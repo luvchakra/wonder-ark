@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ChevronDown, ShieldCheck } from "lucide-react";
 import { moduleRegistry } from "@cofounderai/module-registry";
-import { ModuleIcon } from "@cofounderai/core/shell/module-icon";
+import { ModuleAppIcon } from "@cofounderai/core/shell/module-icon";
 import { Badge } from "@cofounderai/core/ui/badge";
 import { Button } from "@cofounderai/core/ui/button";
 import { SubmitButton } from "@cofounderai/core/ui/submit-button";
@@ -111,7 +111,7 @@ export function BusinessLicensesExpander({
               // different horizontal spot on every row. A fixed name column puts every
               // badge at the same start position instead.
               <div key={module.key} className="flex flex-wrap items-center gap-3 px-3 py-2.5">
-                <ModuleIcon name={module.icon} className="size-4 shrink-0 text-muted-foreground" />
+                <ModuleAppIcon moduleKey={module.key} name={module.icon} />
                 <span className="w-24 shrink-0 text-sm font-medium">{module.name}</span>
                 <div className="min-w-[6.5rem] shrink-0">
                   <StatusBadge

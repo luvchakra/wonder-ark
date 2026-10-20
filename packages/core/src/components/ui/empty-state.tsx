@@ -33,15 +33,22 @@ export function EmptyState({
     );
   }
 
+  // The panel reads as a friendly welcome rather than a gap (docs/DESIGN.md,
+  // "Approachable look"): the icon sits in a soft blue circle and the message is in
+  // body text, not muted.
   return (
     <div
       className={cn(
-        "flex flex-col items-center gap-2 rounded-2xl border border-dashed border-border p-12 text-center",
+        "flex flex-col items-center gap-3 rounded-2xl border border-border bg-card p-12 text-center",
         className,
       )}
     >
-      {Icon ? <Icon className="size-8 text-muted-foreground" aria-hidden="true" /> : null}
-      <p className="text-sm text-muted-foreground">{message}</p>
+      {Icon ? (
+        <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
+          <Icon className="size-7" aria-hidden="true" />
+        </span>
+      ) : null}
+      <p className="max-w-sm text-sm font-medium text-balance text-foreground">{message}</p>
     </div>
   );
 }

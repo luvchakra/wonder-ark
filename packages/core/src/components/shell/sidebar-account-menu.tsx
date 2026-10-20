@@ -3,9 +3,10 @@
 import { useRef, useState } from "react";
 import Link from "next/link";
 import { BarChart3, ChevronsUpDown, CreditCard, LifeBuoy, LogOut, Shield, ShieldCheck, SunMoon, User } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage, avatarToneClass } from "../ui/avatar";
 import { SubmitButton } from "../ui/submit-button";
 import { useDismiss } from "../../hooks/use-dismiss";
+import { cn } from "../../lib/utils";
 import type { ShellUser } from "./types";
 
 function initials(name: string): string {
@@ -182,7 +183,7 @@ export function SidebarAccountMenu({
       >
         <Avatar className="size-8">
           <AvatarImage src={user.avatarUrl} alt="" />
-          <AvatarFallback className="bg-primary text-xs text-primary-foreground">
+          <AvatarFallback className={cn("text-xs", avatarToneClass(user.email || user.name))}>
             {initials(user.name)}
           </AvatarFallback>
         </Avatar>

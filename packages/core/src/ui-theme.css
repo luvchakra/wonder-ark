@@ -101,7 +101,9 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  /* Rounder than a typical back-office default (docs/DESIGN.md, "Approachable look"):
+   * 12px controls, 16px cards. Softens every surface without touching a color. */
+  --radius: 0.75rem;
 
   /* WonderArk brand tokens (docs/plan/16-BRANDING-BACKLOG.md §3) — the one place the
    * brand colours are defined; the semantic tokens below map onto them. Constant across

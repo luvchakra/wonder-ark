@@ -40,7 +40,7 @@ screen.
   rounded cards (`--card`) with a subtle border and a near-flat shadow, generous padding,
   `rounded-lg`/`rounded-xl` corners throughout (cards, inputs, buttons — nothing
   sharp-cornered, nothing as rounded as a pill except the active-nav-item highlight and
-  status badges).
+  status badges; see "Approachable look" below for the current radius).
 
 **Color language:**
 - Primary/accent: a clean mid blue (buttons, active nav state, links, the sales line in
@@ -64,6 +64,30 @@ screen.
 font for headings, unlike StockPilot's Space Grotesk/DM Sans split) — headings are the
 same family as body text, just heavier. Tables are dense (compact row height, small
 text) — this is a data-heavy back-office tool, not a marketing page.
+
+## Approachable look (recorded 2026-10-20)
+
+The owner asked for the platform to feel less serious and more approachable for
+everyday business users, in the spirit of Odoo's web client, **without changing any
+color**. What we took from Odoo, and where it lives:
+
+- **Every module has its own app tile** — its icon on a rounded, colored square, the way
+  Odoo's home menu shows apps. One color per module, drawn from the existing palette
+  (Discovery brand blue, Inventory amber, Service green, CRM chart violet, Finance brand
+  cyan), shown in the rail and on the license and usage pages. `ModuleAppIcon` in
+  `packages/core/src/components/shell/module-icon.tsx`.
+- **People get colored initials**, stable per person (`avatarToneClass()` in
+  `ui/avatar.tsx`), instead of one blue disc for everyone.
+- **Rounder surfaces**: `--radius` is 12px (16px cards), and KPI tiles' icon chips are
+  circles.
+- **Friendly empty states**: the icon in a soft blue circle and the message in body
+  text on a white panel, not a dashed gray outline.
+- **Plain-language chrome**: rail section headings are sentence case, not small caps;
+  table headers are semibold sentence case; breadcrumb links are blue like Odoo's;
+  table rows tint blue on hover; linked KPI tiles lift on hover.
+
+What we deliberately did not take: Odoo's top-menu navigation and full-screen app
+launcher (the rail above stays the navigation), and its purple/teal colors.
 
 ## The shared components this system is made of
 

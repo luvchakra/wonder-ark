@@ -3,7 +3,7 @@ import { getCurrentAccount, listBusinesses } from "@cofounderai/module-discovery
 import { listLicensesForBusiness } from "@cofounderai/core/licensing/queries";
 import type { License, LicenseStatus } from "@cofounderai/core/licensing/types";
 import { moduleRegistry } from "@cofounderai/module-registry";
-import { ModuleIcon } from "@cofounderai/core/shell/module-icon";
+import { ModuleAppIcon } from "@cofounderai/core/shell/module-icon";
 import { Badge } from "@cofounderai/core/ui/badge";
 import { SubmitButton } from "@cofounderai/core/ui/submit-button";
 import {
@@ -109,7 +109,7 @@ export default async function LicensesSettingsPage({
                   return (
                     <div key={module.key} className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                       <div className="flex min-w-0 flex-1 items-center gap-3">
-                        <ModuleIcon name={module.icon} className="size-4 shrink-0 text-muted-foreground" />
+                        <ModuleAppIcon moduleKey={module.key} name={module.icon} />
                         <div className="flex min-w-0 flex-col gap-0.5">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{module.name}</span>

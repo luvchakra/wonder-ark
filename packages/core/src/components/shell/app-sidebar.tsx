@@ -23,7 +23,7 @@ import { readOfferingFocus, writeOfferingFocus, type OfferingFocus } from "../..
 import { useSidebar } from "./sidebar-context";
 import { SidebarAccountMenu } from "./sidebar-account-menu";
 import { WonderArkLogo } from "./wonderark-logo";
-import { ModuleIcon } from "./module-icon";
+import { ModuleAppIcon, ModuleIcon } from "./module-icon";
 import type { ShellBusiness, ShellNavModule, ShellProduct, ShellUser } from "./types";
 
 /**
@@ -109,7 +109,7 @@ function NavLink({
       aria-current={isActive ? "page" : undefined}
       className={cn(
         "flex items-center gap-2.5 truncate rounded-lg px-3 py-2 text-sm transition-colors",
-        indent && "ml-3.5 border-l border-sidebar-border pl-4",
+        indent && "ml-5.5 border-l border-sidebar-border pl-4",
         isActive
           ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
           : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -185,7 +185,7 @@ function NavGroup({
         type="button"
         onClick={onToggle}
         aria-expanded={!collapsed}
-        className="mt-2 ml-7 flex items-center gap-1 rounded-md py-1 text-left text-[11px] font-medium tracking-wide text-sidebar-muted/70 uppercase transition-colors hover:text-sidebar-foreground"
+        className="mt-2 ml-8 flex items-center gap-1 rounded-md py-1 text-left text-xs font-medium text-sidebar-muted transition-colors hover:text-sidebar-foreground"
       >
         <ChevronDown
           className={cn("size-3 shrink-0 transition-transform", collapsed && "-rotate-90")}
@@ -572,13 +572,17 @@ export function AppSidebar({
                   aria-expanded={module.licensed ? isExpanded : undefined}
                   title={module.licensed ? undefined : `${module.name} isn't licensed for this business`}
                   className={cn(
-                    "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm transition-colors",
+                    "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left text-sm transition-colors",
                     isExpanded
                       ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
                       : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                   )}
                 >
-                  <ModuleIcon name={module.icon} className="size-4.5 shrink-0" />
+                  <ModuleAppIcon
+                    moduleKey={module.key}
+                    name={module.icon}
+                    className={module.licensed ? undefined : "opacity-40 grayscale"}
+                  />
                   <span className="min-w-0 flex-1 truncate">{module.name}</span>
                   {!module.licensed ? (
                     <Lock className="size-3.5 shrink-0 opacity-60" aria-hidden="true" />
