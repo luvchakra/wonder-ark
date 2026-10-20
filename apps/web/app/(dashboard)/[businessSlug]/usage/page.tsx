@@ -5,7 +5,7 @@ import { getBusinessUsage } from "@cofounderai/module-discovery/lib/usage/querie
 import { creditsUsedPercent, OPERATION_LABEL } from "@cofounderai/module-discovery/lib/usage/format";
 import { listLicensesForBusiness } from "@cofounderai/core/licensing/queries";
 import { moduleRegistry, type ModuleKey } from "@cofounderai/module-registry";
-import { ModuleIcon } from "@cofounderai/core/shell/module-icon";
+import { ModuleAppIcon } from "@cofounderai/core/shell/module-icon";
 import { Breadcrumbs } from "@cofounderai/module-discovery/components/tenancy/breadcrumbs";
 
 /** Modules that record AI usage today -- `ai_runs` is still discovery's own
@@ -62,7 +62,7 @@ export default async function BusinessUsagePage({
             <section key={module.key} className="flex flex-col gap-3 rounded-md border p-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <ModuleIcon name={module.icon} className="size-4.5 text-muted-foreground" />
+                  <ModuleAppIcon moduleKey={module.key} name={module.icon} />
                   <h2 className="font-medium">{module.name}</h2>
                 </div>
                 {usesAi ? <span className="text-sm text-muted-foreground">{periodLabel}</span> : null}

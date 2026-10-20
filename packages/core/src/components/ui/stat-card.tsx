@@ -56,7 +56,7 @@ export function StatCard({
         {Icon ? (
           <span
             className={cn(
-              "flex size-9 shrink-0 items-center justify-center rounded-lg",
+              "flex size-10 shrink-0 items-center justify-center rounded-full",
               TONE_CHIP[tone],
             )}
           >
@@ -93,7 +93,7 @@ export function StatCard({
       href={href}
       className={cn(
         base,
-        "block transition-colors hover:border-primary/40 hover:bg-accent/30 active:bg-accent/50",
+        "block transition-all hover:border-primary/40 hover:shadow-md active:bg-accent/40",
         className,
       )}
     >
