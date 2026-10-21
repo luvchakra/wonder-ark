@@ -471,7 +471,7 @@ Source: [`docs/plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md`](./plan/09-PLATFORM-ADM
 
 | ID | Story | Status | Evidence / note |
 |---|---|---|---|
-| `PLATFORM-P1-13.1` | Public Careers pages | ✅ Done | `apps/web/app/(site)/careers/[id]/apply-form.tsx` +25 |
+| `PLATFORM-P1-13.1` | Public Careers pages | ✅ Done | `apps/web/app/(site)/careers/[id]/apply-form.tsx` +26 |
 | `PLATFORM-P1-13.2` | Career-site key | ✅ Done | `apps/web/app/platform/(protected)/careers/actions.ts` +9 |
 
 ## Discovery — offering-centric upgrade
