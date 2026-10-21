@@ -1,8 +1,12 @@
 import type { ReactNode } from "react";
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { requireSuperadmin } from "@cofounderai/core/rbac/platform-admin";
 import { createClient } from "@cofounderai/core/db/server";
 import { PlatformShell } from "./platform-shell";
+
+/** Signed-in pages are never indexed or followed by any crawler (AI or search). */
+export const metadata: Metadata = { robots: { index: false, follow: false, nocache: true, noimageindex: true } };
 
 // Every /platform/* page is a per-request, authenticated control-plane view (session +
 // cross-tenant admin queries) -- never a candidate for static prerendering. Forced here

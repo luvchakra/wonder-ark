@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { createClient } from "@cofounderai/core/db/server";
 import { getPendingLegalAcceptances } from "@cofounderai/core/privacy/legal-acceptance";
@@ -29,6 +30,9 @@ import { getAlerts as getCrmAlerts } from "@cofounderai/module-crm/contract/inde
 import { getAlerts as getGstAlerts } from "@cofounderai/module-gst/contract/index";
 import { DashboardChrome } from "@/components/dashboard/dashboard-chrome";
 import { createBusinessAction, createBusinessFromWebsiteAction } from "@/app/(dashboard)/dashboard/actions";
+
+/** Signed-in pages are never indexed or followed by any crawler (AI or search). */
+export const metadata: Metadata = { robots: { index: false, follow: false, nocache: true, noimageindex: true } };
 
 const OTHER_MODULE_ALERTS: Record<"inventory" | "fsm" | "crm" | "gst", (businessId: string) => Promise<{ ok: boolean; data?: ShellAlert[] }>> = {
   inventory: getInventoryAlerts,
