@@ -317,7 +317,9 @@ export async function updateSession(request: NextRequest) {
   const landingOnly = host.kind === "base" && orgAddressRequired();
   if (landingOnly && base) {
     const first = pathname.split("/")[1] ?? "";
-    if (first && !APP_TOP_SEGMENTS.has(first) && !first.includes(".")) {
+    // RESERVED_TOP_SEGMENTS covers the main address's own public pages (/careers) that are
+    // deliberately not in APP_TOP_SEGMENTS: never an organization's page here either.
+    if (first && !APP_TOP_SEGMENTS.has(first) && !RESERVED_TOP_SEGMENTS.has(first) && !first.includes(".")) {
       const target = orgUrl(first, base, request.nextUrl.protocol.replace(":", ""), request.nextUrl.port || undefined);
       if (target) return NextResponse.redirect(new URL(`${target}${pathname.slice(first.length + 1) || "/"}${request.nextUrl.search}`), 307);
     }
