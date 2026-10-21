@@ -426,5 +426,14 @@ in the share is fixed, so raising it only adds businesses. **Roll back** returns
 its previous rollout, or turns it off when there is none, without a code change. Both need a
 reason and are recorded in the flag's history.
 
+The public **Careers** page (`/careers`, linked from the site footer) lists open positions
+and takes applications. WonderJobs runs everything behind it — the jobs, the applications,
+the emails to applicants and the hiring team, decisions and deletion — and WonderArk stores
+no applicant's details. To connect it, register `https://<your address>/careers` in WonderJobs
+(Hiring → Jobs → Career sites → Add a career site → "On our own website"), then paste the
+career-site key it shows (it starts with `wjcs_`) on **Platform → Careers** and press
+**Test connection**. The key is stored encrypted and shown only as `wjcs_••••••••` plus its
+last four characters; every save and clear is recorded in Audit Search.
+
 It's not a licensable module and ordinary business admins never
 see it; it exists for whoever runs the WonderArk service itself.

@@ -19,4 +19,14 @@ describe("next.config", () => {
   it("lets server actions accept uploads up to Vercel's request ceiling", () => {
     expect(nextConfig.experimental?.serverActions?.bodySizeLimit).toBe("4.5mb");
   });
+
+  // PLATFORM-P1-13.1: /careers/status?t=<token> must not leak the token as a referrer.
+  it("sends no referrer and noindex from the application status page", async () => {
+    const rules = await nextConfig.headers!();
+    const status = rules.filter((r) => r.source === "/careers/status").flatMap((r) => r.headers);
+    expect(status).toContainEqual({ key: "Referrer-Policy", value: "no-referrer" });
+    expect(status).toContainEqual({ key: "X-Robots-Tag", value: "noindex, nofollow" });
+    // Later rules win in Next, so the page's own rule must come after the site-wide one.
+    expect(rules.findIndex((r) => r.source === "/careers/status")).toBeGreaterThan(rules.findIndex((r) => r.source === "/:path*"));
+  });
 });

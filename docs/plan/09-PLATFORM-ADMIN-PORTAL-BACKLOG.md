@@ -2021,3 +2021,32 @@ Draft only; it is saved for the team and nothing is sent.
 Each MCP tool declares what it is in its `_meta` (`wonderapps.biz/entity`: `ai_agent` or
 `tool`); AI agents also declare how far they go (`wonderapps.biz/ai`: answer-only or
 draft-only, AI-generated output, never acts), so a client lists them as agents without guessing.
+
+---
+
+# 43. Careers via WonderJobs (added 2026-10-21)
+
+WonderJobs (https://jobs.wonderapps.biz) owns the jobs, the applications, every email to the
+applicant and the hiring team, reminders, decisions and data deletion. This app shows its data
+and forwards what an applicant submits; it stores no applicant data. Reference implementation:
+WonderID (`modules/careers/wonderjobs.ts`, `app/careers/*`).
+
+## PLATFORM-P1-13.1 — Public Careers pages
+
+`/careers` (open jobs, or "No open positions right now"), `/careers/{id}` (description as plain
+text, Share, Apply form with a honeypot and a consent line using WonderJobs' `retentionMonths`,
+schema.org JobPosting) and `/careers/status?t=` (status and Withdraw; noindex, no referrer).
+Applications and withdrawals go through this app's server actions, validated and rate-limited
+per address (about 10 applications an hour), then to WonderJobs through a server-only client
+(`packages/core/src/careers/wonderjobs.ts`: fixed https host, Bearer key, 8 s timeout, one GET
+retry, no POST retry, 429 respected, job list cached 60 s). "Sent" only after a 200. A Careers
+link sits in the site footer.
+
+## PLATFORM-P1-13.2 — Career-site key
+
+`/platform/careers`: a superadmin saves, replaces or clears the WonderJobs career-site key
+(`wjcs_…`) without a redeploy and tests the connection (Connected with the job count, Wrong
+key, Unavailable). Stored encrypted in `platform.careers_connection` (service role only), shown
+only as a mask, and each save or clear recorded in `platform.audit_log` with the last four
+characters. `WONDERJOBS_CAREERS_KEY` is the fallback when no key is saved.
+

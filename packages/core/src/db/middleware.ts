@@ -52,6 +52,10 @@ const RESERVED_TOP_SEGMENTS = new Set([
   "invite",
   // PLATFORM-P1-09.4: the policy acceptance prompt (apps/web/app/legal/accept) -- self-gated.
   "legal",
+  // PLATFORM-P1-13.1: the public Careers pages (apps/web/app/(site)/careers), reserved as a
+  // business slug in 20261021100000. Main address only -- not in org-address.ts's
+  // APP_TOP_SEGMENTS, so an organization's own address never serves them.
+  "careers",
   "robots.txt",
   "sitemap.xml",
   // BRAND-06: the web app manifest (apps/web/app/manifest.ts). Browsers fetch it without

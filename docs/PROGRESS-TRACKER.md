@@ -19,19 +19,19 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 570 |
+| ✅ Done | 572 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 0 |
 | ⛔ Blocked | 0 |
 | ⬜ Not started | 0 |
-| **Total** | **652** |
+| **Total** | **654** |
 
 | Backlog | Done | Set aside | Remaining | Total |
 |---|---|---|---|---|
 | [Platform build-out](./plan/04-CLAUDE-CODE-BACKLOG.md) | 74 | 1 | 0 | 75 |
-| [Platform Administration Portal](./plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md) | 127 | 7 | 0 | 134 |
+| [Platform Administration Portal](./plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md) | 129 | 7 | 0 | 136 |
 | [Discovery — offering-centric upgrade](./plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md) | 57 | 1 | 0 | 58 |
 | [Discovery — opportunity intelligence](./plan/08-DISCOVERY-OPPORTUNITY-INTELLIGENCE-BACKLOG.md) | 0 | 30 | 0 | 30 |
 | [Compliance / Finance — global tax](./plan/11-COMPLIANCE-GLOBAL-TAX-BACKLOG.md) | 87 | 41 | 0 | 128 |
@@ -466,6 +466,13 @@ Source: [`docs/plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md`](./plan/09-PLATFORM-ADM
 | `PLATFORM-P1-12.6` | Auto-reply limits | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/crm/conversations/page.tsx` +20 |
 | `PLATFORM-P1-12.7` | WhatsApp reply drafts over MCP | ✅ Done | `apps/web/app/api/mcp/route.ts` +6 |
 | `PLATFORM-P1-11.3` | MCP entity types | ✅ Done | `apps/web/lib/mcp/server.test.ts` +1 |
+
+### Careers via WonderJobs (added 2026-10-21)
+
+| ID | Story | Status | Evidence / note |
+|---|---|---|---|
+| `PLATFORM-P1-13.1` | Public Careers pages | ✅ Done | `apps/web/components/marketing/footer.tsx` +4 |
+| `PLATFORM-P1-13.2` | Career-site key | ✅ Done | `apps/web/app/platform/platform-nav.ts` +2 |
 
 ## Discovery — offering-centric upgrade
 
