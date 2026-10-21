@@ -48,7 +48,7 @@ export const FAQ: FaqEntry[] = [
     answer:
       "A button only appears when that sign-in method has been switched on for this deployment, so you are never shown one that can't work. Use your email and password in the meantime. Whoever operates the deployment can switch each one on with a configuration change — no redeploy needed, and the button appears within a few minutes.",
     guideSlug: "getting-started",
-    sectionId: "enabling-google-sign-in-for-whoever-deploys-wonderark",
+    sectionId: "creating-an-account",
   },
   {
     category: "Account & access",
@@ -342,9 +342,9 @@ export const FAQ: FaqEntry[] = [
     category: "For administrators",
     question: "Where do I set the AI key for the whole deployment?",
     answer:
-      "The Platform portal's AI Providers page. A key set there is used by every account that hasn't connected its own, and takes precedence over the PLATFORM_AI_API_KEY environment variable — so you can change it without a redeploy.",
+      "The Platform portal's AI Providers page. A key set there is used by every account that hasn't connected its own, and you can change it without a redeploy.",
     guideSlug: "getting-started",
-    sectionId: "environment-variables-for-whoever-deploys-wonderark",
+    sectionId: "the-superadmin-platform-portal",
   },
   {
     category: "Day to day",

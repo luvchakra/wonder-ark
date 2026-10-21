@@ -42,7 +42,6 @@ describe("generated help content", () => {
 describe("recently shipped features are documented", () => {
   const cases: Array<[string, string, string]> = [
     ["Microsoft and LinkedIn sign-in", "getting-started", "creating-an-account"],
-    ["enabling Microsoft and LinkedIn sign-in", "getting-started", "enabling-microsoft-and-linkedin-sign-in-for-whoever-deploys-wonderark"],
     ["Download my data", "getting-started", "your-profile-your-data-and-appearance"],
     ["the Executive Dashboard", "getting-started", "your-dashboard"],
     ["voiding a payment (Service)", "service-fsm", "correcting-a-payment-void-never-edit"],
@@ -189,6 +188,17 @@ describe("listSections", () => {
     expect(sections.length).toBeGreaterThan(40);
     for (const section of sections) {
       expect(getGuide(section.guideSlug)?.title).toBe(section.guideTitle);
+    }
+  });
+});
+
+// The guides are read by every signed-in customer, so they describe what a person does,
+// not how the platform is deployed or built: operator notes live in
+// docs/ops/deployment-setup.md.
+describe("the guides keep platform internals out", () => {
+  it("names no server secret, deploy-only setting or source path", () => {
+    for (const section of listSections()) {
+      expect(`${section.heading}\n${section.body}`, `${section.guideSlug}#${section.sectionId}`).not.toMatch(/SERVICE_ROLE_KEY|_SECRET\b|ENCRYPTION_SECRET|whoever deploys|apps\/web\/|packages\/[a-z-]+\/src/);
     }
   });
 });

@@ -10,13 +10,41 @@ import { SITE_URL } from "@cofounderai/core/site";
  * disallowed too: they are meant for the one person who was sent the link, not a search
  * index.
  */
+/**
+ * AI training and answer-engine crawlers get nothing at all, the marketing pages
+ * included: what they read is used to train or ground models, which is how a product
+ * gets rebuilt from its own screens. Search engines (Googlebot, Bingbot) are unaffected;
+ * Google-Extended and Applebot-Extended are those companies' AI-training tokens, not
+ * their search crawlers.
+ */
+export const AI_CRAWLERS = [
+  "GPTBot",
+  "ChatGPT-User",
+  "OAI-SearchBot",
+  "ClaudeBot",
+  "Claude-Web",
+  "anthropic-ai",
+  "CCBot",
+  "PerplexityBot",
+  "Google-Extended",
+  "Applebot-Extended",
+  "Bytespider",
+  "Amazonbot",
+  "meta-externalagent",
+  "cohere-ai",
+  "Diffbot",
+];
+
 export default function robots(): MetadataRoute.Robots {
   return {
-    rules: {
-      userAgent: "*",
-      allow: "/",
-      disallow: ["/dashboard", "/platform", "/api/", "/auth/", "/onboarding", "/p/", "/reset-password", "/help"],
-    },
+    rules: [
+      {
+        userAgent: "*",
+        allow: "/",
+        disallow: ["/dashboard", "/platform", "/api/", "/auth/", "/onboarding", "/p/", "/reset-password", "/help"],
+      },
+      { userAgent: AI_CRAWLERS, disallow: "/" },
+    ],
     sitemap: `${SITE_URL}/sitemap.xml`,
     host: SITE_URL,
   };

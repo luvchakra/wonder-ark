@@ -438,10 +438,14 @@ export async function sendChatMessage(
 
   await assertWithinUsageLimit(workspace.id);
 
+  // Only the new user turn is taken from the client. The history the model sees is
+  // re-read from what this server stored, so a caller can't put words in the
+  // assistant's mouth (forged "assistant" turns are a prompt-injection route).
   const newUserMessage = messages[messages.length - 1];
-  if (newUserMessage?.role === "user") {
-    await appendChatMessage(workspace.id, newUserMessage);
+  if (newUserMessage?.role !== "user" || typeof newUserMessage.content !== "string" || !newUserMessage.content.trim()) {
+    throw new AiProviderError("unknown", "Type a question for the assistant.");
   }
+  await appendChatMessage(workspace.id, { role: "user", content: newUserMessage.content });
 
   // The one place buildExtraContext() runs -- module/all-modules grounding is worth
   // however long it takes here (a real model call is about to happen regardless), but
@@ -450,7 +454,9 @@ export async function sendChatMessage(
   const extraContext = await buildExtraContext(account.id, resolved, context);
   const fullContextText = resolved.contextText + extraContext;
 
-  const trimmed = messages.slice(-MAX_HISTORY_MESSAGES);
+  const trimmed = (await listChatMessages(workspace.id))
+    .map(({ role, content }) => ({ role, content }))
+    .slice(-MAX_HISTORY_MESSAGES);
   const { accountId, provider, modelId, model } = await resolveAiModel(workspace.id, OPERATION);
   const inputHash = hashInput({
     messages: trimmed,

@@ -4,7 +4,7 @@ CRM runs your pipeline from first message to won customer: conversations from Wh
 Instagram and Facebook, leads, opportunities, a lost-business recovery queue, reviews, and a
 customer profile that pulls in data from every other licensed module.
 
-Last updated: 2026-10-17
+Last updated: 2026-10-21
 
 ## Navigation
 
@@ -178,16 +178,14 @@ connects to it.
 1. **Create (or reuse) a Meta App** at developers.facebook.com and add the
    relevant product — "WhatsApp" for WhatsApp Business, or
    "Instagram"/"Messenger" for Instagram DMs and Facebook Messenger.
-2. **Copy the App Secret** from the Meta App dashboard. Set it as an
-   environment variable on your WonderArk deployment: `CRM_WHATSAPP_APP_SECRET`
-   for WhatsApp, or `CRM_META_APP_SECRET` for Instagram/Messenger. WonderArk
-   uses this to verify every incoming webhook really came from Meta.
-3. **Invent a verify token** (any secret string of your choosing) and set it
-   in *two* places: WonderArk's `CRM_WHATSAPP_WEBHOOK_VERIFY_TOKEN` (or
-   `CRM_META_WEBHOOK_VERIFY_TOKEN`) environment variable, and the "Verify
-   Token" field when you configure the webhook in the Meta dashboard. Meta
-   uses this once to confirm you own the endpoint before sending real
-   traffic.
+2. **Copy the App Secret** from the Meta App dashboard and give it to
+   whoever operates your WonderArk deployment, saying whether it is for
+   WhatsApp or for Instagram/Messenger. WonderArk uses it to verify every
+   incoming webhook really came from Meta.
+3. **Invent a verify token** (any secret string of your choosing). Give it to
+   the same person, and enter it in the "Verify Token" field when you
+   configure the webhook in the Meta dashboard. Meta uses it once to confirm
+   you own the endpoint before sending real traffic.
 4. **Point Meta's webhook at WonderArk.** In the Meta dashboard's Webhooks
    section, set the callback URL to:
    - `https://<your-domain>/api/webhooks/crm-whatsapp` for WhatsApp

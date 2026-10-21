@@ -1,8 +1,8 @@
 // Hand-written OpenAPI 3.0 spec for the public API v1, promoted from
 // stockpilot-ai-ops's src/lib/api-v1/openapi.ts (SP-7's own "promote public_api_v1 +
 // api-v1 lib to core"). No secrets here, so this is safe to import from anywhere -- it's
-// served verbatim at GET /api/v1/openapi.json (unauthenticated, like any API's own
-// documentation).
+// served at GET /api/v1/openapi.json to a valid API key or a signed-in user, never to
+// an anonymous caller.
 import { BRAND_NAME } from "@cofounderai/core/lib/brand";
 
 export const openApiSpec = {
@@ -45,8 +45,7 @@ export const openApiSpec = {
   paths: {
     "/openapi.json": {
       get: {
-        summary: "This document",
-        security: [],
+        summary: "This document (an API key, or a signed-in session in the browser)",
         responses: { "200": { description: "OpenAPI 3.0 document" } },
       },
     },
