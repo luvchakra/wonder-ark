@@ -26,6 +26,7 @@ every variable. Grouped by purpose:
 | Organization addresses | `BASE_APP_HOST` — turns on `<prefix>.<host>` addresses (for example `ark.wonderapps.biz`); `ORG_ADDRESS_REQUIRED` — makes the main address the landing page only |
 | Environment payments | `BILLING_TEST_PAYMENTS` — test-mode payments for **Add an environment** |
 | SEO | `NEXT_PUBLIC_SITE_URL` — optional, falls back to the current deployment URL |
+| Careers (WonderJobs) | `WONDERJOBS_CAREERS_KEY` — optional fallback for the career-site key (`wjcs_…`); a key saved on **Platform → Careers** takes precedence and needs no redeploy. `WONDERJOBS_BASE_URL` — tests/staging only; must be an https `*.wonderapps.biz` address, anything else is refused |
 
 None of this is needed by an ordinary business user signing up on an
 existing WonderArk deployment — it's only relevant to whoever operates the

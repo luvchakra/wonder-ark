@@ -3,7 +3,7 @@ import { Navbar } from "@/components/marketing/navbar";
 import { Footer } from "@/components/marketing/footer";
 
 /**
- * The public pages that aren't the landing page itself -- /pricing, /terms and /privacy.
+ * The public pages that aren't the landing page itself -- /pricing, /careers, /terms and /privacy.
  * They wear the marketing site's clothes (same theme, navbar and footer as / and /help)
  * and read no tenant data, so the proxy lets them through without a session
  * (core/db/middleware.ts's RESERVED_TOP_SEGMENTS). A signed-in visitor sees them the same

@@ -31,10 +31,10 @@ const ENVIRONMENT_SUFFIX: Record<Exclude<OrgEnvironment, "sandbox">, string> = {
 export const PREFIX_MIN = 3;
 export const PREFIX_MAX = 32;
 
-/** Mirrors core.business_slug_problem()'s list (migration 20261013100000): keep in step. */
+/** Mirrors core.business_slug_problem()'s list (migrations 20261013100000, 20261021100000): keep in step. */
 export const RESERVED_PREFIXES = new Set([
   "dashboard", "platform", "login", "signup", "forgot-password", "reset-password", "onboarding",
-  "auth", "api", "p", "help", "terms", "privacy", "pricing", "invite", "legal",
+  "auth", "api", "p", "help", "terms", "privacy", "pricing", "invite", "legal", "careers",
   "www", "app", "admin", "administrator", "platform-admin", "signin", "sign-in", "sign-up",
   "sso", "oauth", "mail", "email", "smtp", "static", "assets", "cdn", "media", "files",
   "status", "docs", "support", "billing", "wonderark", "wonderapps", "root", "system",

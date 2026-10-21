@@ -17,7 +17,19 @@ const nextConfig: NextConfig = {
   // SEC-4: security headers on every response, static assets included.
   poweredByHeader: false,
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders({ isDev: process.env.NODE_ENV === "development" }) }];
+    return [
+      { source: "/:path*", headers: securityHeaders({ isDev: process.env.NODE_ENV === "development" }) },
+      // PLATFORM-P1-13.1: the application status page's address carries the applicant's
+      // token. Listed after the baseline so its Referrer-Policy wins: the token is never
+      // sent on as a referrer, and the page is never indexed.
+      {
+        source: "/careers/status",
+        headers: [
+          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+    ];
   },
 
   async redirects() {

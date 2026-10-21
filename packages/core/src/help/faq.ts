@@ -340,6 +340,14 @@ export const FAQ: FaqEntry[] = [
   },
   {
     category: "For administrators",
+    question: "How do I connect the Careers page to WonderJobs?",
+    answer:
+      "Register this deployment's /careers address in WonderJobs as a career site \"On our own website\", then paste the wjcs_ key it shows on Platform → Careers and press Test connection. Until a key is set, the Careers page tells visitors it isn't set up yet.",
+    guideSlug: "getting-started",
+    sectionId: "the-superadmin-platform-portal",
+  },
+  {
+    category: "For administrators",
     question: "Where do I set the AI key for the whole deployment?",
     answer:
       "The Platform portal's AI Providers page. A key set there is used by every account that hasn't connected its own, and you can change it without a redeploy.",

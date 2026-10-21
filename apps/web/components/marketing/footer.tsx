@@ -116,6 +116,14 @@ export function Footer() {
                     </a>
                   </li>
                 ) : null}
+                {column.title === "Company" ? (
+                  <li>
+                    {/* PLATFORM-P1-13.1: open positions, from WonderJobs. */}
+                    <Link href="/careers" className="text-sm text-landing-muted hover:text-landing-fg">
+                      Careers
+                    </Link>
+                  </li>
+                ) : null}
                 {column.items.map((label) => (
                   <li key={label}>
                     <span

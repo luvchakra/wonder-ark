@@ -75,6 +75,8 @@ const NEW_RESOURCE_TYPES: AuditResourceType[] = [
   "business_notes",
   "organization_plan",
   "organization_profile",
+  // PLATFORM-P1-13.2 -- the WonderJobs career-site key saved or cleared.
+  "careers_connection",
 ];
 
 /** The eleven resource types PLATFORM-P0-17 already built history tables for. */
