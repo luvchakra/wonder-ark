@@ -12,7 +12,7 @@ import { LandingButton } from "./landing-button";
  * they still work from /help, /pricing and the legal pages, which share this bar; they are
  * plain anchors -- a hash jump on the landing page itself. `/pricing` is a real route,
  * rendered with `next/link` below so it navigates client-side instead of reloading the
- * app. The help guides are signed-in only (reached from the account menu), so this public
+ * app; so is `/careers`. The help guides are signed-in only (reached from the account menu), so this public
  * bar doesn't link them.
  */
 const NAV_LINKS = [
@@ -21,6 +21,8 @@ const NAV_LINKS = [
   { href: "/#benefits", label: "Benefits" },
   { href: "/pricing", label: "Pricing" },
   { href: "/#faq", label: "FAQ" },
+  // PLATFORM-P1-13.1: open positions, from WonderJobs.
+  { href: "/careers", label: "Careers" },
 ];
 
 const isRoute = (href: string) => !href.includes("#");
@@ -35,7 +37,7 @@ export function Navbar() {
           <WonderArkLogo variant="horizontal" size="md" alt={BRAND_NAME} priority />
         </Link>
 
-        <nav className="hidden items-center gap-8 md:flex" aria-label="Primary">
+        <nav className="hidden items-center gap-6 md:flex lg:gap-8" aria-label="Primary">
           {NAV_LINKS.map((link) =>
             isRoute(link.href) ? (
               <Link
