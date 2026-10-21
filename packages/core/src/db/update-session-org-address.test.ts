@@ -151,6 +151,19 @@ describe("the main address", () => {
   });
 });
 
+describe("the main address's own public pages", () => {
+  // PLATFORM-P1-13.1: /careers is served on the main address only. With ORG_ADDRESS_REQUIRED
+  // it was handed to careers.<host> as if it were an organization's address.
+  it("serves /careers on the main address instead of handing it to an organization", async () => {
+    process.env.ORG_ADDRESS_REQUIRED = "true";
+    signedIn(false);
+    for (const path of ["/careers", "/careers/job_1", "/careers/status?t=abc"]) {
+      const response = await updateSession(request(`https://ark.example.com${path}`));
+      expect(response.headers.get("location")).toBeNull();
+    }
+  });
+});
+
 describe("addresses off (no BASE_APP_HOST)", () => {
   it("changes nothing", async () => {
     delete process.env.BASE_APP_HOST;
