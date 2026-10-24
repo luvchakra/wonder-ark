@@ -58,3 +58,13 @@ to any app.
 - Turn on **Prioritize Production Builds** in the team settings.
 - When a production deploy sits in `QUEUED`, list the team's `BUILDING` deployments. Usually
   another project holds the slot.
+
+## This repo's deployment rules
+
+Moved here from `CLAUDE.md` (2026-10-10; "merge automatically" 2026-10-15).
+
+- **Working branches don't deploy.** `apps/web/vercel.json` `git.deploymentEnabled` turns deployments off for `claude/**`, `feat/**`, `feature/**`, `fix/**` and similar prefixes. Only `main` deploys. `apps/web/vercel-ignore-build.sh` skips `main` commits whose app inputs didn't change. When the app starts building from a new directory, add it to the script's `git diff` paths.
+- **Count before deployment-heavy work.** Count the team's deployments in the last 24 hours. Above about 70% of the cap, auto-merge only production fixes and hotfixes; leave the rest open and say why.
+- **At the cap:** stop. Wait until the oldest counted deployment is 24 hours old, then redeploy the latest `main` once.
+- **Manual deployments** (redeploys included) need the owner's "build now".
+- **Stuck in `QUEUED`:** list the team's `BUILDING` deployments first. Usually another project holds the slot.
