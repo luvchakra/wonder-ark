@@ -24,3 +24,6 @@ apps/web/e2e/screenshots/
 # Local, uncommitted helper scripts (browser checks against a running app)
 apps/web/.*.mjs
 apps/web/.pw-sandbox.config.ts
+
+# UI check screenshots (scripts/ui-check.mjs)
+ui-check-out/
