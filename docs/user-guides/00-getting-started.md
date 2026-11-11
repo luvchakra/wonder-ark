@@ -6,7 +6,7 @@ differ, licensing the modules you need, plans and billing, and adding your
 team. The last section (§14) is for whoever runs the platform itself rather than for
 everyday users.
 
-Last updated: 2026-10-21
+Last updated: 2026-11-12
 
 ## 1. Creating an account
 
@@ -93,6 +93,9 @@ at the business level; only Discovery operates per-offering.
   Finance). A module the business hasn't licensed — or that your role can't use — shows
   greyed out with a lock and "… isn't licensed for this business"; clicking it explains
   instead of crashing. The foot of the sidebar shows **AI Usage** for the month.
+  Open a module and its menu starts with the pages you use every day (for Service:
+  Dashboard, Jobs, Schedule, My Day, Customers, Invoices). The rest sit under one to three
+  groups, such as **More**, **Accounting** or **Tax & GST**; click a group to open it.
 - **AI Assistant** (top bar) answers questions about your business from its own data. It
   answers only; it never changes anything.
 - The **bell** (top bar) collects what needs you: plan and payment notices,

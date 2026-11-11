@@ -19,14 +19,14 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 587 |
+| ✅ Done | 591 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
 | ⬜ Not started | 0 |
-| **Total** | **670** |
+| **Total** | **674** |
 
 | Backlog | Done | Set aside | Remaining | Total |
 |---|---|---|---|---|
@@ -41,6 +41,7 @@ file is stale, so it cannot quietly drift out of date.
 | [Multi-user / multi-business RBAC](./plan/15-MULTI-USER-RBAC-BACKLOG.md) | 39 | 0 | 0 | 39 |
 | [WonderArk branding](./plan/16-BRANDING-BACKLOG.md) | 13 | 0 | 0 | 13 |
 | [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 16 | 0 | 0 | 16 |
+| [Module menus](./plan/18-MODULE-MENUS.md) | 4 | 0 | 0 | 4 |
 
 ## What is left
 
@@ -1272,9 +1273,22 @@ Source: [`docs/plan/17-DISCOVERY-DATA-AND-CONSUMER.md`](./plan/17-DISCOVERY-DATA
 | `DISC-DATA-P0-03.1` | Find screen | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +6 |
 | `DISC-DATA-P0-03.2` | Staging results and the review list | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +6 |
 | `DISC-DATA-P0-03.3` | Approval carries the source and refuses duplicates | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +4 |
-| `DISC-DATA-P0-04.1` | Enrich on approval and Fill missing details | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +7 |
-| `DISC-DATA-P0-04.2` | Find contacts, address status and sending rules | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +9 |
-| `DISC-DATA-P0-04.3` | Removal | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +1 |
+| `DISC-DATA-P0-04.1` | Enrich on approval and Fill missing details | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +16 |
+| `DISC-DATA-P0-04.2` | Find contacts, address status and sending rules | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +18 |
+| `DISC-DATA-P0-04.3` | Removal | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +4 |
 | `DISC-NAV-P0-01.1` | Four-tab offering navigation | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +11 |
 | `DISC-NAV-P0-01.2` | Today list at the top of Prospects | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +6 |
 | `DISC-NAV-P0-01.3` | Plain labels | ✅ Done | `packages/core/src/lib/offering-nav.ts` +2 |
+
+## Module menus
+
+Source: [`docs/plan/18-MODULE-MENUS.md`](./plan/18-MODULE-MENUS.md)
+
+### Stories
+
+| ID | Story | Status | Evidence / note |
+|---|---|---|---|
+| `PLATFORM-NAV-P0-01.1` | Service menu | ✅ Done | `packages/module-fsm/src/manifest.ts` +1 |
+| `PLATFORM-NAV-P0-01.2` | Inventory menu | ✅ Done | `packages/module-inventory/src/manifest.ts` +1 |
+| `PLATFORM-NAV-P0-01.3` | CRM menu | ✅ Done | `packages/module-crm/src/manifest.ts` +1 |
+| `PLATFORM-NAV-P0-01.4` | Finance menu | ✅ Done | `packages/module-registry/src/index.ts` |

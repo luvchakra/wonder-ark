@@ -13,37 +13,38 @@ export const inventoryManifest: ModuleManifest = {
   icon: "Package",
   routePrefix: "/inventory",
   nav: [
+    // PLATFORM-NAV-P0-01.2 (owner, 2026-11-11: "simplify the module menus and pages, reduce and make it intuitive"):
+    // the pages used every day come first with no heading, so they are one click away; the rest fold under a few
+    // named groups. Every page keeps its path; only where its link sits changed.
     {
-      heading: "Overview",
       items: [
         { label: "Dashboard", slug: "dashboard", icon: "LayoutDashboard" },
-        { label: "Alerts", slug: "alerts", icon: "Bell" },
-        { label: "Audit Log", slug: "audit-log", icon: "History" },
-      ],
-    },
-    {
-      heading: "Catalog & Inventory",
-      items: [
         { label: "Products", slug: "products", icon: "Package" },
         { label: "Inventory", slug: "stock", icon: "RefreshCw" },
-        { label: "Stock Transfers", slug: "transfers", icon: "Truck" },
-        { label: "Warehouses", slug: "warehouses", icon: "Warehouse" },
+        { label: "Sales Orders", slug: "sales-orders", icon: "ShoppingCart" },
+        {
+          label: "Purchase Orders",
+          slug: "purchase-orders",
+          icon: "ClipboardList",
+        },
       ],
     },
     {
-      heading: "Sales",
+      heading: "Sales and purchasing",
       items: [
         { label: "Customers", slug: "customers", icon: "Users" },
-        { label: "Sales Orders", slug: "sales-orders", icon: "ShoppingCart" },
         { label: "Sales Invoices", slug: "sales-invoices", icon: "FileText" },
         { label: "Sales Returns", slug: "sales-returns", icon: "RotateCcw" },
+        { label: "Suppliers", slug: "suppliers", icon: "Truck" },
       ],
     },
-        {
-      heading: "Purchasing",
+    {
+      heading: "More",
       items: [
-        { label: "Suppliers", slug: "suppliers", icon: "Truck" },
-        { label: "Purchase Orders", slug: "purchase-orders", icon: "ClipboardList" },
+        { label: "Stock Transfers", slug: "transfers", icon: "Truck" },
+        { label: "Warehouses", slug: "warehouses", icon: "Warehouse" },
+        { label: "Alerts", slug: "alerts", icon: "Bell" },
+        { label: "Audit Log", slug: "audit-log", icon: "History" },
       ],
     },
   ],
