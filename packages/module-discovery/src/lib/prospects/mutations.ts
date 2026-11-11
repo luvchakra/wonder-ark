@@ -3,7 +3,10 @@ import { normalizeUrl } from "@cofounderai/core/lib/url";
 import { publish } from "@cofounderai/core/events/mutations";
 import { getBusinessIdForWorkspace, getProduct, getWorkspace } from "../tenancy/queries";
 import { backfillCustomerContactsForWonProspect, ensureProspectParty, markProspectPartyWon } from "./party-sync";
-import type { Prospect, ProspectOutcome, ProspectStatus } from "./types";
+import { cleanText, fieldSourcesFor } from "../data-sources/suggestions";
+import { WEB_SEARCH_SOURCE_ID } from "../data-sources/types";
+import { findDuplicateProspect } from "./duplicates";
+import type { Prospect, ProspectOutcome, ProspectStatus, ProspectSuggestion } from "./types";
 
 export type ProspectInput = {
   companyName: string;
@@ -221,53 +224,133 @@ async function linkPartiesForProspects(
   }
 }
 
+/** DISC-DATA-P0-03.3: a suggestion staged from the prospect data gateway, as opposed to
+ * one the AI web search found (source 'web_search', or no source on a row staged before
+ * the column existed). */
+function isGatewaySuggestion(suggestion: ProspectSuggestion): boolean {
+  return Boolean(suggestion.source) && suggestion.source !== WEB_SEARCH_SOURCE_ID;
+}
+
+function duplicateKeys(companyName: string, website: string | null): string[] {
+  const domain = website ? extractDomain(website) : null;
+  return [`name:${companyName.trim().toLowerCase()}`, ...(domain ? [`domain:${domain}`] : [])];
+}
+
+/** The organisation's own published contact points on a gateway record (a shop number,
+ * an `info@` mailbox -- never a named person's), read defensively from the stored
+ * payload. */
+function gatewayContactPoints(payload: unknown): { phone: string | null; email: string | null } {
+  const record = typeof payload === "object" && payload !== null ? (payload as Record<string, unknown>) : {};
+  const phone = typeof record.phone === "string" ? cleanText(record.phone, 50) : null;
+  const email = typeof record.email === "string" ? cleanText(record.email, 254) : null;
+  return { phone, email: email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) ? email : null };
+}
+
+export type SuggestionApproval = {
+  /** How many suggestions became prospects. */
+  added: number;
+  /** How many were refused because the company is already a prospect of this offering. */
+  duplicates: number;
+};
+
 /** Moves selected suggestions into `prospects` and removes them from the staging
  * table. Also seeds a `prospect_research` row from each suggestion's `match_reason`/
  * `source_url` (docs/prospects-pipeline-redesign-requirements.md R5) -- otherwise "why
  * we sourced this" is dropped on approval and research starts from nothing. Inserts
  * directly (rather than via `createProspectsBulk`) because it needs the new prospect
- * ids back to link the research rows. Returns how many prospects were added. */
-export async function approveProspectSuggestions(
+ * ids back to link the research rows.
+ *
+ * DISC-DATA-P0-03.3: this is the only door from a source into the pipeline, so it is
+ * where a prospect inherits where it came from. `kind`, `source`, `source_name` and
+ * `source_ref` are copied from the suggestion. For a suggestion staged from the gateway,
+ * the organisation's own phone and mailbox are copied from the stored record, every
+ * column the source filled is noted in `field_sources`, and the shared duplicate check
+ * runs once more: a company that became a prospect while the suggestion waited (or that
+ * two sources both found) is refused rather than added twice. An AI web-search
+ * suggestion is approved exactly as before; it was checked when it was found. */
+export async function approveProspectSuggestionsDetailed(
   workspaceId: string,
   suggestionIds: string[],
-): Promise<number> {
-  if (suggestionIds.length === 0) return 0;
+): Promise<SuggestionApproval> {
+  if (suggestionIds.length === 0) return { added: 0, duplicates: 0 };
   const supabase = await createClient();
 
-  const { data: suggestions, error: fetchError } = await supabase
+  const { data: fetched, error: fetchError } = await supabase
     .from("prospect_suggestions")
     .select("*")
     .eq("workspace_id", workspaceId)
     .in("id", suggestionIds);
   if (fetchError) throw fetchError;
-  if (!suggestions || suggestions.length === 0) return 0;
+  const suggestions = (fetched ?? []) as ProspectSuggestion[];
+  if (suggestions.length === 0) return { added: 0, duplicates: 0 };
 
-  const { data: inserted, error: insertError } = await supabase
-    .from("prospects")
-    .insert(
-      suggestions.map((s) => ({
-        workspace_id: workspaceId,
-        ...toRow({
-          companyName: s.company_name,
-          website: s.website ?? undefined,
-          industry: s.industry ?? undefined,
-          companySize: s.company_size ?? undefined,
-          location: s.location ?? undefined,
-          description: s.description ?? undefined,
+  const accepted: ProspectSuggestion[] = [];
+  const taken = new Set<string>();
+  let duplicates = 0;
+  for (const suggestion of suggestions) {
+    const keys = duplicateKeys(suggestion.company_name, suggestion.website);
+    if (isGatewaySuggestion(suggestion)) {
+      const duplicate =
+        keys.some((key) => taken.has(key)) ||
+        (await findDuplicateProspect(workspaceId, {
+          companyName: suggestion.company_name,
+          website: suggestion.website,
+        })) !== null;
+      if (duplicate) {
+        duplicates += 1;
+        continue;
+      }
+    }
+    for (const key of keys) taken.add(key);
+    accepted.push(suggestion);
+  }
+
+  let inserted: Prospect[] = [];
+  if (accepted.length > 0) {
+    const { data, error: insertError } = await supabase
+      .from("prospects")
+      .insert(
+        accepted.map((s) => {
+          const fromGateway = isGatewaySuggestion(s);
+          const contact = fromGateway ? gatewayContactPoints(s.payload) : { phone: null, email: null };
+          const row = toRow({
+            companyName: s.company_name,
+            website: s.website ?? undefined,
+            industry: s.industry ?? undefined,
+            companySize: s.company_size ?? undefined,
+            location: s.location ?? undefined,
+            description: s.description ?? undefined,
+            companyEmail: contact.email ?? undefined,
+          });
+          return {
+            workspace_id: workspaceId,
+            ...row,
+            kind: s.kind ?? "company",
+            source: s.source ?? null,
+            source_name: s.source_name ?? null,
+            source_ref: s.source_ref ?? null,
+            phone: contact.phone,
+            field_sources: fromGateway
+              ? fieldSourcesFor(
+                  { ...row, phone: contact.phone },
+                  { source: s.source as string, source_name: s.source_name ?? null, source_ref: s.source_ref ?? null },
+                  s.payload,
+                )
+              : {},
+          };
         }),
-      })),
-    )
-    .select();
-  if (insertError) throw insertError;
+      )
+      .select();
+    if (insertError) throw insertError;
+    inserted = data ?? [];
+  }
 
-  await linkPartiesForProspects(workspaceId, inserted ?? []);
+  await linkPartiesForProspects(workspaceId, inserted);
 
-  const researchRows = suggestions
-    .map((suggestion, i) => ({ suggestion, prospect: inserted?.[i] }))
+  const researchRows = accepted
+    .map((suggestion, i) => ({ suggestion, prospect: inserted[i] }))
     .filter(
-      (
-        pair,
-      ): pair is { suggestion: (typeof suggestions)[number]; prospect: Prospect } =>
+      (pair): pair is { suggestion: ProspectSuggestion; prospect: Prospect } =>
         Boolean(pair.prospect) && Boolean(pair.suggestion.match_reason || pair.suggestion.source_url),
     )
     .map(({ suggestion, prospect }) => ({
@@ -292,6 +375,8 @@ export async function approveProspectSuggestions(
     if (researchError) throw researchError;
   }
 
+  // A refused duplicate leaves the review list too: the company is already a prospect,
+  // so there is nothing left to decide about it.
   const { error: deleteError } = await supabase
     .from("prospect_suggestions")
     .delete()
@@ -299,7 +384,16 @@ export async function approveProspectSuggestions(
     .in("id", suggestionIds);
   if (deleteError) throw deleteError;
 
-  return inserted?.length ?? 0;
+  return { added: inserted.length, duplicates };
+}
+
+/** `approveProspectSuggestionsDetailed`, for callers that only need how many prospects
+ * were added (the AI Discovery pipeline). */
+export async function approveProspectSuggestions(
+  workspaceId: string,
+  suggestionIds: string[],
+): Promise<number> {
+  return (await approveProspectSuggestionsDetailed(workspaceId, suggestionIds)).added;
 }
 
 export async function discardProspectSuggestions(

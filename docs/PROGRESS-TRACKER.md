@@ -19,14 +19,14 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 572 |
+| ✅ Done | 582 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 0 |
 | ⛔ Blocked | 0 |
 | ⬜ Not started | 0 |
-| **Total** | **654** |
+| **Total** | **664** |
 
 | Backlog | Done | Set aside | Remaining | Total |
 |---|---|---|---|---|
@@ -40,6 +40,7 @@ file is stale, so it cannot quietly drift out of date.
 | [Subscriptions & billing (Razorpay + Stripe)](./plan/14-SUBSCRIPTION-BILLING-BACKLOG.md) | 40 | 0 | 0 | 40 |
 | [Multi-user / multi-business RBAC](./plan/15-MULTI-USER-RBAC-BACKLOG.md) | 39 | 0 | 0 | 39 |
 | [WonderArk branding](./plan/16-BRANDING-BACKLOG.md) | 13 | 0 | 0 | 13 |
+| [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 10 | 0 | 0 | 10 |
 
 ## What is left
 
@@ -1248,3 +1249,22 @@ Source: [`docs/plan/16-BRANDING-BACKLOG.md`](./plan/16-BRANDING-BACKLOG.md)
 | `BRAND-11` | Email/documents | ✅ Done | `packages/core/src/email/render.test.ts` +1 |
 | `BRAND-12` | Visual QA | ✅ Done | `apps/web/e2e/authenticated/branding.spec.ts` +1 |
 | `BRAND-13` | Install banner | ✅ Done | `apps/web/app/layout.tsx` +8 |
+
+## Discovery — prospect data and consumer discovery
+
+Source: [`docs/plan/17-DISCOVERY-DATA-AND-CONSUMER.md`](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md)
+
+### Part B story index (wonder-ark)
+
+| ID | Story | Status | Evidence / note |
+|---|---|---|---|
+| `DISC-DATA-P0-01.1` | Offering audience type | ✅ Done | `scripts/test-discovery-saved-searches-rls.mjs` +1 |
+| `DISC-DATA-P0-01.2` | Source fields on suggestions and prospects | ✅ Done | `packages/module-discovery/src/lib/ai/discover-prospects.ts` +3 |
+| `DISC-DATA-P0-01.3` | Contact email status and source | ✅ Done | `scripts/test-discovery-saved-searches-rls.mjs` +1 |
+| `DISC-DATA-P0-01.4` | Saved searches table and access rules | ✅ Done | `scripts/test-discovery-saved-searches-rls.mjs` +1 |
+| `DISC-DATA-P0-02.1` | WorksLake gateway client | ✅ Done | `packages/module-discovery/src/lib/data-sources/__tests__/no-provider-access.test.ts` +2 |
+| `DISC-DATA-P0-02.2` | One list of prospect sources | ✅ Done | `packages/module-discovery/src/lib/data-sources/__tests__/fixtures/contract.ts` +5 |
+| `DISC-DATA-P0-02.3` | Usage check and run history for gateway calls | ✅ Done | `packages/module-discovery/src/lib/data-sources/__tests__/runs.test.ts` +3 |
+| `DISC-DATA-P0-03.1` | Find screen | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +6 |
+| `DISC-DATA-P0-03.2` | Staging results and the review list | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +6 |
+| `DISC-DATA-P0-03.3` | Approval carries the source and refuses duplicates | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +4 |

@@ -236,6 +236,14 @@ export const FAQ: FaqEntry[] = [
   },
   {
     category: "Day to day",
+    question: "Why does WorksLake business data say Needs setup or Unavailable?",
+    answer:
+      "On an offering's Discover page, WorksLake business data is one of the sources you can search. Needs setup means the WorksLake connection hasn't been set up for this workspace yet; Unavailable means it didn't answer. WonderArk never fills in sample results in its place. Web search (AI) and Import CSV keep working either way.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
     question: "How do I keep an eye on one particular account?",
     answer:
       "Open the account from Prospects and use Watch this account, with a reason and, if you like, a next review date. The offering's Watchlist tab then lists it with its watch reason, current score, latest signal and next review date. This is separate from the Watch action on an opportunity, which only changes that opportunity's status.",

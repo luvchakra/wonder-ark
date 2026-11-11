@@ -18,6 +18,7 @@ import { assertWithinUsageLimit } from "../usage/limits";
 import { acquireDiscoveryLock, releaseDiscoveryLock } from "./discovery-lock";
 import { resolveAiModel, toAiProviderError } from "./router";
 import { createWebSearchTools } from "@cofounderai/core/ai/provider-factory";
+import { WEB_SEARCH_SOURCE_ID, WEB_SEARCH_SOURCE_LABEL } from "../data-sources/types";
 
 const OPERATION = "discover_prospects";
 
@@ -160,6 +161,9 @@ export async function discoverProspects(
             description: c.description,
             match_reason: c.match_reason,
             source_url: c.source_url,
+            // DISC-DATA-P0-01.2: every suggestion says which source found it.
+            source: WEB_SEARCH_SOURCE_ID,
+            source_name: WEB_SEARCH_SOURCE_LABEL,
           })),
         )
         .select();

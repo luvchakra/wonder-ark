@@ -11,7 +11,7 @@ offerings and data:
 - **Funding** — your funding profile, investor readiness, rounds, investors,
   outreach, data room and due diligence.
 
-Last updated: 2026-10-17
+Last updated: 2026-11-11
 
 
 ## How Discovery is organised
@@ -171,10 +171,24 @@ Personas are managed on the same page, whether or not an ICP exists yet.
 
 ### Finding prospects
 
-- **Discover** (needs an approved ICP) runs an AI web search, with optional overrides for
-  industry, company size, location or other keywords. **Find 10 new prospects** returns
-  suggestions, each with a match reason and source link; tick the ones you want and click
-  **Add selected to prospects**.
+- **Discover** opens one search form. **What** (keywords or categories) and **Where** arrive
+  filled in from your approved ICP, **Source** chooses where to look, and **Find** runs the
+  search. Company size and other filters are under **More filters**. The sources:
+  - **WorksLake business data** searches stored business listings. If the connection isn't
+    set up it is listed as **Needs setup**, and if it doesn't answer, **Unavailable**;
+    nothing is shown in its place. A line under the form shows how many searches and paid
+    lookups your business has left this month, and a source that uses paid lookups says so
+    on the **Find** button.
+  - **Web search (AI)** (needs an approved ICP) runs an AI web search for up to 10 companies.
+  - **Companies hiring for…** is listed when hiring signals are available. It searches by
+    job-title keywords, filled in from your ICP's buying signals and existing tools.
+
+  After a search, a summary says how many results came back, how many were added, and how
+  many were left out because they are already prospects, already waiting for review, or
+  outside your approved ICP. What was found waits under **To review**, each with its place,
+  category, why it fits and a badge naming its source. Untick any you don't want, then
+  click **Approve selected** to add the rest to your prospects, or **Discard selected** to
+  remove them. Running the same search again doesn't add the same company twice.
 - **Import CSV** loads a list from CSV, Excel or PDF, or pasted CSV. `company_name` is
   required; a file in another layout is restructured by AI for you to check before import.
 - **Add** creates one prospect by hand.

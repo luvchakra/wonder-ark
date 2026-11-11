@@ -12,6 +12,12 @@ export const OPERATION_LABEL: Record<string, string> = {
   generate_reply: "Reply generation",
   classify_reply: "Reply classification",
   chat: "AI assistant",
+  // DISC-DATA-P0-02.3: prospect-data lookups through the WorksLake gateway, recorded in
+  // the same ledger (lib/data-sources/runs.ts) so they show beside the AI runs.
+  gateway_search: "Prospect search (WorksLake)",
+  gateway_signals: "Hiring signals (WorksLake)",
+  gateway_enrich: "Prospect enrichment (WorksLake)",
+  gateway_contacts: "Contact lookup (WorksLake)",
 };
 
 /** Founder-facing usage is expressed as "% of AI credits used," never a raw dollar
