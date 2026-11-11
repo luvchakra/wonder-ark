@@ -217,6 +217,45 @@ from your own prospects and suggestions:
 A line appears only when it has something in it. When nothing is waiting, the list says
 so.
 
+### A prospect's details and contacts
+
+A prospect's page opens with what is known about the company. Beside each value a source
+supplied is where it came from, for example "Industry: Software, from Wikidata"; a value
+with no source beside it was typed by a person. **Source** names where the prospect itself
+was found, with a link to the record when there is one. **Edit details** unfolds the form
+for changing any of it. If you change a value a source filled in, it is no longer credited
+to that source.
+
+**Filling in blanks.** When you approve a company under **To review**, WonderArk looks up
+the details it is missing (industry, company size, description, phone, general email,
+LinkedIn page, location) from free sources. It fills only what is blank and never changes a
+value you typed. If the lookup fails, the page says **Enrichment unavailable** and nothing
+is changed; **Retry** runs it again. **Fill missing details** does the same lookup and may
+also use paid sources: it first shows how many paid lookups your business has left this
+month, and runs only when you confirm. Afterwards it says what was filled and how many paid
+lookups it used.
+
+**Finding contacts.** **Find contacts** looks for up to three people at the company in the
+roles of your approved ideal customer, and checks each address. It always uses paid
+lookups, so it too shows how many are left and runs only when you confirm; pressing it
+twice by accident does not spend twice. It needs the company's website and an approved
+ideal customer with at least one role. Each person found is added under **Contacts** with
+who found them, when, and a mark for the address: **Verified**, **Risky**, **Invalid** or
+**Not verified**. If the search finds the company's general mailbox (such as `info@`) and
+the prospect has no general email yet, it is filled in. When no contact provider is
+connected, the result says "No named contacts: the contact providers need setup." Nothing
+is sent to anyone by a lookup. **Add a contact** unfolds the form for adding one by hand;
+a contact you type has no mark. If you change a found contact's address, its mark is
+cleared, because the new address has not been checked.
+
+If the WorksLake connection isn't set up, the page says **Needs setup** in place of these
+lookups; if it doesn't answer, the lookup reports **Unavailable** and changes nothing.
+
+**Removing a contact.** **Delete** removes a contact. If the person asked you to stop
+contacting them, tick **They asked not to be contacted**: WonderArk then also asks WorksLake
+to leave that address out of later contact lookups. If that request can't be passed on, the
+contact is not deleted and the page says why, so you can try again.
+
 ### Opportunities (Today's Opportunities)
 
 **Prospects → Opportunities** sorts the offering's active opportunities into bins,
@@ -270,7 +309,9 @@ On a prospect's page you generate an **Outreach strategy** (why, channel, key me
 to action), edit it and **Approve strategy**; only then can you **Generate message**. An email
 draft is sent with **Approve & send email**; a LinkedIn or WhatsApp draft has **Approve** and
 then **Mark sent** once you've sent it yourself. Sending email needs a contact with an email
-address and email set up for the deployment. If a send fails, the message shows "Send failed"
+address and email set up for the deployment. An address a contact lookup marked **Invalid**
+can't be sent to; one marked **Risky** or **Not verified** asks you to confirm once before
+it sends. If a send fails, the message shows "Send failed"
 with the reason, and you can **Retry send**. Emails can use a saved template ("No template
 (AI writes freely)" is the default).
 

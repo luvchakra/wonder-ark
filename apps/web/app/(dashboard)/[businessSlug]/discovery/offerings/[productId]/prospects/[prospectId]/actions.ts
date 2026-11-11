@@ -4,14 +4,26 @@ import { businessPath } from "@/lib/business-path";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  updateProspect,
+  saveProspectEdits,
   updateProspectStatus,
   setProspectOutcome,
 } from "@cofounderai/module-discovery/lib/prospects/mutations";
+import { enrichProspect, enrichmentMessage } from "@cofounderai/module-discovery/lib/data-sources/enrichment";
+import {
+  contactLookupMessage,
+  findContactsForProspect,
+  removeContactOnRequest,
+} from "@cofounderai/module-discovery/lib/data-sources/contacts";
+import { listDataSources } from "@cofounderai/module-discovery/lib/data-sources/index";
+import {
+  gatewayFailureMessage,
+  type LookupQuotaState,
+  type LookupState,
+} from "@cofounderai/module-discovery/lib/data-sources/types";
 import type { ProspectStatus } from "@cofounderai/module-discovery/lib/prospects/types";
 import {
   createContact,
-  updateContact,
+  editContact,
   deleteContact,
 } from "@cofounderai/module-discovery/lib/contacts/mutations";
 import { researchProspect } from "@cofounderai/module-discovery/lib/ai/research-prospect";
@@ -75,7 +87,8 @@ export async function updateProspectAction(
   prospectId: string,
   formData: FormData,
 ) {
-  await updateProspect(prospectId, {
+  // DISC-DATA-P0-04.1: a value the person changed stops being credited to a source.
+  await saveProspectEdits(prospectId, {
     companyName: String(formData.get("companyName") ?? ""),
     website: String(formData.get("website") ?? ""),
     industry: String(formData.get("industry") ?? ""),
@@ -178,7 +191,8 @@ export async function updateContactAction(
   contactId: string,
   formData: FormData,
 ) {
-  await updateContact(contactId, {
+  // DISC-DATA-P0-04.2: changing the address clears what a lookup said about the old one.
+  await editContact(contactId, {
     firstName: String(formData.get("firstName") ?? ""),
     lastName: String(formData.get("lastName") ?? ""),
     jobTitle: String(formData.get("jobTitle") ?? ""),
@@ -189,14 +203,112 @@ export async function updateContactAction(
   revalidatePath(await prospectPath(businessId, productId, prospectId));
 }
 
+/**
+ * Deletes a contact. DISC-DATA-P0-04.3: with "They asked not to be contacted" ticked, the
+ * address is first passed to WorksLake's removal list; if that cannot be done the
+ * contact is kept and the reason is returned, so the request is not lost. Returned as
+ * state, not thrown, so the reason reaches the screen (see `runAiAction`).
+ */
 export async function deleteContactAction(
   businessId: string,
   productId: string,
   prospectId: string,
   contactId: string,
-) {
-  await deleteContact(contactId);
+  _prevState: AiActionState,
+  formData: FormData,
+): Promise<AiActionState> {
+  return runAiAction(async () => {
+    if (formData.get("askedNotToBeContacted") !== null) {
+      const outcome = await removeContactOnRequest(contactId);
+      if (outcome.status === "failed") throw new Error(outcome.message);
+    } else {
+      await deleteContact(contactId);
+    }
+    revalidatePath(await prospectPath(businessId, productId, prospectId));
+  });
+}
+
+/**
+ * DISC-DATA-P0-04.1: runs the free lookup of a prospect's missing details again, after
+ * the one queued at approval failed. Free sources only; fills only the blanks.
+ */
+export async function retryEnrichmentAction(
+  businessId: string,
+  productId: string,
+  prospectId: string,
+): Promise<AiActionState> {
+  return runAiAction(async () => {
+    const outcome = await enrichProspect(prospectId, { allowPaid: false });
+    revalidatePath(await prospectPath(businessId, productId, prospectId));
+    if (outcome.status === "failed") throw new Error(outcome.message);
+  });
+}
+
+/** Turns a lookup into what the screen shows, never letting an exception stand in for a
+ * reason: a refused licence or a used-up allowance is a failed lookup with its message. */
+async function runLookup(run: () => Promise<{ failed: boolean; message: string }>): Promise<LookupState> {
+  try {
+    const { failed, message } = await run();
+    return { status: failed ? "failed" : "completed", message };
+  } catch (error) {
+    return { status: "failed", message: error instanceof Error ? error.message : "Something went wrong. Nothing was changed." };
+  }
+}
+
+/**
+ * DISC-DATA-P0-04.1: "Fill missing details" -- the same lookup with paid sources allowed.
+ * Runs only on the person's confirmation. `requestKey` is made by the server when the
+ * page renders and names this one click, so a double click is answered once.
+ */
+export async function fillMissingDetailsAction(
+  businessId: string,
+  productId: string,
+  prospectId: string,
+  requestKey: string,
+): Promise<LookupState> {
+  const state = await runLookup(async () => {
+    const outcome = await enrichProspect(prospectId, { allowPaid: true, requestKey });
+    return { failed: outcome.status === "failed", message: enrichmentMessage(outcome) };
+  });
   revalidatePath(await prospectPath(businessId, productId, prospectId));
+  return state;
+}
+
+/**
+ * DISC-DATA-P0-04.2: "Find contacts" -- up to three people in the approved ideal
+ * customer's roles. Always spends paid lookups, so it runs only on the person's
+ * confirmation and, like the lookup above, once per click.
+ */
+export async function findContactsAction(
+  businessId: string,
+  productId: string,
+  prospectId: string,
+  requestKey: string,
+): Promise<LookupState> {
+  const state = await runLookup(async () => {
+    const outcome = await findContactsForProspect(prospectId, requestKey);
+    return { failed: outcome.status === "failed", message: contactLookupMessage(outcome) };
+  });
+  revalidatePath(await prospectPath(businessId, productId, prospectId));
+  return state;
+}
+
+/**
+ * How many paid lookups the business has left, for the confirmation shown before a paid
+ * lookup. Read from the gateway when the person opens it; the business is resolved on
+ * the server from the workspace the caller can read. Spends nothing.
+ */
+export async function lookupQuotaAction(workspaceId: string): Promise<LookupQuotaState> {
+  try {
+    const list = await listDataSources(workspaceId);
+    if (list.gateway.state === "ok" && list.quota) {
+      return { state: "ok", period: list.quota.period, paid: list.quota.paid };
+    }
+    const state = list.gateway.state === "ok" ? "unavailable" : list.gateway.state;
+    return { state, message: gatewayFailureMessage(state, list.gateway.resetAt, list.quota) };
+  } catch {
+    return { state: "unavailable", message: "Unavailable: couldn't read how many paid lookups are left." };
+  }
 }
 
 /**
@@ -354,7 +466,8 @@ export async function approveAndSendMessageAction(
     const contactId = String(formData.get("contactId") ?? "") || null;
     if (contactId) await updateMessageContact(messageId, contactId);
     await approveMessage(messageId);
-    await sendMessage(messageId);
+    // DISC-DATA-P0-04.2: the person's one confirmation for a risky or unverified address.
+    await sendMessage(messageId, { confirmedUnverified: formData.get("confirmedUnverified") === "1" });
     revalidatePath(await prospectPath(businessId, productId, prospectId));
   });
 }
@@ -372,7 +485,7 @@ export async function sendMessageAction(
   return runAiAction(async () => {
     const contactId = String(formData.get("contactId") ?? "") || null;
     if (contactId) await updateMessageContact(messageId, contactId);
-    await sendMessage(messageId);
+    await sendMessage(messageId, { confirmedUnverified: formData.get("confirmedUnverified") === "1" });
     revalidatePath(await prospectPath(businessId, productId, prospectId));
   });
 }

@@ -19,14 +19,14 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 584 |
+| ✅ Done | 587 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
 | ⬜ Not started | 0 |
-| **Total** | **667** |
+| **Total** | **670** |
 
 | Backlog | Done | Set aside | Remaining | Total |
 |---|---|---|---|---|
@@ -40,7 +40,7 @@ file is stale, so it cannot quietly drift out of date.
 | [Subscriptions & billing (Razorpay + Stripe)](./plan/14-SUBSCRIPTION-BILLING-BACKLOG.md) | 40 | 0 | 0 | 40 |
 | [Multi-user / multi-business RBAC](./plan/15-MULTI-USER-RBAC-BACKLOG.md) | 39 | 0 | 0 | 39 |
 | [WonderArk branding](./plan/16-BRANDING-BACKLOG.md) | 13 | 0 | 0 | 13 |
-| [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 13 | 0 | 0 | 13 |
+| [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 16 | 0 | 0 | 16 |
 
 ## What is left
 
@@ -1264,7 +1264,7 @@ Source: [`docs/plan/17-DISCOVERY-DATA-AND-CONSUMER.md`](./plan/17-DISCOVERY-DATA
 |---|---|---|---|
 | `DISC-DATA-P0-01.1` | Offering audience type | ✅ Done | `scripts/test-discovery-saved-searches-rls.mjs` +1 |
 | `DISC-DATA-P0-01.2` | Source fields on suggestions and prospects | ✅ Done | `packages/module-discovery/src/lib/ai/discover-prospects.ts` +3 |
-| `DISC-DATA-P0-01.3` | Contact email status and source | ✅ Done | `scripts/test-discovery-saved-searches-rls.mjs` +1 |
+| `DISC-DATA-P0-01.3` | Contact email status and source | ✅ Done | `packages/module-discovery/src/lib/contacts/types.ts` +2 |
 | `DISC-DATA-P0-01.4` | Saved searches table and access rules | ✅ Done | `scripts/test-discovery-saved-searches-rls.mjs` +1 |
 | `DISC-DATA-P0-02.1` | WorksLake gateway client | ✅ Done | `packages/module-discovery/src/lib/data-sources/__tests__/no-provider-access.test.ts` +2 |
 | `DISC-DATA-P0-02.2` | One list of prospect sources | ✅ Done | `packages/module-discovery/src/lib/data-sources/__tests__/fixtures/contract.ts` +5 |
@@ -1272,6 +1272,9 @@ Source: [`docs/plan/17-DISCOVERY-DATA-AND-CONSUMER.md`](./plan/17-DISCOVERY-DATA
 | `DISC-DATA-P0-03.1` | Find screen | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +6 |
 | `DISC-DATA-P0-03.2` | Staging results and the review list | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +6 |
 | `DISC-DATA-P0-03.3` | Approval carries the source and refuses duplicates | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +4 |
-| `DISC-NAV-P0-01.1` | Four-tab offering navigation | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +7 |
-| `DISC-NAV-P0-01.2` | Today list at the top of Prospects | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +2 |
-| `DISC-NAV-P0-01.3` | Plain labels | ✅ Done | `packages/module-discovery/src/components/tenancy/product-nav.tsx` |
+| `DISC-DATA-P0-04.1` | Enrich on approval and Fill missing details | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +7 |
+| `DISC-DATA-P0-04.2` | Find contacts, address status and sending rules | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +9 |
+| `DISC-DATA-P0-04.3` | Removal | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +1 |
+| `DISC-NAV-P0-01.1` | Four-tab offering navigation | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +11 |
+| `DISC-NAV-P0-01.2` | Today list at the top of Prospects | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +6 |
+| `DISC-NAV-P0-01.3` | Plain labels | ✅ Done | `packages/core/src/lib/offering-nav.ts` +2 |

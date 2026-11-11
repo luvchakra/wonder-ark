@@ -5,8 +5,11 @@ import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { runFind } from "@cofounderai/module-discovery/lib/data-sources/find";
 import type { FindState } from "@cofounderai/module-discovery/lib/data-sources/types";
+import { after } from "next/server";
+import { queueProspectEnrichment, runQueuedEnrichmentNow } from "@cofounderai/module-discovery/lib/data-sources/enrichment";
+import { isGatewayConfigured } from "@cofounderai/module-discovery/lib/data-sources/workslake-client";
 import {
-  approveProspectSuggestionsDetailed,
+  approveProspectSuggestionsWithProspects,
   discardProspectSuggestions,
 } from "@cofounderai/module-discovery/lib/prospects/mutations";
 
@@ -63,7 +66,23 @@ export async function approveSuggestionsAction(
   formData: FormData,
 ) {
   const ids = formData.getAll("ids").map(String);
-  const { added, duplicates } = await approveProspectSuggestionsDetailed(workspaceId, ids);
+  const { added, duplicates, prospects } = await approveProspectSuggestionsWithProspects(workspaceId, ids);
+
+  // DISC-DATA-P0-04.1: each approved company gets one free lookup of its missing details.
+  // It is queued through core.domain_events, so it survives this request and is retried,
+  // and attempted straight after the response as well, because the drain runs once a
+  // day. Neither blocks the approval, and a failure of either leaves the prospect as it
+  // is. With no gateway settings there is nothing to ask, so nothing is queued.
+  const companyIds = prospects.filter((prospect) => (prospect.kind ?? "company") === "company").map((prospect) => prospect.id);
+  if (companyIds.length > 0 && isGatewayConfigured()) {
+    try {
+      await queueProspectEnrichment(workspaceId, companyIds);
+    } catch (error) {
+      console.error("Could not queue enrichment:", error instanceof Error ? error.message : error);
+    }
+    after(() => runQueuedEnrichmentNow(companyIds));
+  }
+
   revalidatePath(await prospectsPath(businessId, productId));
   revalidatePath(await discoverPath(businessId, productId));
   // DISC-DATA-P0-03.3: a suggestion refused as a duplicate is reported, not counted as

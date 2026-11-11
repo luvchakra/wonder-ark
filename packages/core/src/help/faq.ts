@@ -244,6 +244,22 @@ export const FAQ: FaqEntry[] = [
   },
   {
     category: "Day to day",
+    question: "Why can't I send an email to one of my contacts?",
+    answer:
+      "If Find contacts added the contact and its address is marked Invalid, WonderArk won't send to it: choose another contact or correct the address. An address marked Risky or Not verified can be sent to after you confirm once. A contact you typed yourself has no mark and sends as usual. Separately, an address that unsubscribed from your business's emails is never sent to.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
+    question: "Does Find contacts or Fill missing details cost anything?",
+    answer:
+      "Both can use your business's paid lookups. Each shows how many you have left this month before it runs, and runs only when you confirm; pressing twice by accident doesn't spend twice. The lookup that runs when you approve a company uses free sources only. All of them fill only what is blank and never change a value you typed.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
     question: "How do I keep an eye on one particular account?",
     answer:
       "Open the account from Prospects and use Watch this account, with a reason and, if you like, a next review date. Watchlist, under the offering's Prospects tab, then lists it with its watch reason, current score, latest signal and next review date. This is separate from the Watch action on an opportunity, which only changes that opportunity's status.",

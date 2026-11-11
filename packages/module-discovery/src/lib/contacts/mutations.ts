@@ -3,7 +3,7 @@ import { createClient } from "../../db/server";
 import { ensureProspectParty } from "../prospects/party-sync";
 import { getProspect } from "../prospects/queries";
 import { getBusinessIdForWorkspace } from "../tenancy/queries";
-import type { Contact } from "./types";
+import type { Contact, ContactProvenance } from "./types";
 
 export async function createContact(
   workspaceId: string,
@@ -16,6 +16,9 @@ export async function createContact(
     linkedinUrl?: string;
     phone?: string;
   },
+  /** DISC-DATA-P0-04.2: given only for a contact a lookup found, never for one a person
+   * typed, whose three provenance columns stay null. */
+  found?: ContactProvenance,
 ): Promise<Contact> {
   const supabase = await createClient();
   const { data, error } = await supabase
@@ -29,6 +32,9 @@ export async function createContact(
       email: input.email?.trim() || null,
       linkedin_url: input.linkedinUrl?.trim() || null,
       phone: input.phone?.trim() || null,
+      ...(found
+        ? { email_status: found.emailStatus, source: found.source, source_retrieved_at: found.retrievedAt }
+        : {}),
     })
     .select()
     .single();
@@ -82,6 +88,38 @@ export async function updateContact(
       linkedin_url: input.linkedinUrl?.trim() || null,
       phone: input.phone?.trim() || null,
     })
+    .eq("id", contactId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * DISC-DATA-P0-04.2: a person's edit of a contact. It is `updateContact`, plus one rule:
+ * when the address changes on a contact a lookup found, what the lookup said about the
+ * old address (`email_status`) is cleared, because nothing has checked the new one. The
+ * source and its date stay: they still say where the person came from.
+ */
+export async function editContact(
+  contactId: string,
+  input: Parameters<typeof updateContact>[1],
+): Promise<Contact> {
+  const supabase = await createClient();
+  const { data: before, error: readError } = await supabase
+    .from("contacts")
+    .select("email, email_status")
+    .eq("id", contactId)
+    .maybeSingle();
+  if (readError) throw readError;
+
+  const updated = await updateContact(contactId, input);
+
+  const sameAddress = (before?.email ?? "").trim().toLowerCase() === (input.email ?? "").trim().toLowerCase();
+  if (!before?.email_status || sameAddress) return updated;
+  const { data, error } = await supabase
+    .from("contacts")
+    .update({ email_status: null })
     .eq("id", contactId)
     .select()
     .single();

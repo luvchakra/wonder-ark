@@ -612,6 +612,9 @@ adds its stories here when it is built.
 ### DISC-DATA-P0-03.1 — Find screen (B3)
 ### DISC-DATA-P0-03.2 — Staging results and the review list (B3)
 ### DISC-DATA-P0-03.3 — Approval carries the source and refuses duplicates (B3)
+### DISC-DATA-P0-04.1 — Enrich on approval and Fill missing details (B4)
+### DISC-DATA-P0-04.2 — Find contacts, address status and sending rules (B4)
+### DISC-DATA-P0-04.3 — Removal: "They asked not to be contacted" (B4)
 ### DISC-NAV-P0-01.1 — Four-tab offering navigation (B6)
 ### DISC-NAV-P0-01.2 — Today list at the top of Prospects (B6)
 ### DISC-NAV-P0-01.3 — Plain labels: Ideal customer, Find, To review (B6)
@@ -636,4 +639,18 @@ B6, as built:
 - **"Follow-ups due" has no stored date to read.** It is derived: a prospect in the Sent stage with no reply and no activity for `STAGE_STUCK_THRESHOLD_DAYS` (7), the rule the list already shows as "Needs next step". Its link opens the list with `?stage=sent&due=1`, a filter added to `listProspects` so the count and the list cannot differ.
 - **Left for B5:** People under Prospects, new sign-ups in the Today list, "What people say" under Results. No placeholder was built for any of them.
 - **"ICP" in body copy** (the ICP page's own buttons and messages) is unchanged; the label rule was applied to navigation, the setup bar, the sidebar and the help guide.
+
+B4, as built:
+
+- **No migration.** B1's columns carry everything. A lookup's state is read from the run ledger (`discovery.ai_runs`), keyed by a hash that names the prospect and, for a paid lookup, the one click that asked for it. That is also what makes a replayed job or a second click find the first and ask nothing.
+- **"Spends once" is the ledger key plus the existing per-workspace lock** (`prospect_discovery_locks`, built so "two overlapping discovery runs for the same workspace can't both bill"). The click's key is made by the server when the prospect page renders. A paid lookup, an AI web search and another paid lookup therefore never run at the same moment for one offering; the second is refused with "Nothing was spent".
+- **The drain runs once a day**, so "fills blank fields within a minute" needs more than the queue. Approval publishes `discovery.prospect.enrichment_requested` (retried by the drain, parked without a licence) and also attempts the lookup straight after the response, as the CRM auto-reply does. The queued job finds a lookup that already succeeded and does not repeat it.
+- **Only approval on the To review list queues enrichment.** AI Discovery's own automatic approval (`lib/pipeline/handlers.ts`, `lib/ai-approval/auto-populate.ts`) is unchanged: those paths research the prospect with AI straight afterwards, and they are protected flows (doc 12, section 0).
+- **A paid lookup shows what is left, not what it will cost.** The contract gives no price for an enrich or contacts call before it runs. The button opens a confirmation that reads the business's remaining paid lookups from `GET /v1/prospects/sources` at that moment; the result then says how many units were used. The prospect page makes no gateway call until a button is pressed.
+- **`metadata.providers` on enrich and contacts** is read leniently (`providerIssuesOf`): an entry the client cannot read is left out rather than failing an answer the business may have paid for. It is what lets the page say "No named contacts: the contact providers need setup."
+- **Enriched values are read by column**: `hq` as a string, or an object's `text`, else its city, region and country; `linkedinUrl` only as a plain http(s) link; `email` only as an address. A field whose source has no name is not stored.
+- **Editing clears provenance.** Changing a value a source filled removes its `field_sources` entry; changing a found contact's address clears its `email_status`.
+- **"They asked not to be contacted" keeps the contact if the gateway cannot take the request**, and says why, so the request is not lost. It passes the address to the gateway only; it does not add it to the business's own unsubscribe list (`core.communication_suppressions`), which the spec does not ask for.
+- **`contacts.source` holds the source's name** as the gateway gave it (for example "Hunter"), since the table has one source column and that is what is shown.
+- **The prospect page reads before it edits.** Details are a read-only list with each value's source; the edit form and the add-contact form are folded. Sources are shown as text; the links are the company's website and profiles and the record at the prospect's own source.
 

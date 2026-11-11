@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "../../db/server";
 import { hashInput } from "../ai/hash";
 
@@ -24,8 +25,13 @@ export type DataSourceOperation =
   | "gateway_enrich"
   | "gateway_contacts";
 
+function runHash(request: unknown): string {
+  return hashInput({ request, version: GATEWAY_CONTRACT_VERSION });
+}
+
 /** Like `recordAiRun`, a failure to write the ledger is logged and never breaks the
- * search it describes. */
+ * search it describes. `client` is for a caller with no signed-in user (the domain-events
+ * drain); everything else writes as the person, through RLS. */
 export async function recordDataSourceRun(input: {
   workspaceId: string;
   operation: DataSourceOperation;
@@ -37,15 +43,16 @@ export async function recordDataSourceRun(input: {
   unitsSpent?: number | null;
   durationMs?: number;
   errorCode?: string;
+  client?: SupabaseClient;
 }): Promise<void> {
-  const supabase = await createClient();
+  const supabase = input.client ?? (await createClient());
   const { error } = await supabase.from("ai_runs").insert({
     workspace_id: input.workspaceId,
     operation: input.operation,
     model: GATEWAY_RUN_MODEL,
     provider: GATEWAY_RUN_PROVIDER,
     prompt_version: GATEWAY_CONTRACT_VERSION,
-    input_hash: hashInput({ request: input.request, version: GATEWAY_CONTRACT_VERSION }),
+    input_hash: runHash(input.request),
     status: input.status,
     source: input.source,
     result_count: input.resultCount ?? null,
@@ -54,4 +61,38 @@ export async function recordDataSourceRun(input: {
     error_code: input.errorCode ?? null,
   });
   if (error) console.error("Failed to record a data-source run:", error.message);
+}
+
+/**
+ * DISC-DATA-P0-04.1/04.2: the latest recorded run of `operation` for exactly this
+ * `request`, or null. A lookup records itself under a key that names what it is for (a
+ * prospect, and for a paid lookup the one click that asked for it), so the ledger is also
+ * what says "this was already done": a replayed job or a second click finds the first
+ * run here and does not ask the gateway again. Uses `ai_runs_cache_lookup_idx`.
+ */
+export async function findDataSourceRun(
+  workspaceId: string,
+  operation: DataSourceOperation,
+  request: unknown,
+  client?: SupabaseClient,
+): Promise<{ status: "succeeded" | "failed"; createdAt: string; resultCount: number | null; unitsSpent: number | null; errorCode: string | null } | null> {
+  const supabase = client ?? (await createClient());
+  const { data, error } = await supabase
+    .from("ai_runs")
+    .select("status, created_at, result_count, units_spent, error_code")
+    .eq("workspace_id", workspaceId)
+    .eq("operation", operation)
+    .eq("input_hash", runHash(request))
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    status: data.status,
+    createdAt: data.created_at,
+    resultCount: data.result_count,
+    unitsSpent: data.units_spent,
+    errorCode: data.error_code,
+  };
 }
