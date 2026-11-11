@@ -13,6 +13,8 @@
  * rail. Lives in core because the shell renders it and core cannot import a module.
  */
 
+import { OFFERING_TABS, activeOfferingNav, buildOfferingNav } from "./offering-nav";
+
 export type DiscoveryNavGroupId = "offerings" | "marketing" | "customer-acquisition" | "funding";
 
 export interface DiscoveryNavLink {
@@ -61,22 +63,17 @@ const FUNDING = [
 ] as const;
 
 /**
- * Customer Acquisition → the existing offering page that does that job. Two spec items
- * have no page of their own today and point at the nearest one: "Knowledge" at the
- * offering overview (where its knowledge sources are managed), "Pipeline" at the AI
- * discovery run history. `slug: ""` is the offering overview.
+ * DISC-NAV-P0-01.1: Customer Acquisition lists the offering's four tabs -- Setup, Find,
+ * Prospects, Results -- instead of nine entries, two of which opened the same page. Each
+ * opens the tab's first page; every other page is one click further, on the tab's own
+ * second row (lib/offering-nav.ts holds the one list both read). `slug: ""` is the
+ * offering overview.
  */
-export const CUSTOMER_ACQUISITION_ROUTES = [
-  { id: "products", label: "Products", slug: "" },
-  { id: "icp", label: "ICP", slug: "icp" },
-  { id: "prospects", label: "Prospects", slug: "prospects" },
-  { id: "research", label: "Research", slug: "discovery" },
-  { id: "signals", label: "Signals", slug: "watchlist" },
-  { id: "outreach", label: "Outreach", slug: "opportunities" },
-  { id: "pipeline", label: "Pipeline", slug: "history" },
-  { id: "conversion", label: "Conversion", slug: "conversions" },
-  { id: "knowledge", label: "Knowledge", slug: "" },
-] as const;
+export const CUSTOMER_ACQUISITION_ROUTES = OFFERING_TABS.map((tab) => ({
+  id: tab.id,
+  label: tab.label,
+  slug: tab.pages[0]!.slug,
+}));
 
 function under(pathname: string, href: string): boolean {
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -143,21 +140,16 @@ export function buildDiscoveryNav(
   let acquisitionActive = false;
   if (focus) {
     const root = `${offeringsRoot}/${focus.id}`;
-    // Exactly one item is active: the longest route the current page sits under, so the
-    // offering overview ("Products") does not also light up on /icp, and "Knowledge",
-    // which shares the overview's route, never competes with "Products".
-    let best: { id: string; length: number } | null = null;
-    for (const item of CUSTOMER_ACQUISITION_ROUTES) {
-      const href = item.slug ? `${root}/${item.slug}` : root;
-      const match = item.slug ? under(path, href) : path === href;
-      if (match && (!best || href.length > best.length)) best = { id: item.id, length: href.length };
-    }
-    acquisitionActive = best !== null && offeringInPath === focus.id;
-    acquisitionItems = CUSTOMER_ACQUISITION_ROUTES.map((item) => ({
-      id: item.id,
-      label: item.label,
-      href: item.slug ? `${root}/${item.slug}` : root,
-      active: acquisitionActive && best?.id === item.id,
+    // Exactly one item is active: the tab whose page the current path sits at or under
+    // (so a single prospect lights up Prospects, and the Find page lights up Find).
+    const tabs = buildOfferingNav(root);
+    const activeTab = offeringInPath === focus.id ? (activeOfferingNav(tabs, path)?.tab.id ?? null) : null;
+    acquisitionActive = activeTab !== null;
+    acquisitionItems = tabs.map((tab) => ({
+      id: tab.id,
+      label: tab.label,
+      href: tab.href,
+      active: tab.id === activeTab,
     }));
   }
 

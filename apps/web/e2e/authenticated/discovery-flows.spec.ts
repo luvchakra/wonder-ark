@@ -466,9 +466,10 @@ test.describe("Funding flows", () => {
   test("the sidebar's Customer Acquisition points at the offering's existing pages", async ({ page }) => {
     await page.goto(`/${slug}/discovery/dashboard`);
     await page.getByRole("button", { name: /^Customer Acquisition/ }).click();
-    const icp = page.locator('nav[aria-label="Main"]').getByRole("link", { name: "ICP", exact: true });
-    await expect(icp).toHaveAttribute("href", new RegExp(`/${slug}/discovery/offerings/[0-9a-f-]{36}/icp$`));
-    await icp.click();
+    // DISC-NAV-P0-01.1: Customer Acquisition lists the offering's four tabs.
+    const find = page.locator('nav[aria-label="Main"]').getByRole("link", { name: "Find", exact: true });
+    await expect(find).toHaveAttribute("href", new RegExp(`/${slug}/discovery/offerings/[0-9a-f-]{36}/prospects/discover$`));
+    await find.click();
     await expectNoAppCrash(page);
   });
 });

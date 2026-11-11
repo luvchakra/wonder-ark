@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { resolveBusinessIdBySlug } from "@cofounderai/core/businesses/resolve";
 import {
@@ -29,13 +28,10 @@ export default async function ImportProspectsPage({
   const workspace = await getWorkspaceForProduct(product.id);
   if (!workspace) notFound();
 
-  const basePath = `/${businessSlug}/discovery/offerings/${productId}/prospects`;
-
   return (
     <div className="flex flex-col gap-4">
-      <Link href={basePath} className="text-sm text-muted-foreground hover:underline">
-        ← Back to prospects
-      </Link>
+      {/* DISC-NAV-P0-01.1: Import is a page of the Find tab, so the tab bar above leads
+          everywhere; the "Back to prospects" link this page carried is gone. */}
       <h2 className="font-medium">Import prospects</h2>
       <p className="text-sm text-muted-foreground">
         Upload a CSV, Excel (.xlsx), or PDF file. Required column:{" "}

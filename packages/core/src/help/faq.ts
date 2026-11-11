@@ -230,7 +230,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "Why did Run AI Discovery stop and leave my ICP as a draft?",
     answer:
-      "Your business's AI approvals setting is Review each step (the default), so the AI's own results wait for you: approve the ICP on the ICP page, add the accounts it found on the Discover page, then click Resume AI Discovery. An owner or admin can switch to Approve automatically on the Business page under AI approvals. Nothing is sent to anyone in either mode.",
+      "Your business's AI approvals setting is Review each step (the default), so the AI's own results wait for you: approve the ICP on the offering's Ideal customer page (under Setup), add the accounts it found under Find, in To review, then click Resume AI Discovery. An owner or admin can switch to Approve automatically on the Business page under AI approvals. Nothing is sent to anyone in either mode.",
     guideSlug: "discovery",
     sectionId: "ai-approvals",
   },
@@ -238,7 +238,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "Why does WorksLake business data say Needs setup or Unavailable?",
     answer:
-      "On an offering's Discover page, WorksLake business data is one of the sources you can search. Needs setup means the WorksLake connection hasn't been set up for this workspace yet; Unavailable means it didn't answer. WonderArk never fills in sample results in its place. Web search (AI) and Import CSV keep working either way.",
+      "Under an offering's Find tab, WorksLake business data is one of the sources you can search. Needs setup means the WorksLake connection hasn't been set up for this workspace yet; Unavailable means it didn't answer. WonderArk never fills in sample results in its place. Web search (AI) and Import keep working either way.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },
@@ -246,7 +246,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "How do I keep an eye on one particular account?",
     answer:
-      "Open the account from Prospects and use Watch this account, with a reason and, if you like, a next review date. The offering's Watchlist tab then lists it with its watch reason, current score, latest signal and next review date. This is separate from the Watch action on an opportunity, which only changes that opportunity's status.",
+      "Open the account from Prospects and use Watch this account, with a reason and, if you like, a next review date. Watchlist, under the offering's Prospects tab, then lists it with its watch reason, current score, latest signal and next review date. This is separate from the Watch action on an opportunity, which only changes that opportunity's status.",
     guideSlug: "discovery",
     sectionId: "watchlist",
   },

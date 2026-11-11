@@ -19,20 +19,20 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 582 |
+| ✅ Done | 584 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
-| ❔ Unverified | 0 |
+| ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
 | ⬜ Not started | 0 |
-| **Total** | **664** |
+| **Total** | **667** |
 
 | Backlog | Done | Set aside | Remaining | Total |
 |---|---|---|---|---|
 | [Platform build-out](./plan/04-CLAUDE-CODE-BACKLOG.md) | 74 | 1 | 0 | 75 |
 | [Platform Administration Portal](./plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md) | 129 | 7 | 0 | 136 |
-| [Discovery — offering-centric upgrade](./plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md) | 57 | 1 | 0 | 58 |
+| [Discovery — offering-centric upgrade](./plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md) | 56 | 1 | 1 | 58 |
 | [Discovery — opportunity intelligence](./plan/08-DISCOVERY-OPPORTUNITY-INTELLIGENCE-BACKLOG.md) | 0 | 30 | 0 | 30 |
 | [Compliance / Finance — global tax](./plan/11-COMPLIANCE-GLOBAL-TAX-BACKLOG.md) | 87 | 41 | 0 | 128 |
 | [Discovery — Marketing, Customer Acquisition & Funding](./plan/12-DISCOVERY-MARKETING-FUNDING-BACKLOG.md) | 44 | 1 | 0 | 45 |
@@ -40,11 +40,15 @@ file is stale, so it cannot quietly drift out of date.
 | [Subscriptions & billing (Razorpay + Stripe)](./plan/14-SUBSCRIPTION-BILLING-BACKLOG.md) | 40 | 0 | 0 | 40 |
 | [Multi-user / multi-business RBAC](./plan/15-MULTI-USER-RBAC-BACKLOG.md) | 39 | 0 | 0 | 39 |
 | [WonderArk branding](./plan/16-BRANDING-BACKLOG.md) | 13 | 0 | 0 | 13 |
-| [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 10 | 0 | 0 | 10 |
+| [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 13 | 0 | 0 | 13 |
 
 ## What is left
 
-Nothing outstanding — every story in every backlog is done, deferred or superseded.
+1 stories are neither built nor deliberately set aside:
+
+| ID | Story | Status | Note |
+|---|---|---|---|
+| `DISC-OFFER-P0-03.3` | Offering Navigation | ❔ Unverified | Discussed in `docs/design/discovery-offering-backlog-audit.md`, but no code cites it — confirm before relying on this |
 
 ## Platform build-out
 
@@ -501,7 +505,7 @@ Source: [`docs/plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md`](./plan/10-DISCOVE
 |---|---|---|---|
 | `DISC-OFFER-P0-03.1` | Offering Context Selector | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/layout.tsx` +7 |
 | `DISC-OFFER-P0-03.2` | Offering Discovery Overview | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/page.tsx` +1 |
-| `DISC-OFFER-P0-03.3` | Offering Navigation | ✅ Done | `packages/module-discovery/src/components/tenancy/product-nav.tsx` |
+| `DISC-OFFER-P0-03.3` | Offering Navigation | ❔ Unverified | Discussed in `docs/design/discovery-offering-backlog-audit.md`, but no code cites it — confirm before relying on this |
 
 ### DISC-OFFER-P0-04 — Offering Discovery Strategy
 
@@ -533,7 +537,7 @@ Source: [`docs/plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md`](./plan/10-DISCOVE
 | ID | Story | Status | Evidence / note |
 |---|---|---|---|
 | `DISC-OFFER-P0-07.1` | Next Best Action | ✅ Done | `packages/module-discovery/src/lib/opportunities/mutations.ts` +5 |
-| `DISC-OFFER-P0-07.2` | Today's Opportunities | ✅ Done | `packages/module-discovery/src/components/opportunities/opportunities-dashboard.tsx` +7 |
+| `DISC-OFFER-P0-07.2` | Today's Opportunities | ✅ Done | `packages/module-discovery/src/components/opportunities/opportunities-dashboard.tsx` +6 |
 | `DISC-OFFER-P0-07.3` | Opportunity Detail | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/opportunities/[opportunityId]/actions.ts` +2 |
 
 ### DISC-OFFER-P0-08 — CRM Handoff
@@ -628,7 +632,7 @@ Source: [`docs/plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md`](./plan/10-DISCOVE
 
 | ID | Story | Status | Evidence / note |
 |---|---|---|---|
-| `DISC-OFFER-P0-14.1` | Discovery Run History | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/history/[runId]/page.tsx` +13 |
+| `DISC-OFFER-P0-14.1` | Discovery Run History | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/history/[runId]/page.tsx` +12 |
 | `DISC-OFFER-P0-14.2` | Versioned Stage Results | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/icp/page.tsx` +13 |
 
 ### P0 EPIC — Final Human Action Gate
@@ -1268,3 +1272,6 @@ Source: [`docs/plan/17-DISCOVERY-DATA-AND-CONSUMER.md`](./plan/17-DISCOVERY-DATA
 | `DISC-DATA-P0-03.1` | Find screen | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +6 |
 | `DISC-DATA-P0-03.2` | Staging results and the review list | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +6 |
 | `DISC-DATA-P0-03.3` | Approval carries the source and refuses duplicates | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +4 |
+| `DISC-NAV-P0-01.1` | Four-tab offering navigation | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +7 |
+| `DISC-NAV-P0-01.2` | Today list at the top of Prospects | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +2 |
+| `DISC-NAV-P0-01.3` | Plain labels | ✅ Done | `packages/module-discovery/src/components/tenancy/product-nav.tsx` |

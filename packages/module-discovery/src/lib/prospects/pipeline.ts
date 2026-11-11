@@ -130,6 +130,16 @@ export function deriveProspectPipelineState(
   return { stage, nextAction, lastActivityAt, isStuck };
 }
 
+/**
+ * DISC-NAV-P0-01.2: a follow-up is due when a message was sent, no reply has come, and
+ * nothing has happened for `STAGE_STUCK_THRESHOLD_DAYS` -- the rule the list already
+ * marks as "Needs next step", narrowed to the Sent stage. Derived on read from the same
+ * rows as the stage; nothing is stored and no new threshold is introduced.
+ */
+export function isFollowUpDue(prospect: Pick<ProspectPipelineState, "stage" | "isStuck">): boolean {
+  return prospect.stage === "sent" && prospect.isStuck;
+}
+
 export type ConversionFunnelStep = { stage: ProspectStage; label: string; reached: number };
 
 export type ConversionFunnel = {

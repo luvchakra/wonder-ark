@@ -73,16 +73,29 @@ describe("buildDiscoveryNav", () => {
   it("points Customer Acquisition at the existing routes of the offering in the URL", () => {
     const tree = buildDiscoveryNav(BASE, PRODUCTS, "/acme/discovery/offerings/p2/prospects/x9");
     const acquisition = group(tree, "customer-acquisition");
-    expect(acquisition.items.find((i) => i.id === "icp")!.href).toBe("/acme/discovery/offerings/p2/icp");
+    // DISC-NAV-P0-01.1: four entries, each opening its tab's first page.
+    expect(acquisition.items.map((i) => [i.label, i.href])).toEqual([
+      ["Setup", "/acme/discovery/offerings/p2"],
+      ["Find", "/acme/discovery/offerings/p2/prospects/discover"],
+      ["Prospects", "/acme/discovery/offerings/p2/prospects"],
+      ["Results", "/acme/discovery/offerings/p2/performance"],
+    ]);
     expect(acquisition.holdsActive).toBe(true);
     expect(acquisition.heading).toBe("Customer Acquisition · Cameras");
     // The offering is highlighted in Business Offerings and the stage in Acquisition.
     expect(activeIds(tree)).toEqual(["offerings:p2", "customer-acquisition:prospects"]);
   });
 
-  it("highlights only Products, not Knowledge, on the offering overview", () => {
-    const tree = buildDiscoveryNav(BASE, PRODUCTS, "/acme/discovery/offerings/p1");
-    expect(activeIds(tree)).toEqual(["offerings:p1", "customer-acquisition:products"]);
+  it("highlights the tab a page belongs to, whichever of its pages is open", () => {
+    const active = (path: string) => activeIds(buildDiscoveryNav(BASE, PRODUCTS, `/acme/discovery/offerings/p1${path}`));
+    expect(active("")).toEqual(["offerings:p1", "customer-acquisition:setup"]);
+    expect(active("/icp")).toEqual(["offerings:p1", "customer-acquisition:setup"]);
+    // Find's pages sit under /prospects and elsewhere; none of them lights up Prospects.
+    expect(active("/prospects/discover")).toEqual(["offerings:p1", "customer-acquisition:find"]);
+    expect(active("/prospects/import")).toEqual(["offerings:p1", "customer-acquisition:find"]);
+    expect(active("/history/r1")).toEqual(["offerings:p1", "customer-acquisition:find"]);
+    expect(active("/watchlist")).toEqual(["offerings:p1", "customer-acquisition:prospects"]);
+    expect(active("/usage")).toEqual(["offerings:p1", "customer-acquisition:results"]);
   });
 
   it("falls back to the first offering away from offering pages, without claiming the page", () => {

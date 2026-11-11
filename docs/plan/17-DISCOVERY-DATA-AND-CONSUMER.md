@@ -612,6 +612,9 @@ adds its stories here when it is built.
 ### DISC-DATA-P0-03.1 — Find screen (B3)
 ### DISC-DATA-P0-03.2 — Staging results and the review list (B3)
 ### DISC-DATA-P0-03.3 — Approval carries the source and refuses duplicates (B3)
+### DISC-NAV-P0-01.1 — Four-tab offering navigation (B6)
+### DISC-NAV-P0-01.2 — Today list at the top of Prospects (B6)
+### DISC-NAV-P0-01.3 — Plain labels: Ideal customer, Find, To review (B6)
 
 ## Part B implementation notes (wonder-ark)
 
@@ -624,3 +627,13 @@ Where B1 to B3, as built, differ from the text above. The live repo wins (`CLAUD
 - **"Companies hiring for..." is an entry in the Source picker**, not a second form, so the page's control count goes down. The contract does not say how `GET /v1/prospects/sources` lists a signal; the entry appears for a source whose `kinds` includes `"signal"` and stays hidden until the gateway sends one.
 - **A row carries one control, its checkbox**; Approve and Discard act on the ticked rows (`CLAUDE.md`, Minimal UI: a list item carries at most one action).
 - **The Find button says a source uses paid lookups and how many are left**, not "uses 1 of 50": the contract gives no unit cost per search.
+
+B6, as built:
+
+- **The list of tabs lives in `packages/core/src/lib/offering-nav.ts`**, not in `product-nav.tsx`: the Discovery sidebar reads it too, and core cannot import a module. The sidebar's Customer Acquisition group now lists the same four tabs (it listed nine entries, two of which opened the overview).
+- **A tab shows its pages on a second row.** Setup: Overview, Ideal customer (personas are on that page). Find: Search, Import, History, Definitions. Prospects: All, Opportunities, Watchlist. Results: Performance, Conversions, Usage. "To review" is a section of the Search page, so it has no link of its own; the Today list links to it.
+- **The table above does not place the Discovery definitions page** (`/discovery`). It sits under Find as "Definitions", since "the Discovery tab becomes Find".
+- **"Follow-ups due" has no stored date to read.** It is derived: a prospect in the Sent stage with no reply and no activity for `STAGE_STUCK_THRESHOLD_DAYS` (7), the rule the list already shows as "Needs next step". Its link opens the list with `?stage=sent&due=1`, a filter added to `listProspects` so the count and the list cannot differ.
+- **Left for B5:** People under Prospects, new sign-ups in the Today list, "What people say" under Results. No placeholder was built for any of them.
+- **"ICP" in body copy** (the ICP page's own buttons and messages) is unchanged; the label rule was applied to navigation, the setup bar, the sidebar and the help guide.
+
