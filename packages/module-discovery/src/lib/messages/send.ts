@@ -6,6 +6,7 @@ import { getBusiness, getProduct, getWorkspace } from "../tenancy/queries";
 import { getOrCreateConversation, markConversationAwaitingReply } from "../conversations/mutations";
 import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render";
 import { prepareOutreachEmail } from "@cofounderai/core/privacy/suppression";
+import { INVALID_ADDRESS_MESSAGE, emailSendCheck, unconfirmedAddressMessage } from "./email-status";
 import type { Message } from "./types";
 
 /** Sends an approved outbound email via Resend and records the real outcome on the
@@ -19,7 +20,12 @@ import type { Message } from "./types";
  * instead of our rendered html/text -- Resend substitutes the variables and applies the
  * template's own subject/from at send time, so `message.subject`/content are display-only
  * for these. */
-export async function sendMessage(messageId: string): Promise<Message> {
+export async function sendMessage(
+  messageId: string,
+  /** DISC-DATA-P0-04.2: set when the person confirmed sending to an address a lookup
+   * marked risky or left unverified. It has no effect on an invalid address. */
+  options: { confirmedUnverified?: boolean } = {},
+): Promise<Message> {
   const supabase = await createClient();
   const { data: message, error: fetchError } = await supabase
     .from("messages")
@@ -39,11 +45,22 @@ export async function sendMessage(messageId: string): Promise<Message> {
   if (!prospect) throw new Error("Prospect not found.");
 
   const contacts = await listContacts(message.prospect_id);
-  const toEmail = message.contact_id
-    ? (contacts.find((c) => c.id === message.contact_id)?.email ?? null)
-    : (contacts.find((c) => c.email)?.email ?? null);
+  const recipient = message.contact_id
+    ? contacts.find((c) => c.id === message.contact_id)
+    : contacts.find((c) => c.email);
+  const toEmail = recipient?.email ?? null;
   if (!toEmail) {
     throw new Error("No contact email on file -- add a contact with an email before sending.");
+  }
+
+  // DISC-DATA-P0-04.2: an address a lookup marked invalid is never sent to; one it marked
+  // risky, or could not verify, needs the person's confirmation. Decided here, on the
+  // server, whatever the form showed. A contact a person typed has no status and sends
+  // as before.
+  const check = emailSendCheck(recipient?.email_status);
+  if (check === "blocked") throw new Error(INVALID_ADDRESS_MESSAGE);
+  if (check === "confirm" && !options.confirmedUnverified) {
+    throw new Error(unconfirmedAddressMessage(recipient!.email_status!));
   }
 
   const apiKey = process.env.RESEND_API_KEY;

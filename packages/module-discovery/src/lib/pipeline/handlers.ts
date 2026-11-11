@@ -182,7 +182,7 @@ export async function runAccountDiscoveryStage(ctx: StageContext): Promise<Stage
   if (ctx.aiApprovalMode !== "auto") {
     return {
       outcome: "completed",
-      detail: `${suggestions.length} account(s) suggested for your review. Approve the ones you want on the Discover page, then resume AI Discovery.`,
+      detail: `${suggestions.length} account(s) suggested for your review. Approve the ones you want under Find, in To review, then resume AI Discovery.`,
       reviewLevel: "needs_review",
       awaitingApproval: true,
     };

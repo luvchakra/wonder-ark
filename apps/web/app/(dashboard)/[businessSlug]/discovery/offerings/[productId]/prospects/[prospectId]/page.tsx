@@ -34,6 +34,11 @@ import { NativeSelect } from "@cofounderai/core/ui/native-select";
 import { Textarea } from "@cofounderai/core/ui/textarea";
 import { ExpandableBox } from "@cofounderai/module-discovery/components/ui/expandable-box";
 import { ContactRow } from "@cofounderai/module-discovery/components/prospects/contact-row";
+import { EmailSendForm } from "@cofounderai/module-discovery/components/prospects/email-send-form";
+import { PaidLookupButton } from "@cofounderai/module-discovery/components/prospects/paid-lookup-button";
+import { ProspectDetails } from "@cofounderai/module-discovery/components/prospects/prospect-details";
+import { getEnrichmentState, missingEnrichFields } from "@cofounderai/module-discovery/lib/data-sources/enrichment";
+import { isGatewayConfigured } from "@cofounderai/module-discovery/lib/data-sources/workslake-client";
 import { BuyerIntelligenceTable } from "@cofounderai/module-discovery/components/prospects/buyer-intelligence-table";
 import { ScoreRagBadge } from "@cofounderai/module-discovery/components/prospects/rag-badge";
 import { FsmHandoffPanel } from "@cofounderai/module-discovery/components/prospects/fsm-handoff-panel";
@@ -79,6 +84,10 @@ import {
   updateWatchlistAction,
   removeFromWatchlistAction,
   addProspectFeedbackAction,
+  retryEnrichmentAction,
+  fillMissingDetailsAction,
+  findContactsAction,
+  lookupQuotaAction,
 } from "./actions";
 
 /** DISC-OFFER-P0-06.1: replaced by `EVIDENCE_TYPE_LABEL` (module-discovery's own
@@ -157,17 +166,13 @@ function OutboundMessageCard({
   const emailContacts = contacts.filter((c) => c.email);
   const hasContactEmail = emailContacts.length > 0;
   const defaultContactId = message.contact_id ?? emailContacts[0]?.id ?? "";
-
-  const contactSelect =
-    isEmail && hasContactEmail ? (
-      <NativeSelect name="contactId" defaultValue={defaultContactId} className="w-auto max-w-56">
-        {emailContacts.map((c) => (
-          <option key={c.id} value={c.id}>
-            {[c.first_name, c.last_name].filter(Boolean).join(" ") || c.email}
-          </option>
-        ))}
-      </NativeSelect>
-    ) : null;
+  // DISC-DATA-P0-04.2: each recipient carries what a lookup said about its address, so
+  // the send form can refuse an invalid one and ask once about a risky or unverified one.
+  const recipients = emailContacts.map((c) => ({
+    id: c.id,
+    label: [c.first_name, c.last_name].filter(Boolean).join(" ") || (c.email as string),
+    emailStatus: c.email_status ?? null,
+  }));
 
   return (
     <li className={cn("flex flex-col gap-2 rounded-md border p-3 text-sm", className)}>
@@ -229,7 +234,7 @@ function OutboundMessageCard({
 
       {isEmail && !hasContactEmail && message.status !== "sent" ? (
         <p className="text-xs text-muted-foreground">
-          Add a contact with an email below before this can be sent.
+Add a contact with an email under Contacts before this can be sent.
         </p>
       ) : null}
 
@@ -237,7 +242,7 @@ function OutboundMessageCard({
         {isEmail ? (
           <>
             {message.status === "draft" && hasContactEmail ? (
-              <AiActionForm
+              <EmailSendForm
                 action={approveAndSendMessageAction.bind(
                   null,
                   businessId,
@@ -252,15 +257,13 @@ function OutboundMessageCard({
                   </>
                 }
                 pendingText="Sending..."
-                formClassName="flex flex-wrap items-center gap-2"
-                buttonProps={{ size: "lg" }}
-              >
-                {contactSelect}
-              </AiActionForm>
+                recipients={recipients}
+                defaultRecipientId={defaultContactId}
+              />
             ) : null}
             {(message.status === "approved" || message.status === "failed") &&
             hasContactEmail ? (
-              <AiActionForm
+              <EmailSendForm
                 action={sendMessageAction.bind(null, businessId, productId, prospectId, message.id)}
                 buttonLabel={
                   <>
@@ -269,11 +272,9 @@ function OutboundMessageCard({
                   </>
                 }
                 pendingText="Sending..."
-                formClassName="flex flex-wrap items-center gap-2"
-                buttonProps={{ size: "lg" }}
-              >
-                {contactSelect}
-              </AiActionForm>
+                recipients={recipients}
+                defaultRecipientId={defaultContactId}
+              />
             ) : null}
             {message.status === "failed" && message.failure_reason ? (
               <p role="alert" className="text-xs text-destructive">
@@ -350,7 +351,14 @@ export default async function ProspectDetailPage({
   const prospect = await getProspect(prospectId);
   if (!prospect || prospect.workspace_id !== workspace.id) notFound();
 
-  const [contacts, research, scores, strategy, messages, conversations, researchBrief, buyerIntelligence, watchlistEntry, prospectFeedback] = await Promise.all([
+  // DISC-DATA-P0-04.1/04.2: the lookups on this page go through the WorksLake gateway.
+  // Whether it is set up is read from this server's settings; no request is made to it
+  // until the person presses one of them.
+  const isCompany = (prospect.kind ?? "company") === "company";
+  const gatewayReady = isGatewayConfigured();
+  const hasMissingDetails = isCompany && missingEnrichFields(prospect).length > 0;
+
+  const [contacts, research, scores, strategy, messages, conversations, researchBrief, buyerIntelligence, watchlistEntry, prospectFeedback, enrichmentState] = await Promise.all([
     listContacts(prospect.id),
     getProspectResearch(prospect.id),
     listRecentProspectScores(prospect.id),
@@ -361,7 +369,13 @@ export default async function ProspectDetailPage({
     getBuyerIntelligenceForProspect(workspace.id, prospect.id),
     getWatchlistEntryForProspect(prospect.id),
     listProspectFeedback(prospect.id),
+    // Only a lookup that failed is worth a line, and only while something is still blank.
+    gatewayReady && hasMissingDetails ? getEnrichmentState(prospect) : null,
   ]);
+  // The key of one click on each paid lookup below: a second request carrying the same
+  // key is answered from the first and spends nothing. A new render makes new keys.
+  const fillKey = crypto.randomUUID();
+  const contactsKey = crypto.randomUUID();
 
   // DISC-OFFER-P1 §7-03.2 "Research Cache" -- the exact ai_runs row this cached research
   // came from, if one is on file (null for research written before ai_run_id existed).
@@ -498,9 +512,49 @@ export default async function ProspectDetailPage({
           removeAction={removeFromWatchlistAction.bind(null, businessId, productId, prospect.id, watchlistEntry?.id ?? "")}
         />
 
+        {/* DISC-DATA-P0-04.1 (B4.6): what is known, with the source beside each value a
+            source supplied. The form that edits these is folded under "Edit details":
+            the page is read far more often than it is edited. Visible controls in this
+            block: ten before (nine fields and Save), at most seven now (Edit details,
+            Fill missing details, Retry, and up to four links). */}
+        <ProspectDetails prospect={prospect} />
+
+        {isCompany && !gatewayReady ? (
+          <p className="text-sm text-muted-foreground">
+            Needs setup: filling missing details and finding contacts use the WorksLake connection, which isn&apos;t
+            set up for this workspace yet.
+          </p>
+        ) : null}
+        {gatewayReady && hasMissingDetails ? (
+          <div className="flex flex-col gap-3">
+            {enrichmentState === "failed" ? (
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-md border bg-muted/40 p-3 text-sm">
+                <span>Enrichment unavailable. Nothing was changed.</span>
+                <AiActionForm
+                  action={retryEnrichmentAction.bind(null, businessId, productId, prospect.id)}
+                  buttonLabel="Retry"
+                  pendingText="Retrying..."
+                  buttonProps={{ variant: "outline" }}
+                />
+              </div>
+            ) : null}
+            <PaidLookupButton
+              label="Fill missing details"
+              title="Fill missing details?"
+              description="Looks up the details this company is missing and fills only the blanks. It can use paid sources, which spend your business's paid lookups. Nothing you typed is changed."
+              confirmLabel="Fill missing details"
+              pendingText="Looking up..."
+              quotaAction={lookupQuotaAction.bind(null, workspace.id)}
+              runAction={fillMissingDetailsAction.bind(null, businessId, productId, prospect.id, fillKey)}
+            />
+          </div>
+        ) : null}
+
+        <details className="rounded-md border p-3">
+          <summary className="cursor-pointer text-sm font-medium">Edit details</summary>
         <form
           action={updateProspectAction.bind(null, businessId, productId, prospect.id)}
-          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+          className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2"
         >
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="companyName">Company name</Label>
@@ -575,10 +629,27 @@ export default async function ProspectDetailPage({
             Save changes
           </SubmitButton>
         </form>
+        </details>
       </section>
 
+      {/* DISC-DATA-P0-04.2. Visible controls in this block, apart from each contact's own
+          two: seven before (the six fields of the add form and its button), two now
+          (Find contacts, and "Add a contact", which unfolds the form). */}
       <section className="flex flex-col gap-4">
-        <h2 className="font-medium">Contacts</h2>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <h2 className="font-medium">Contacts</h2>
+          {isCompany && gatewayReady ? (
+            <PaidLookupButton
+              label="Find contacts"
+              title="Find contacts?"
+              description="Looks for up to three people at this company in your ideal customer's roles, and checks each address. This always spends your business's paid lookups. Nothing is sent to anyone."
+              confirmLabel="Find contacts"
+              pendingText="Looking up..."
+              quotaAction={lookupQuotaAction.bind(null, workspace.id)}
+              runAction={findContactsAction.bind(null, businessId, productId, prospect.id, contactsKey)}
+            />
+          ) : null}
+        </div>
         {contacts.length === 0 ? (
           <p className="text-sm text-muted-foreground">No contacts yet.</p>
         ) : (
@@ -594,8 +665,8 @@ export default async function ProspectDetailPage({
           </ul>
         )}
 
-        <div className="flex flex-col gap-3 rounded-md border p-4">
-          <h3 className="text-sm font-medium">Add a contact</h3>
+        <details className="rounded-md border p-4">
+          <summary className="cursor-pointer text-sm font-medium">Add a contact</summary>
           <form
             action={addContactAction.bind(
               null,
@@ -604,7 +675,7 @@ export default async function ProspectDetailPage({
               workspace.id,
               prospect.id,
             )}
-            className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+            className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2"
           >
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="firstName">First name</Label>
@@ -634,7 +705,7 @@ export default async function ProspectDetailPage({
               Add contact
             </SubmitButton>
           </form>
-        </div>
+        </details>
       </section>
 
       {/* DISC-OFFER-P0-06.2: "Offering Research Brief" -- the doc's own progressive-

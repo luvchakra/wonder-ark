@@ -24,19 +24,16 @@ The Discovery sidebar is always the same shape:
 | **Business** | Your business profile and its offerings |
 | **Business Offerings** | One entry per offering you've created |
 | **Marketing** | Dashboard, Strategy, Campaigns, Content, Assets, Website & SEO, Analytics |
-| **Customer Acquisition** | Products, ICP, Prospects, Research, Signals, Outreach, Pipeline, Conversion, Knowledge — for one offering at a time |
+| **Customer Acquisition** | Setup, Find, Prospects, Results — for one offering at a time |
 | **Funding** | Dashboard, Funding Profile, Investor Readiness, Fundraising, Investors, Investor Outreach, Data Room, Due Diligence, Analytics |
 
-Inside Customer Acquisition, a few sidebar items open a tab with a different
-name: **Research** opens the offering's *Discovery* tab, **Signals** opens its
-*Watchlist*, **Outreach** opens its *Opportunities*, and **Pipeline** opens its
-run *History*; **Knowledge** and **Products** open its *Overview*. Each is described under
-"Working an offering" below.
+The four Customer Acquisition items are the offering's own four tabs, described under
+"Working an offering" below. Each opens the first page of its tab.
 
 **Switching offering.** When a business has more than one offering, the
 header of every offering page has an **Offering** selector. Switching keeps
-you on the same section — from ICP to the other offering's ICP, from
-Prospects to its Prospects. The sidebar also remembers the offering you last
+you on the same section — from Ideal customer to the other offering's Ideal customer,
+from Prospects to its Prospects. The sidebar also remembers the offering you last
 worked in, so going to Marketing and back to Customer Acquisition returns to
 it rather than to the first offering.
 
@@ -99,11 +96,20 @@ offerings" panel when the same company turns up under more than one of them.
 
 ## Working an offering
 
-Once an offering has a profile, its pages are a row of tabs along the top —
-**Overview, ICP, Discovery, Opportunities, Prospects, Watchlist, Performance,
-Conversions, History**. They aren't a checklist: use them in any order. (Before
-a profile exists you instead get a short step-by-step bar for setting the
-offering up.)
+Once an offering has a profile, its pages sit under four tabs along the top. The row
+under the tabs lists the pages of the tab you are in:
+
+| Tab | Pages |
+|---|---|
+| **Setup** | **Overview**, **Ideal customer** (your ICP and buyer personas) |
+| **Find** | **Search** (with what it found, under **To review**), **Import**, **History**, **Definitions** |
+| **Prospects** | **All**, **Opportunities**, **Watchlist** |
+| **Results** | **Performance**, **Conversions**, **Usage** |
+
+They aren't a checklist: use them in any order. Every page keeps the address it had, so
+old links and bookmarks still open. (Before a profile exists you instead get a short
+step-by-step bar for setting the offering up: Overview, Ideal customer, Prospects,
+Conversions.)
 
 ### Overview
 
@@ -126,7 +132,7 @@ The offering's hub page:
   the next date but doesn't start runs on its own yet) and a **Run AI Discovery** panel with
   live progress. What it may approve depends on your [AI approvals](#ai-approvals) setting,
   shown under the panel. With **Review each step** it stops when the ICP it generates needs
-  your approval, and again when it finds accounts: they wait on the **Discover** page and
+  your approval, and again when it finds accounts: they wait under **Find**, in **To review**, and
   become prospects only when you add them; click **Resume AI Discovery** after each review.
   With **Approve automatically** it approves the ICP and adds up to 10 accounts as prospects
   without asking. Nothing is sent to anyone either way.
@@ -139,7 +145,7 @@ The offering's hub page:
 
 - **Review each step** (the default): it writes the offering profile and generates an ICP,
   which stays a draft until you approve it. If the ICP was already approved, it also finds
-  one company and leaves it on the **Discover** page for you to add or discard.
+  one company and leaves it under **Find**, in **To review**, for you to add or discard.
 - **Approve automatically**: it writes the offering profile, generates and approves an ICP,
   finds one prospect and adds it, researches and scores it, approves an outreach strategy
   for it and drafts a first message.
@@ -149,7 +155,7 @@ a draft until you send it.
 
 ### Discovery (definitions)
 
-The **Discovery** tab holds your *discovery definitions*: what to look for, for this
+**Find → Definitions** holds your *discovery definitions*: what to look for, for this
 offering. A definition has a name, a monitoring frequency (**Daily, Weekly, Monthly** or
 **Manual only** — recorded for now; definitions don't run on a schedule yet), a minimum score, target
 geographies and industries, buyer roles, **desired signals**, **excluded
@@ -161,7 +167,8 @@ Reviews, Expansion and Multiple Buying Signals — which you can then edit.
 
 ### ICP & Buyer Personas
 
-Generate (or regenerate, clone, or approve) an Ideal Customer Profile:
+**Setup → Ideal customer** is where you generate (or regenerate, clone, or approve) an
+Ideal Customer Profile (ICP):
 industries, company sizes, geographies, roles, pain points, buying signals,
 exclusions, revenue range, business model, tech stack, growth stage, and
 existing tools. The ICP has one overall **Confidence** percentage and an **Evidence** list.
@@ -171,7 +178,9 @@ Personas are managed on the same page, whether or not an ICP exists yet.
 
 ### Finding prospects
 
-- **Discover** opens one search form. **What** (keywords or categories) and **Where** arrive
+Everything that brings companies in is under the **Find** tab.
+
+- **Search** opens one search form. **What** (keywords or categories) and **Where** arrive
   filled in from your approved ICP, **Source** chooses where to look, and **Find** runs the
   search. Company size and other filters are under **More filters**. The sources:
   - **WorksLake business data** searches stored business listings. If the connection isn't
@@ -189,13 +198,67 @@ Personas are managed on the same page, whether or not an ICP exists yet.
   category, why it fits and a badge naming its source. Untick any you don't want, then
   click **Approve selected** to add the rest to your prospects, or **Discard selected** to
   remove them. Running the same search again doesn't add the same company twice.
-- **Import CSV** loads a list from CSV, Excel or PDF, or pasted CSV. `company_name` is
+- **Import** loads a list from CSV, Excel or PDF, or pasted CSV. `company_name` is
   required; a file in another layout is restructured by AI for you to check before import.
-- **Add** creates one prospect by hand.
+- **Add**, on the **Prospects** tab, creates one prospect by hand.
+
+### Today
+
+The **Prospects** tab opens with a short **Today** list of what is waiting for you, counted
+from your own prospects and suggestions:
+
+- **Replies waiting for your answer** — prospects whose latest conversation needs a
+  response. **Answer** opens the list filtered to them.
+- **Follow-ups due** — prospects you sent a message to, with no reply and no activity for
+  7 days. **Follow up** opens the list filtered to them.
+- **Suggestions waiting for review** — what a search found and you haven't approved or
+  discarded yet. **Review** opens **To review** under Find.
+
+A line appears only when it has something in it. When nothing is waiting, the list says
+so.
+
+### A prospect's details and contacts
+
+A prospect's page opens with what is known about the company. Beside each value a source
+supplied is where it came from, for example "Industry: Software, from Wikidata"; a value
+with no source beside it was typed by a person. **Source** names where the prospect itself
+was found, with a link to the record when there is one. **Edit details** unfolds the form
+for changing any of it. If you change a value a source filled in, it is no longer credited
+to that source.
+
+**Filling in blanks.** When you approve a company under **To review**, WonderArk looks up
+the details it is missing (industry, company size, description, phone, general email,
+LinkedIn page, location) from free sources. It fills only what is blank and never changes a
+value you typed. If the lookup fails, the page says **Enrichment unavailable** and nothing
+is changed; **Retry** runs it again. **Fill missing details** does the same lookup and may
+also use paid sources: it first shows how many paid lookups your business has left this
+month, and runs only when you confirm. Afterwards it says what was filled and how many paid
+lookups it used.
+
+**Finding contacts.** **Find contacts** looks for up to three people at the company in the
+roles of your approved ideal customer, and checks each address. It always uses paid
+lookups, so it too shows how many are left and runs only when you confirm; pressing it
+twice by accident does not spend twice. It needs the company's website and an approved
+ideal customer with at least one role. Each person found is added under **Contacts** with
+who found them, when, and a mark for the address: **Verified**, **Risky**, **Invalid** or
+**Not verified**. If the search finds the company's general mailbox (such as `info@`) and
+the prospect has no general email yet, it is filled in. When no contact provider is
+connected, the result says "No named contacts: the contact providers need setup." Nothing
+is sent to anyone by a lookup. **Add a contact** unfolds the form for adding one by hand;
+a contact you type has no mark. If you change a found contact's address, its mark is
+cleared, because the new address has not been checked.
+
+If the WorksLake connection isn't set up, the page says **Needs setup** in place of these
+lookups; if it doesn't answer, the lookup reports **Unavailable** and changes nothing.
+
+**Removing a contact.** **Delete** removes a contact. If the person asked you to stop
+contacting them, tick **They asked not to be contacted**: WonderArk then also asks WorksLake
+to leave that address out of later contact lookups. If that request can't be passed on, the
+contact is not deleted and the page says why, so you can try again.
 
 ### Opportunities (Today's Opportunities)
 
-The **Opportunities** tab sorts the offering's active opportunities into bins,
+**Prospects → Opportunities** sorts the offering's active opportunities into bins,
 and shows a bin only when it has something in it: **Hot**, **Needs Review**,
 **New**, **Watching** and **Insufficient Evidence**. Each row shows the
 company, score, priority, why the offering fits, why now, the primary contact,
@@ -246,7 +309,9 @@ On a prospect's page you generate an **Outreach strategy** (why, channel, key me
 to action), edit it and **Approve strategy**; only then can you **Generate message**. An email
 draft is sent with **Approve & send email**; a LinkedIn or WhatsApp draft has **Approve** and
 then **Mark sent** once you've sent it yourself. Sending email needs a contact with an email
-address and email set up for the deployment. If a send fails, the message shows "Send failed"
+address and email set up for the deployment. An address a contact lookup marked **Invalid**
+can't be sent to; one marked **Risky** or **Not verified** asks you to confirm once before
+it sends. If a send fails, the message shows "Send failed"
 with the reason, and you can **Retry send**. Emails can use a saved template ("No template
 (AI writes freely)" is the default).
 
@@ -274,14 +339,14 @@ all of the business's outreach, including Funding.
 
 ## Watchlist
 
-Watching an *opportunity* (the **Watch** action on the Opportunities tab) just
-changes that opportunity's status. The **Watchlist** tab is a separate,
+Watching an *opportunity* (the **Watch** action on the Opportunities page) just
+changes that opportunity's status. **Prospects → Watchlist** is a separate,
 deliberate list of *accounts* you want to keep an eye on.
 
 1. Open an account from **Prospects**.
 2. Use **Watch this account**, giving a **Watch reason** (for example "Close
    to budget approval") and, optionally, a **Next review** date.
-3. Come back to the **Watchlist** tab: each watched account shows its watch
+3. Come back to **Watchlist**: each watched account shows its watch
    reason, current score, latest signal and next review date. The score and
    signal are read live from the account, so they are never out of date.
 
@@ -291,13 +356,13 @@ offering you set it in.
 
 ## Performance analysis and run history
 
-The **Performance** tab answers "what's actually working for this offering?"
+**Results → Performance** answers "what's actually working for this offering?"
 from everything discovered so far: which signals produce conversations, which
 ICP attributes produce conversions, which buyer roles respond, and whether a
 higher score really correlates with better outcomes, and which Discovery Plays perform
 best. It can be exported as a report.
 
-The **History** tab is the audit list of every AI Discovery run for the
+**Find → History** is the audit list of every AI Discovery run for the
 offering — what started it (Run AI Discovery, Retry failed stage, or Save &
 Run Downstream), its status (Running, Completed, Failed, or Waiting for review when it
 stopped for your approval) and how long it

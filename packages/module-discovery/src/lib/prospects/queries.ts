@@ -2,6 +2,7 @@ import { createClient } from "../../db/server";
 import type { Prospect, ProspectStatus, ProspectSuggestion } from "./types";
 import {
   deriveProspectPipelineState,
+  isFollowUpDue,
   latestTimestamp,
   PROSPECT_STAGES,
   type ProspectPipelineState,
@@ -15,6 +16,8 @@ export type ProspectFilters = {
   industry?: string;
   search?: string;
   stage?: ProspectStage;
+  /** DISC-NAV-P0-01.2: only prospects whose follow-up is due (`isFollowUpDue`). */
+  followUpDue?: boolean;
 };
 
 export type ProspectSort = "recent" | "stage" | "priority";
@@ -104,6 +107,7 @@ export async function listProspects(
   let prospects = (data as unknown as ProspectPipelineRow[]).map(deriveRow);
 
   if (filters.stage) prospects = prospects.filter((p) => p.stage === filters.stage);
+  if (filters.followUpDue) prospects = prospects.filter(isFollowUpDue);
 
   if (sort === "stage") {
     prospects = [...prospects].sort(
@@ -255,4 +259,16 @@ export async function listProspectSuggestions(
     .order("created_at", { ascending: false });
   if (error) throw error;
   return data;
+}
+
+/** DISC-NAV-P0-01.2: how many suggestions are waiting on the Find page's "To review"
+ * list -- the same rows `listProspectSuggestions` returns, counted without loading them. */
+export async function countProspectSuggestions(workspaceId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase
+    .from("prospect_suggestions")
+    .select("id", { count: "exact", head: true })
+    .eq("workspace_id", workspaceId);
+  if (error) throw error;
+  return count ?? 0;
 }

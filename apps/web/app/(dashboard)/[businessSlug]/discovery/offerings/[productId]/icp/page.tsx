@@ -77,7 +77,7 @@ export default async function IcpPage({
         <div className="flex flex-col gap-3">
           {autoPopulateBanner}
           <p className="text-sm text-muted-foreground">
-            Generate an offering profile on the Overview tab before defining an ICP.
+            Generate an offering profile on Overview before defining your ideal customer.
           </p>
         </div>
         {personaSection}

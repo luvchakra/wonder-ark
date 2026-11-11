@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useAppPathname } from "@cofounderai/core/shell/org-address-context";
-import { Check, ChevronRight } from "lucide-react";
+import { Check } from "lucide-react";
 import { cn } from "@cofounderai/core/lib/utils";
+import { activeOfferingNav, buildOfferingNav } from "@cofounderai/core/lib/offering-nav";
 import { useAutoPopulateProgress } from "./auto-populate-progress";
 
 type StageId = "overview" | "icp" | "prospects" | "conversions";
@@ -39,7 +40,8 @@ export function ProductNav({
   const { activeStage } = useAutoPopulateProgress();
   const tabs: { id: StageId; href: string; label: string }[] = [
     { id: "overview", href: basePath, label: "Overview" },
-    { id: "icp", href: `${basePath}/icp`, label: "ICP" },
+    // DISC-NAV-P0-01.3: "ICP" reads as "Ideal customer" wherever it is a label.
+    { id: "icp", href: `${basePath}/icp`, label: "Ideal customer" },
     { id: "prospects", href: `${basePath}/prospects`, label: "Prospects" },
     { id: "conversions", href: `${basePath}/conversions`, label: "Conversions" },
   ];
@@ -50,81 +52,66 @@ export function ProductNav({
       : pathname === tab.href || pathname.startsWith(`${tab.href}/`),
   );
 
-  /* DISC-OFFER-P0-03.3's "Offering Navigation" -- the numbered stepper below reads as
-   * "do these once, in this order," which is right for a brand-new offering's initial
-   * setup but wrong once it has a profile: from then on this is an ongoing workspace a
-   * founder revisits constantly and out of order, not a checklist. Switching to a flat,
-   * equal-weight tab bar once setup is complete matches how it's actually used, without
-   * adding any destination that doesn't already exist -- the doc's own suggested
-   * Discovery/Opportunities/Signals/Watchlist/Research entries had no page behind them
-   * yet at that story; "Discovery" gains one here in 04.1 (definitions), so it's added
-   * to this ongoing bar only -- not to the setup stepper below, since a Discovery
-   * Definition is optional/ongoing configuration, not a required setup step in order.
-   * "Opportunities" gains a real page the same way in DISC-OFFER-P0-07.2 (the "Today's
-   * Opportunities" dashboard); "Watchlist" gains one in DISC-OFFER-P1 §7-01.3 (this
-   * file's own `watchlist/page.tsx`); "Performance" gains one in §7-02.3 (this file's
-   * own `performance/page.tsx`) -- Signals/Research still have no page behind them and
-   * stay out for the same "no dead links" reason. */
+  /* DISC-NAV-P0-01.1: once an offering has a profile this is an ongoing workspace a
+   * founder revisits out of order, not a checklist, so the numbered stepper below gives
+   * way to a tab bar. It used to carry nine equal tabs; it now carries four -- Setup,
+   * Find, Prospects, Results -- and a second row with the pages of the tab in view.
+   * Every page keeps its path and stays reachable from its tab; the list itself lives in
+   * core's lib/offering-nav.ts, which the sidebar and the route check read too. */
   if (completed?.overview) {
-    const ongoingTabs: { href: string; label: string }[] = [
-      { href: basePath, label: "Overview" },
-      { href: `${basePath}/icp`, label: "ICP" },
-      { href: `${basePath}/discovery`, label: "Discovery" },
-      { href: `${basePath}/opportunities`, label: "Opportunities" },
-      { href: `${basePath}/prospects`, label: "Prospects" },
-      { href: `${basePath}/watchlist`, label: "Watchlist" },
-      { href: `${basePath}/performance`, label: "Performance" },
-      { href: `${basePath}/conversions`, label: "Conversions" },
-      // DISC-OFFER-P0-14.1's own "Discovery Run History" -- a real page exists behind
-      // this one now (`history/page.tsx`), same "no dead links" rule this bar's own
-      // comment already established for Discovery/Opportunities.
-      { href: `${basePath}/history`, label: "History" },
-    ];
-    const activeOngoingIndex = ongoingTabs.findIndex((tab) =>
-      tab.href === basePath ? pathname === basePath : pathname === tab.href || pathname.startsWith(`${tab.href}/`),
-    );
+    const ongoingTabs = buildOfferingNav(basePath);
+    const active = activeOfferingNav(ongoingTabs, pathname);
 
     return (
-      <nav aria-label="Offering sections" className="flex w-full flex-wrap items-center gap-1 rounded-lg border border-border bg-muted p-1">
-        {ongoingTabs.map((tab, i) => {
-          const isActive = i === activeOngoingIndex;
-          return (
-            <div key={tab.href} className="flex items-center">
-              {/* A numbered badge on every tab (not just the active one) so the bar reads
-                  as one connected set of sections, matching the stepper's own visual
-                  language -- but no arrows *between* every pair: these 9 sections are
-                  deliberately non-sequential once an offering has a profile (see this
-                  function's own docstring), so an unbroken chain of "move to the next
-                  stage" arrows would misrepresent them as an ordered checklist. The
-                  chevrons here are purely a visual rhythm between pills, aria-hidden and
-                  never implying a required path -- every tab stays independently
-                  clickable regardless of position. */}
+      <div className="flex flex-col gap-2">
+        <nav
+          aria-label="Offering sections"
+          className="grid w-full grid-cols-4 gap-1 rounded-lg border border-border bg-muted p-1"
+        >
+          {ongoingTabs.map((tab) => {
+            const isActive = tab.id === active?.tab.id;
+            return (
               <Link
+                key={tab.id}
                 href={tab.href}
-                aria-current={isActive ? "page" : undefined}
+                // "page" only on the very page the tab lands on; elsewhere inside it, the
+                // second row marks the page and this marks the section.
+                aria-current={isActive ? (pathname === tab.href ? "page" : "true") : undefined}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+                  "rounded-md px-2 py-1.5 text-center text-sm font-medium transition-colors",
                   isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                <span
-                  className={cn(
-                    "flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
-                    isActive ? "bg-primary text-primary-foreground" : "bg-background text-muted-foreground",
-                  )}
-                  aria-hidden="true"
-                >
-                  {i + 1}
-                </span>
                 {tab.label}
               </Link>
-              {i < ongoingTabs.length - 1 ? (
-                <ChevronRight className="mx-0.5 size-3.5 shrink-0 text-muted-foreground/40" aria-hidden="true" />
-              ) : null}
-            </div>
-          );
-        })}
-      </nav>
+            );
+          })}
+        </nav>
+        {active ? (
+          <nav aria-label={`${active.tab.label} pages`} className="flex flex-wrap items-center gap-x-1 gap-y-1 px-1">
+            {active.tab.pages.map((page) => {
+              const isCurrent = page.href === active.page.href;
+              return (
+                <Link
+                  key={page.href}
+                  href={page.href}
+                  // On a single prospect, run or opportunity its list is marked as the
+                  // section in view, not as the page itself.
+                  aria-current={isCurrent ? (pathname === page.href ? "page" : "true") : undefined}
+                  className={cn(
+                    "rounded-full px-3 py-1 text-sm transition-colors",
+                    isCurrent
+                      ? "bg-primary/10 font-medium text-primary"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  {page.label}
+                </Link>
+              );
+            })}
+          </nav>
+        ) : null}
+      </div>
     );
   }
 

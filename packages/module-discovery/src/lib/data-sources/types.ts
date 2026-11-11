@@ -131,3 +131,16 @@ export function gatewayFailureMessage(
   }
   return "Unavailable: WorksLake didn't answer. Nothing was added. Try again in a few minutes.";
 }
+
+/**
+ * DISC-DATA-P0-04.1/04.2: what a lookup a person asked for on the prospect page reports
+ * back ("Fill missing details", "Find contacts"). `failed` covers everything that did
+ * not complete, with the reason in `message`; it is never shown as success.
+ */
+export type LookupState = { status: "completed" | "failed"; message: string } | null;
+
+/** What the confirmation shows before a paid lookup: the paid lookups the business has
+ * left, as the gateway reports them, or why they cannot be read. Never estimated. */
+export type LookupQuotaState =
+  | { state: "ok"; period: string; paid: { limit: number; remaining: number } }
+  | { state: "needs_setup" | "unavailable" | "quota"; message: string };

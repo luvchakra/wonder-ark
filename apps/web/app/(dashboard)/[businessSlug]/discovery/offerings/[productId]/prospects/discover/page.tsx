@@ -42,7 +42,9 @@ function gatewayNote(list: DataSourceList): string | null {
  * carries no link of its own for that.
  *
  * Visible controls: 5 with nothing to review (was 6), and 7 plus two per suggestion
- * with a review list (was 8 plus three per suggestion).
+ * with a review list (was 8 plus three per suggestion). DISC-NAV-P0-01.1 leaves the page
+ * itself alone and takes the offering's tab bar above it from nine links to eight (four
+ * tabs and Find's four pages).
  */
 export default async function DiscoverProspectsPage({
   params,
@@ -82,7 +84,7 @@ export default async function DiscoverProspectsPage({
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-lg font-medium">Discover prospects</h1>
+        <h1 className="text-lg font-medium">Find prospects</h1>
         <p className="text-sm text-muted-foreground">
           Nothing is added to your prospects until you approve it below.
         </p>

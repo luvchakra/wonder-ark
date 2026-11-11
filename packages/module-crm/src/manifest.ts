@@ -14,29 +14,39 @@ export const crmManifest: ModuleManifest = {
   icon: "Inbox",
   routePrefix: "/crm",
   nav: [
+    // PLATFORM-NAV-P0-01.3 (owner, 2026-11-11: "simplify the module menus and pages, reduce and make it intuitive"):
+    // the pages used every day come first with no heading, so they are one click away; the rest fold under a few
+    // named groups. Every page keeps its path; only where its link sits changed.
     {
-      heading: "Overview",
       items: [
-        { label: "Dashboard", slug: "dashboard", icon: "LayoutDashboard" },
         { label: "Inbox", slug: "", icon: "Inbox" },
-        { label: "Conversations", slug: "conversations", icon: "MessageCircle" },
-        { label: "Potential Lost Business", slug: "lost-business", icon: "AlertTriangle" },
-        { label: "Reviews", slug: "reviews", icon: "Star" },
-        { label: "Analytics", slug: "analytics", icon: "BarChart3" },
-        { label: "Reactivation", slug: "reactivation", icon: "RefreshCw" },
-      ],
-    },
-    {
-      heading: "Sales",
-      items: [
+        { label: "Dashboard", slug: "dashboard", icon: "LayoutDashboard" },
         { label: "Leads", slug: "leads", icon: "Users" },
         { label: "Sales Opportunities", slug: "opportunities", icon: "Target" },
         { label: "Follow-ups", slug: "follow-ups", icon: "ListTodo" },
+      ],
+    },
+    {
+      heading: "Insights",
+      items: [
+        { label: "Analytics", slug: "analytics", icon: "BarChart3" },
+        {
+          label: "Conversations",
+          slug: "conversations",
+          icon: "MessageCircle",
+        },
+        { label: "Reviews", slug: "reviews", icon: "Star" },
+        {
+          label: "Potential Lost Business",
+          slug: "lost-business",
+          icon: "AlertTriangle",
+        },
+        { label: "Reactivation", slug: "reactivation", icon: "RefreshCw" },
         { label: "Exceptions", slug: "exceptions", icon: "ClipboardList" },
       ],
     },
     {
-      heading: "Administration",
+      heading: "Setup",
       items: [
         { label: "Channels", slug: "channels", icon: "Radio" },
         { label: "WhatsApp", slug: "whatsapp", icon: "MessageCircle" },

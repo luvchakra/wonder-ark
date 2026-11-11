@@ -219,15 +219,23 @@ export type EnrichRequest = z.infer<typeof EnrichRequestSchema>;
 
 const EnrichedFieldSchema = z.object({
   value: z.unknown().refine((value) => value !== null && value !== undefined, "A filled field has a value."),
-  source: z.object({ provider: text, name: text, url: nullableText.optional() }),
+  source: z.object({
+    provider: text,
+    name: text,
+    url: nullableText.optional(),
+    termsPending: z.boolean().optional(),
+  }),
   observedAt: text,
 });
 
 export const EnrichResponseSchema = z.object({
   requestId: text,
+  /** Null when only a name was given. */
   domain: nullableText,
   /** A field the waterfall could not fill is null. */
   fields: z.record(z.string(), EnrichedFieldSchema.nullable()),
+  /** DISC-DATA-P0-04.1: `{ providers: [{ id, status }] }`, read with `providerIssuesOf`. */
+  metadata: z.unknown().optional(),
   usage: GatewayUsageSchema,
 });
 export type EnrichResponse = z.infer<typeof EnrichResponseSchema>;
@@ -270,9 +278,32 @@ export const ContactsResponseSchema = z.object({
       source: z.object({ provider: text, name: text, url: nullableText.optional() }),
     }),
   ),
+  /** DISC-DATA-P0-04.2: `{ providers: [{ id, status }] }`, read with `providerIssuesOf`. */
+  metadata: z.unknown().optional(),
   usage: GatewayUsageSchema,
 });
 export type ContactsResponse = z.infer<typeof ContactsResponseSchema>;
+
+const ProviderStatusSchema = z.object({ id: text, status: z.enum(PROVIDER_RUN_STATUSES) });
+export type ProviderIssue = { id: string; status: "needs_setup" | "unavailable" | "quota" };
+
+/**
+ * The providers an enrich or contacts call could not use, from the response's
+ * `metadata.providers`. Read leniently on purpose: `metadata` is extra information about
+ * a lookup the business may have paid for, so an entry this client cannot read is left
+ * out rather than costing the person the whole answer.
+ */
+export function providerIssuesOf(metadata: unknown): ProviderIssue[] {
+  const providers =
+    typeof metadata === "object" && metadata !== null ? (metadata as { providers?: unknown }).providers : null;
+  if (!Array.isArray(providers)) return [];
+  return providers.flatMap((entry) => {
+    const parsed = ProviderStatusSchema.safeParse(entry);
+    return parsed.success && parsed.data.status !== "ok"
+      ? [{ id: parsed.data.id, status: parsed.data.status }]
+      : [];
+  });
+}
 
 // ---------------------------------------------------------------------------------------
 // Contract: POST /v1/prospects/signals

@@ -16,25 +16,27 @@ export const fsmManifest: ModuleManifest = {
   icon: "Wrench",
   routePrefix: "/service",
   nav: [
-    { heading: "Overview", items: [{ label: "Dashboard", slug: "", icon: "LayoutDashboard" }] },
+    // PLATFORM-NAV-P0-01.1 (owner, 2026-11-11: "simplify the module menus and pages, reduce and make it intuitive"):
+    // the pages used every day come first with no heading, so they are one click away; the rest fold under a few
+    // named groups. Every page keeps its path; only where its link sits changed.
     {
-      heading: "Pipeline",
       items: [
-        { label: "Opportunities", slug: "opportunities", icon: "Target" },
+        { label: "Dashboard", slug: "", icon: "LayoutDashboard" },
         { label: "Jobs", slug: "jobs", icon: "Briefcase" },
-      ],
-    },
-    {
-      heading: "Scheduling",
-      items: [
         { label: "Schedule", slug: "schedule", icon: "CalendarDays" },
         { label: "My Day", slug: "my-day", icon: "Smartphone" },
+        { label: "Customers", slug: "customers", icon: "Users" },
+        { label: "Invoices", slug: "invoices", icon: "FileText" },
       ],
     },
-    { heading: "Billing", items: [{ label: "Invoices", slug: "invoices", icon: "FileText" }] },
-    { heading: "Customers", items: [{ label: "Customers", slug: "customers", icon: "Users" }] },
-    { heading: "Reports", items: [{ label: "Reports", slug: "reports", icon: "BarChart3" }] },
-    { heading: "Administration", items: [{ label: "Settings", slug: "settings", icon: "Settings" }] },
+    {
+      heading: "More",
+      items: [
+        { label: "Opportunities", slug: "opportunities", icon: "Target" },
+        { label: "Reports", slug: "reports", icon: "BarChart3" },
+        { label: "Settings", slug: "settings", icon: "Settings" },
+      ],
+    },
   ],
   features: [
     "Opportunity-to-job pipeline",

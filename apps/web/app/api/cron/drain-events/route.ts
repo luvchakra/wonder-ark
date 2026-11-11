@@ -11,6 +11,7 @@ import "@cofounderai/module-inventory/events/handlers";
 import "@cofounderai/module-fsm/events/handlers";
 import "@cofounderai/module-gst/events/handlers";
 import "@cofounderai/module-crm/events/handlers";
+import "@cofounderai/module-discovery/events/handlers";
 import { bearerTokenMatches } from "@cofounderai/core/lib/timing-safe";
 
 /**

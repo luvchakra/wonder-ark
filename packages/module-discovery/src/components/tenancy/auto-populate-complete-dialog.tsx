@@ -31,14 +31,14 @@ import { fireConfetti } from "./confetti";
  */
 const REVIEW_RESULTS = {
   icp_review: {
-    title: "Your ICP is waiting for your review",
-    body: "Approve the ICP, then use Discover under Prospects to find matching companies.",
-    action: "Review ICP",
+    title: "Your ideal customer is waiting for your review",
+    body: "Approve it, then use Find to look for matching companies.",
+    action: "Review ideal customer",
   },
   suggestions_review: {
     title: "AI found a prospect for your review",
-    body: "It is on the Discover page and is added to Prospects only when you approve it.",
-    action: "Review suggestions",
+    body: "It is under Find, in To review, and is added to Prospects only when you approve it.",
+    action: "Review it",
   },
 } as const;
 

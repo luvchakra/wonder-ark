@@ -20,8 +20,8 @@ export interface ModuleNavItem {
 }
 
 export interface ModuleNavGroup {
-  /** Section heading shown above `items`; omitted for a flat list with no heading
-   * (e.g. GST's nav, which has no grouped sections). */
+  /** Section heading shown above `items`, folded until opened; omitted for a module's
+   * everyday pages, which show bare at the top with nothing to open (PLATFORM-NAV-P0-01.1/01.2/01.3/01.4). */
   heading?: string;
   items: ModuleNavItem[];
 }
@@ -56,7 +56,12 @@ export const moduleRegistry: ModuleManifest[] = [
     // directly from live data (packages/core/src/components/shell/app-sidebar.tsx),
     // not a static nav tree -- this entry exists only so every module has *a* nav
     // manifest for the shape's other consumers (usage/licenses pages).
-    nav: [{ heading: undefined, items: [{ label: "Overview", slug: "", icon: "Target" }] }],
+    nav: [
+      {
+        heading: undefined,
+        items: [{ label: "Overview", slug: "", icon: "Target" }],
+      },
+    ],
     features: [
       "AI-generated ideal customer profiles",
       "Prospect discovery and research",
@@ -72,43 +77,40 @@ export const moduleRegistry: ModuleManifest[] = [
     icon: "Package",
     routePrefix: "/inventory",
     nav: [
+      // PLATFORM-NAV-P0-01.1/01.2/01.3/01.4 (owner, 2026-11-11: "simplify the module menus and pages, reduce and make it intuitive"):
+      // the pages used every day come first with no heading, so they are one click away; the rest fold under a few
+      // named groups. Every page keeps its path; only where its link sits changed.
       {
-        heading: "Overview",
         items: [
           { label: "Dashboard", slug: "dashboard", icon: "LayoutDashboard" },
+          { label: "Products", slug: "products", icon: "Package" },
+          { label: "Inventory", slug: "stock", icon: "RefreshCw" },
+          { label: "Sales Orders", slug: "sales-orders", icon: "ShoppingCart" },
+          {
+            label: "Purchase Orders",
+            slug: "purchase-orders",
+            icon: "ClipboardList",
+          },
+        ],
+      },
+      {
+        heading: "Sales and purchasing",
+        items: [
+          { label: "Customers", slug: "customers", icon: "Users" },
+          { label: "Sales Invoices", slug: "sales-invoices", icon: "FileText" },
+          { label: "Sales Returns", slug: "sales-returns", icon: "RotateCcw" },
+          { label: "Suppliers", slug: "suppliers", icon: "Truck" },
+        ],
+      },
+      {
+        heading: "More",
+        items: [
+          { label: "Stock Transfers", slug: "transfers", icon: "Truck" },
+          { label: "Warehouses", slug: "warehouses", icon: "Warehouse" },
           { label: "Alerts", slug: "alerts", icon: "Bell" },
           { label: "Audit Log", slug: "audit-log", icon: "History" },
         ],
       },
-      {
-        heading: "Catalog & Inventory",
-        items: [
-          { label: "Products", slug: "products", icon: "Package" },
-          { label: "Inventory", slug: "stock", icon: "RefreshCw" },
-          { label: "Stock Transfers", slug: "transfers", icon: "Truck" },
-          { label: "Warehouses", slug: "warehouses", icon: "Warehouse" },
-        ],
-      },
-      {
-        heading: "Sales",
-        items: [
-          { label: "Customers", slug: "customers", icon: "Users" },
-          { label: "Sales Orders", slug: "sales-orders", icon: "ShoppingCart" },
-          { label: "Sales Invoices", slug: "sales-invoices", icon: "FileText" },
-          { label: "Sales Returns", slug: "sales-returns", icon: "RotateCcw" },
-        ],
-      },
-      {
-        heading: "Purchasing",
-        items: [
-          { label: "Suppliers", slug: "suppliers", icon: "Truck" },
-          { label: "Purchase Orders", slug: "purchase-orders", icon: "ClipboardList" },
-        ],
-      },
-      // No "Administration > Team" group: team and permissions are business-level, not
-      // per-module, and that page lives at /[businessSlug]/admin/team. The entry left
-      // behind here after that move pointed at /inventory/team, which has no page --
-      // a dead link in the rail, and the one failing case in tests/menu-routes.test.ts.
     ],
     features: [
       "Product catalog and multi-warehouse stock",
@@ -125,25 +127,27 @@ export const moduleRegistry: ModuleManifest[] = [
     icon: "Wrench",
     routePrefix: "/service",
     nav: [
-      { heading: "Overview", items: [{ label: "Dashboard", slug: "", icon: "LayoutDashboard" }] },
+      // PLATFORM-NAV-P0-01.1/01.2/01.3/01.4 (owner, 2026-11-11: "simplify the module menus and pages, reduce and make it intuitive"):
+      // the pages used every day come first with no heading, so they are one click away; the rest fold under a few
+      // named groups. Every page keeps its path; only where its link sits changed.
       {
-        heading: "Pipeline",
         items: [
-          { label: "Opportunities", slug: "opportunities", icon: "Target" },
+          { label: "Dashboard", slug: "", icon: "LayoutDashboard" },
           { label: "Jobs", slug: "jobs", icon: "Briefcase" },
-        ],
-      },
-      {
-        heading: "Scheduling",
-        items: [
           { label: "Schedule", slug: "schedule", icon: "CalendarDays" },
           { label: "My Day", slug: "my-day", icon: "Smartphone" },
+          { label: "Customers", slug: "customers", icon: "Users" },
+          { label: "Invoices", slug: "invoices", icon: "FileText" },
         ],
       },
-      { heading: "Billing", items: [{ label: "Invoices", slug: "invoices", icon: "FileText" }] },
-      { heading: "Customers", items: [{ label: "Customers", slug: "customers", icon: "Users" }] },
-      { heading: "Reports", items: [{ label: "Reports", slug: "reports", icon: "BarChart3" }] },
-      { heading: "Administration", items: [{ label: "Settings", slug: "settings", icon: "Settings" }] },
+      {
+        heading: "More",
+        items: [
+          { label: "Opportunities", slug: "opportunities", icon: "Target" },
+          { label: "Reports", slug: "reports", icon: "BarChart3" },
+          { label: "Settings", slug: "settings", icon: "Settings" },
+        ],
+      },
     ],
     features: [
       "Opportunity-to-job pipeline",
@@ -160,30 +164,43 @@ export const moduleRegistry: ModuleManifest[] = [
     icon: "Inbox",
     routePrefix: "/crm",
     nav: [
+      // PLATFORM-NAV-P0-01.1/01.2/01.3/01.4 (owner, 2026-11-11: "simplify the module menus and pages, reduce and make it intuitive"):
+      // the pages used every day come first with no heading, so they are one click away; the rest fold under a few
+      // named groups. Every page keeps its path; only where its link sits changed.
       {
-        heading: "Overview",
         items: [
-          { label: "Dashboard", slug: "dashboard", icon: "LayoutDashboard" },
           { label: "Inbox", slug: "", icon: "Inbox" },
-          { label: "Conversations", slug: "conversations", icon: "MessageCircle" },
-          { label: "Potential Lost Business", slug: "lost-business", icon: "AlertTriangle" },
-                    { label: "Reviews", slug: "reviews", icon: "Star" },
-          // CRM-NAV-01: built earlier, reachable only by address until now.
-          { label: "Analytics", slug: "analytics", icon: "BarChart3" },
-          { label: "Reactivation", slug: "reactivation", icon: "RefreshCw" },
+          { label: "Dashboard", slug: "dashboard", icon: "LayoutDashboard" },
+          { label: "Leads", slug: "leads", icon: "Users" },
+          {
+            label: "Sales Opportunities",
+            slug: "opportunities",
+            icon: "Target",
+          },
+          { label: "Follow-ups", slug: "follow-ups", icon: "ListTodo" },
         ],
       },
       {
-        heading: "Sales",
+        heading: "Insights",
         items: [
-          { label: "Leads", slug: "leads", icon: "Users" },
-          { label: "Sales Opportunities", slug: "opportunities", icon: "Target" },
-          { label: "Follow-ups", slug: "follow-ups", icon: "ListTodo" },
+          { label: "Analytics", slug: "analytics", icon: "BarChart3" },
+          {
+            label: "Conversations",
+            slug: "conversations",
+            icon: "MessageCircle",
+          },
+          { label: "Reviews", slug: "reviews", icon: "Star" },
+          {
+            label: "Potential Lost Business",
+            slug: "lost-business",
+            icon: "AlertTriangle",
+          },
+          { label: "Reactivation", slug: "reactivation", icon: "RefreshCw" },
           { label: "Exceptions", slug: "exceptions", icon: "ClipboardList" },
         ],
       },
       {
-        heading: "Administration",
+        heading: "Setup",
         items: [
           { label: "Channels", slug: "channels", icon: "Radio" },
           { label: "WhatsApp", slug: "whatsapp", icon: "MessageCircle" },
@@ -227,11 +244,17 @@ export const moduleRegistry: ModuleManifest[] = [
     // so listing a page before it exists ships a 404 (and fails tests/menu-routes.test.ts,
     // which asserts every nav item resolves to a real page).
     nav: [
+      // PLATFORM-NAV-P0-01.1/01.2/01.3/01.4 (owner, 2026-11-11: "simplify the module menus and pages, reduce and make it intuitive"):
+      // the pages used every day come first with no heading, so they are one click away; the rest fold under a few
+      // named groups. Every page keeps its path; only where its link sits changed.
       {
-        heading: "Overview",
         items: [
           { label: "Dashboard", slug: "dashboard", icon: "LayoutDashboard" },
-          { label: "Exceptions", slug: "exceptions", icon: "ListChecks" },
+          { label: "Invoices", slug: "invoices", icon: "FileText" },
+          { label: "Bills", slug: "bills", icon: "Receipt" },
+          { label: "Expenses", slug: "expenses", icon: "ShoppingCart" },
+          { label: "Banking", slug: "banking", icon: "Landmark" },
+          { label: "GST Filing", slug: "filing", icon: "ClipboardList" },
         ],
       },
       {
@@ -239,45 +262,55 @@ export const moduleRegistry: ModuleManifest[] = [
         items: [
           { label: "Chart of Accounts", slug: "accounts", icon: "BookOpen" },
           { label: "Journal", slug: "journal", icon: "BookText" },
-          { label: "Banking", slug: "banking", icon: "Landmark" },
-          // FIN-4: invoices from core.documents with four independent statuses.
-          { label: "Invoices", slug: "invoices", icon: "FileText" },
           { label: "Receivables", slug: "receivables", icon: "HandCoins" },
           { label: "Payables", slug: "payables", icon: "Wallet" },
-          { label: "Bills", slug: "bills", icon: "Receipt" },
-          { label: "Expenses", slug: "expenses", icon: "ShoppingCart" },
-          { label: "Financial Reports", slug: "reports", icon: "BarChart3" },
-          // FIN-6: sales, purchases, expenses, inventory valuation, COGS and gross margin.
-          { label: "Operational Reports", slug: "operational-reports", icon: "ClipboardList" },
-          // FIN-9: optional reporting dimensions over journal lines.
-          { label: "Dimensions", slug: "dimensions", icon: "LayoutGrid" },
-          { label: "Budget", slug: "budget", icon: "Target" },
           { label: "Recurring Entries", slug: "recurring", icon: "Repeat" },
-          { label: "Accounting Periods", slug: "periods", icon: "CalendarRange" },
-          { label: "Backfill", slug: "backfill", icon: "History" },
+          {
+            label: "Accounting Periods",
+            slug: "periods",
+            icon: "CalendarRange",
+          },
+          { label: "Budget", slug: "budget", icon: "Target" },
+          { label: "Dimensions", slug: "dimensions", icon: "LayoutGrid" },
         ],
       },
       {
         heading: "Tax & GST",
         items: [
-          { label: "GST Profile", slug: "profile", icon: "Receipt" },
-          { label: "GST Registrations", slug: "registrations", icon: "Building2" },
+          {
+            label: "Filing Readiness",
+            slug: "filing-readiness",
+            icon: "ListChecks",
+          },
           { label: "GST Ledger", slug: "gst-ledger", icon: "Receipt" },
-          { label: "Filing Readiness", slug: "filing-readiness", icon: "ListChecks" },
-          { label: "GST Filing", slug: "filing", icon: "ClipboardList" },
-          { label: "GSTR-2B Reconciliation", slug: "reconciliation", icon: "ListChecks" },
+          {
+            label: "GSTR-2B Reconciliation",
+            slug: "reconciliation",
+            icon: "ListChecks",
+          },
           { label: "e-Invoicing", slug: "einvoicing", icon: "FileText" },
           { label: "e-Way Bill", slug: "eway-bill", icon: "Truck" },
+          { label: "GST Profile", slug: "profile", icon: "Receipt" },
+          {
+            label: "GST Registrations",
+            slug: "registrations",
+            icon: "Building2",
+          },
         ],
       },
       {
-        // COMPLY-P0-11: Evidence (10.1) and Audit Log (10.3) are cross-cutting
-        // record-keeping, not GST-return mechanics -- their own heading, matching how
-        // "Overview" is already split out above.
-        heading: "Records",
+        heading: "Reports and records",
         items: [
+          { label: "Financial Reports", slug: "reports", icon: "BarChart3" },
+          {
+            label: "Operational Reports",
+            slug: "operational-reports",
+            icon: "ClipboardList",
+          },
+          { label: "Exceptions", slug: "exceptions", icon: "ListChecks" },
           { label: "Evidence", slug: "evidence", icon: "FolderOpen" },
           { label: "Audit Log", slug: "audit-log", icon: "History" },
+          { label: "Backfill", slug: "backfill", icon: "History" },
         ],
       },
     ],

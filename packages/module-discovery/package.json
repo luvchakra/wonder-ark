@@ -3,13 +3,16 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "sideEffects": false,
+  "sideEffects": [
+    "./src/events/handlers.ts"
+  ],
   "exports": {
     "./lib/*": "./src/lib/*.ts",
     "./prompts/*": "./src/prompts/*.ts",
     "./db/*": "./src/db/*.ts",
     "./components/*": "./src/components/*.tsx",
     "./actions/*": "./src/actions/*.ts",
+    "./events/*": "./src/events/*.ts",
     "./contract/*": "./src/contract/*.ts",
     "./exports/*": "./src/exports/*.ts",
     "./exports": "./src/exports/index.ts"

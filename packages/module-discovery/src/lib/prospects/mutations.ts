@@ -88,6 +88,43 @@ export async function updateProspect(
   return data;
 }
 
+/** The columns `updateProspect` writes that a source can have filled. */
+const SOURCED_COLUMNS = ["website", "industry", "company_size", "location", "description", "linkedin_url", "company_email"] as const;
+
+/**
+ * DISC-DATA-P0-04.1: a person's edit of a prospect's details. It is `updateProspect`,
+ * plus one rule: a column whose value the person changed stops being credited to a
+ * source. `field_sources` says where a value came from, and a value a person typed came
+ * from them, so its entry is removed; an unchanged value keeps its source.
+ */
+export async function saveProspectEdits(prospectId: string, input: ProspectInput): Promise<Prospect> {
+  const supabase = await createClient();
+  const { data: before, error: readError } = await supabase
+    .from("prospects")
+    .select("*")
+    .eq("id", prospectId)
+    .maybeSingle();
+  if (readError) throw readError;
+
+  const updated = await updateProspect(prospectId, input);
+
+  const sources = (before as Prospect | null)?.field_sources ?? {};
+  const kept = { ...sources };
+  for (const column of SOURCED_COLUMNS) {
+    if (column in kept && (before as Prospect)[column] !== updated[column]) delete kept[column];
+  }
+  if (Object.keys(kept).length === Object.keys(sources).length) return updated;
+
+  const { data, error } = await supabase
+    .from("prospects")
+    .update({ field_sources: kept })
+    .eq("id", prospectId)
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function updateProspectStatus(
   prospectId: string,
   status: ProspectStatus,
@@ -272,7 +309,17 @@ export async function approveProspectSuggestionsDetailed(
   workspaceId: string,
   suggestionIds: string[],
 ): Promise<SuggestionApproval> {
-  if (suggestionIds.length === 0) return { added: 0, duplicates: 0 };
+  const { added, duplicates } = await approveProspectSuggestionsWithProspects(workspaceId, suggestionIds);
+  return { added, duplicates };
+}
+
+/** `approveProspectSuggestionsDetailed`, also returning the prospects it created, for a
+ * caller that acts on them next (DISC-DATA-P0-04.1: queueing their enrichment). */
+export async function approveProspectSuggestionsWithProspects(
+  workspaceId: string,
+  suggestionIds: string[],
+): Promise<SuggestionApproval & { prospects: Prospect[] }> {
+  if (suggestionIds.length === 0) return { added: 0, duplicates: 0, prospects: [] };
   const supabase = await createClient();
 
   const { data: fetched, error: fetchError } = await supabase
@@ -282,7 +329,7 @@ export async function approveProspectSuggestionsDetailed(
     .in("id", suggestionIds);
   if (fetchError) throw fetchError;
   const suggestions = (fetched ?? []) as ProspectSuggestion[];
-  if (suggestions.length === 0) return { added: 0, duplicates: 0 };
+  if (suggestions.length === 0) return { added: 0, duplicates: 0, prospects: [] };
 
   const accepted: ProspectSuggestion[] = [];
   const taken = new Set<string>();
@@ -384,7 +431,7 @@ export async function approveProspectSuggestionsDetailed(
     .in("id", suggestionIds);
   if (deleteError) throw deleteError;
 
-  return { added: inserted.length, duplicates };
+  return { added: inserted.length, duplicates, prospects: inserted };
 }
 
 /** `approveProspectSuggestionsDetailed`, for callers that only need how many prospects
