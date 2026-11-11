@@ -54,7 +54,7 @@ export default async function IcpPage({
       step="icp"
       action={autoPopulateIcpAction.bind(null, businessId, productId)}
       nextPath={`${prospectsPath}?autopopulate=1`}
-      runningLabel="Populating your ICP from the offering profile..."
+      runningLabel="Filling in your ideal customer from the offering profile..."
     />
   );
 
@@ -96,12 +96,12 @@ export default async function IcpPage({
         <div className="flex flex-col gap-3">
           {autoPopulateBanner}
           <p className="text-sm text-muted-foreground">
-            No ICP yet. Generate one from the approved offering profile{cloneSources.length > 0 ? ", or clone one from another offering." : "."}
+            No ideal customer yet. Generate one from the approved offering profile{cloneSources.length > 0 ? ", or clone one from another offering." : "."}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <AiActionForm
               action={generateIcpAction.bind(null, businessId, productId)}
-              buttonLabel="Generate ICP"
+              buttonLabel="Generate ideal customer"
               pendingText="Generating..."
             />
             <CloneIcpButton sources={cloneSources} hasExistingIcp={false} cloneAction={cloneIcpAction.bind(null, businessId, productId)} />

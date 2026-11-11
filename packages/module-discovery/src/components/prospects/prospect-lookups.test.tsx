@@ -155,7 +155,7 @@ describe("ContactRow", () => {
 
   it("offers the removal request as one distinct choice, worded as what it does", () => {
     const html = renderToStaticMarkup(<RemovalChoice />);
-    expect(text(html)).toBe("They asked not to be contacted Also asks WorksLake to leave this address out of later contact lookups.");
+    expect(text(html)).toBe("They asked not to be contacted Blocks every later email from your business to this address, and asks WorksLake to leave it out of later contact lookups.");
     expect(html).toContain('type="checkbox"');
     expect(html).toContain('name="askedNotToBeContacted"');
     expect(html).not.toMatch(/checked/);

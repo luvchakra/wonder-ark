@@ -1,5 +1,6 @@
 import { writeAuditLog } from "@cofounderai/core/audit/mutations";
 import { requireModule } from "@cofounderai/core/licensing/queries";
+import { suppressEmailOnRequest } from "@cofounderai/core/privacy/suppression";
 import { createClient } from "../../db/server";
 import { DiscoveryInProgressError, acquireDiscoveryLock, releaseDiscoveryLock } from "../ai/discovery-lock";
 import { createContact, deleteContact } from "../contacts/mutations";
@@ -344,13 +345,20 @@ export type ContactRemovalOutcome =
 
 /**
  * DISC-DATA-P0-04.3: deleting a contact because the person asked not to be contacted.
- * Their address is first passed to the gateway's removal list, so no later lookup, for
- * any business, returns them; only when the gateway has accepted it is the contact
- * deleted here. If the request cannot be passed on, the contact is kept and the person
- * is told, so the request is not lost. A contact with no address has nothing to pass on
- * and is simply deleted.
  *
- * The audit log records that the request was made and passed on, never the address.
+ * Two lists take the address, in this order:
+ *  1. the business's own opt-out list (`core.communication_suppressions`, the one every
+ *     outreach send checks through `prepareOutreachEmail`), so no later email from this
+ *     business reaches the address, even if it is typed in again or imported. Only its
+ *     hash is stored;
+ *  2. the gateway's removal list, so no later lookup returns the person.
+ * Only when both have accepted it is the contact deleted here. If the business's own
+ * list cannot be written, nothing else is attempted. If the gateway cannot take the
+ * request, the address is already blocked for this business, and the contact is kept
+ * with the reason shown, so the request to WorksLake is not lost. A contact with no
+ * address has nothing to pass on and is simply deleted.
+ *
+ * The audit log records that the request was made and where it went, never the address.
  */
 export async function removeContactOnRequest(contactId: string): Promise<ContactRemovalOutcome> {
   const supabase = await createClient();
@@ -367,15 +375,26 @@ export async function removeContactOnRequest(contactId: string): Promise<Contact
 
   const email = emailOf(data.email);
   if (email) {
+    try {
+      await suppressEmailOnRequest(businessId, email);
+    } catch (suppressError) {
+      console.error("Could not add an address to the opt-out list:", suppressError instanceof Error ? suppressError.message : suppressError);
+      return {
+        status: "failed",
+        reason: "unavailable",
+        message: "Unavailable: the address couldn't be added to your do-not-contact list. The contact was not deleted. Try again in a few minutes.",
+      };
+    }
     const result = await suppress({ tenantId: businessId }, { emails: [email], domains: [] });
     if (!result.ok) {
       const needsSetup = result.failure === "needs_setup" || result.failure === "forbidden";
+      const blocked = "No email from your business will be sent to this address.";
       return {
         status: "failed",
         reason: needsSetup ? "needs_setup" : "unavailable",
         message: needsSetup
-          ? "Needs setup: the WorksLake connection isn't set up, so the request couldn't be passed on. The contact was not deleted."
-          : "Unavailable: the request couldn't be passed on to WorksLake. The contact was not deleted. Try again in a few minutes.",
+          ? `${blocked} Needs setup: the WorksLake connection isn't set up, so the request couldn't be passed on. The contact was not deleted.`
+          : `${blocked} Unavailable: the request couldn't be passed on to WorksLake. The contact was not deleted. Try again in a few minutes.`,
       };
     }
   }
@@ -387,7 +406,7 @@ export async function removeContactOnRequest(contactId: string): Promise<Contact
       action: "discovery.contact.removed_on_request",
       entityType: "discovery_contact",
       entityId: contactId,
-      after: { passed_to_gateway: email !== null },
+      after: { added_to_opt_out_list: email !== null, passed_to_gateway: email !== null },
     });
   } catch (auditError) {
     console.error("Could not record a contact removal:", auditError instanceof Error ? auditError.message : auditError);

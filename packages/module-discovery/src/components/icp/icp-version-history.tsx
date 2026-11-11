@@ -68,7 +68,7 @@ function VersionFieldSummary({ version }: { version: IcpProfileVersion }) {
 export function IcpVersionHistory({ versions }: { versions: IcpProfileVersion[] }) {
   if (versions.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground">No version history yet -- this ICP predates version tracking and hasn&apos;t been regenerated or saved since.</p>
+      <p className="text-sm text-muted-foreground">No version history yet: this ideal customer predates version tracking and hasn&apos;t been regenerated or saved since.</p>
     );
   }
 

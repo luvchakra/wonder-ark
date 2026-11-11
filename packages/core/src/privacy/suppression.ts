@@ -25,6 +25,29 @@ export async function recordUnsubscribe(businessId: string, hash: string, reason
   if (error && (error as { code?: string }).code !== "23503") throw error;
 }
 
+/**
+ * DISC-DATA-P0-04.3: a signed-in member adds an address to their business's own opt-out
+ * list because the person asked not to be contacted. It is the list every outreach send
+ * checks (`prepareOutreachEmail`), so no later email from this business reaches the
+ * address, whoever drafts it. Runs as the caller: the table's insert policy requires a
+ * member who may write for the business and `created_by = auth.uid()`. Only the hash is
+ * stored. Idempotent: an address already on the list is left as it is.
+ */
+export async function suppressEmailOnRequest(businessId: string, email: string): Promise<void> {
+  const supabase = await createClient({ schema: "core" });
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not signed in.");
+  const { error } = await supabase
+    .from("communication_suppressions")
+    .upsert(
+      { business_id: businessId, email_hash: emailHash(email), reason: "manual", created_by: user.id },
+      { onConflict: "business_id,email_hash", ignoreDuplicates: true },
+    );
+  if (error) throw error;
+}
+
 export type OutreachCompliance =
   | { suppressed: true }
   | { suppressed: false; unsubscribeUrl: string; headers: Record<string, string> };
