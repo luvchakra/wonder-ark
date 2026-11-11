@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { resolveBusinessIdBySlug } from "@cofounderai/core/businesses/resolve";
 import {
@@ -7,16 +6,44 @@ import {
 } from "@cofounderai/module-discovery/lib/tenancy/queries";
 import { listProspectSuggestions } from "@cofounderai/module-discovery/lib/prospects/queries";
 import { getIcpProfile } from "@cofounderai/module-discovery/lib/icp/queries";
-import { SubmitButton } from "@cofounderai/core/ui/submit-button";
-import { Input } from "@cofounderai/core/ui/input";
-import { Label } from "@cofounderai/core/ui/label";
-import { AiActionForm } from "@cofounderai/module-discovery/components/ai/ai-action-form";
+import { listDataSources } from "@cofounderai/module-discovery/lib/data-sources/index";
 import {
-  runDiscoveryAction,
-  approveSuggestionsAction,
-  discardSuggestionsAction,
-} from "./actions";
+  DATA_SOURCE_STATUS_LABEL,
+  STORED_SOURCE_ID,
+  STORED_SOURCE_LABEL,
+  WEB_SEARCH_SOURCE_ID,
+  gatewayFailureMessage,
+  type DataSourceList,
+} from "@cofounderai/module-discovery/lib/data-sources/types";
+import { FindForm } from "@cofounderai/module-discovery/components/prospects/find-form";
+import { SuggestionReviewList } from "@cofounderai/module-discovery/components/prospects/suggestion-review-list";
+import { approveSuggestionsAction, discardSuggestionsAction, findAction } from "./actions";
 
+/** The one line under the form: what is left of this business's lookups, or why the
+ * gateway can't be searched. Only what the gateway reported; nothing is estimated. */
+function gatewayNote(list: DataSourceList): string | null {
+  if (list.gateway.state === "quota") return gatewayFailureMessage("quota", list.gateway.resetAt, list.quota);
+  if (list.gateway.state !== "ok") {
+    return `${STORED_SOURCE_LABEL}: ${DATA_SOURCE_STATUS_LABEL[list.gateway.state]}.`;
+  }
+  const { quota } = list;
+  if (!quota) return null;
+  return `WorksLake: ${quota.search.remaining} of ${quota.search.limit} searches and ${quota.paid.remaining} of ${quota.paid.limit} paid lookups left this ${quota.period}.`;
+}
+
+/**
+ * DISC-DATA-P0-03.1/03.2: Find. One form (what, where, source, Find, with the rest
+ * under "More filters") and the list of suggestions waiting for review.
+ *
+ * Layout, planned before markup (docs/design/claude-ui-design-rules.md): the person's
+ * task is to find companies and decide which to keep, so the page is the search, then
+ * what it found. Find is the primary action until suggestions are waiting; then
+ * approving them is. The offering's tab bar already leads back to Prospects, so the page
+ * carries no link of its own for that.
+ *
+ * Visible controls: 5 with nothing to review (was 6), and 7 plus two per suggestion
+ * with a review list (was 8 plus three per suggestion).
+ */
 export default async function DiscoverProspectsPage({
   params,
 }: {
@@ -31,146 +58,55 @@ export default async function DiscoverProspectsPage({
   const workspace = await getWorkspaceForProduct(product.id);
   if (!workspace) notFound();
 
-  const [suggestions, icp] = await Promise.all([
+  const [suggestions, icp, list] = await Promise.all([
     listProspectSuggestions(workspace.id),
     getIcpProfile(workspace.id),
+    listDataSources(workspace.id),
   ]);
-  const prospectsPath = `/${businessSlug}/discovery/offerings/${productId}/prospects`;
+
+  // Find looks for companies; a source that only holds channels is not offered here.
+  const sources = list.sources.filter(
+    (source) => source.action === "signals" || (source.action === "search" && source.kinds.includes("business")),
+  );
+  const usable = sources.filter((source) => source.status === "active");
+  const defaultSource =
+    usable.find((source) => source.id === STORED_SOURCE_ID) ??
+    usable.find((source) => source.origin === "gateway" && source.action === "search" && !source.paid) ??
+    usable.find((source) => source.id === WEB_SEARCH_SOURCE_ID) ??
+    usable[0];
+
+  // Prefilled from the approved ICP only: a draft ICP is not yet what the business
+  // decided to target.
+  const approvedIcp = icp?.status === "approved" ? icp : null;
 
   return (
     <div className="flex flex-col gap-6">
-      <Link href={prospectsPath} className="text-sm text-muted-foreground hover:underline">
-        ← Back to prospects
-      </Link>
-
-      <div className="flex flex-col gap-4">
-        <div>
-          <h1 className="text-lg font-medium">Discover prospects</h1>
-          <p className="text-sm text-muted-foreground">
-            Searches the web for companies matching your approved ICP. Nothing is
-            added to your pipeline until you review and approve it below.
-          </p>
-        </div>
-
-        <AiActionForm
-          action={runDiscoveryAction.bind(null, businessId, productId, workspace.id)}
-          buttonLabel="Find 10 new prospects"
-          pendingText="Searching the web..."
-          buttonProps={{ size: "default" }}
-          formClassName="flex flex-col gap-3"
-          wrapperClassName="flex flex-col items-start gap-2 rounded-md border p-4"
-        >
-          <p className="text-sm font-medium">Narrow this search (optional)</p>
-          <p className="text-xs text-muted-foreground">
-            Leave a field blank to fall back to your ICP&apos;s own criteria.
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="industry">Industry</Label>
-              <Input
-                id="industry"
-                name="industry"
-                placeholder={icp?.industries.join(", ") || "e.g. Fintech, Healthcare"}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="companySize">Company size</Label>
-              <Input
-                id="companySize"
-                name="companySize"
-                placeholder={icp?.company_sizes.join(", ") || "e.g. 50-500 employees"}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                name="location"
-                placeholder={icp?.geographies.join(", ") || "e.g. Bengaluru, India"}
-              />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="keywords">Also look for</Label>
-              <Input id="keywords" name="keywords" placeholder="e.g. recently raised funding" />
-            </div>
-          </div>
-        </AiActionForm>
+      <div>
+        <h1 className="text-lg font-medium">Discover prospects</h1>
+        <p className="text-sm text-muted-foreground">
+          Nothing is added to your prospects until you approve it below.
+        </p>
       </div>
 
-      {suggestions.length === 0 ? (
-        <p className="rounded-md border border-dashed p-6 text-center text-sm text-muted-foreground">
-          No suggestions waiting for review yet. Click &ldquo;Find 10 new
-          prospects&rdquo; to search.
-        </p>
-      ) : (
-        <>
-          <form
-            action={approveSuggestionsAction.bind(null, businessId, productId, workspace.id)}
-            className="flex flex-col gap-4"
-          >
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {suggestions.map((s) => (
-                <li key={s.id} className="relative flex flex-col gap-1.5 rounded-lg border p-3 text-sm">
-                  <input
-                    type="checkbox"
-                    name="ids"
-                    value={s.id}
-                    defaultChecked
-                    className="absolute top-3 right-3 size-4"
-                  />
-                  <span className="pr-6 font-medium">{s.company_name}</span>
-                  {s.website ? (
-                    <a
-                      href={s.website}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="truncate text-xs text-muted-foreground underline"
-                    >
-                      {s.website}
-                    </a>
-                  ) : null}
-                  <p className="text-xs text-muted-foreground">
-                    {[s.industry, s.company_size, s.location].filter(Boolean).join(" · ") || "—"}
-                  </p>
-                  {s.description ? (
-                    <p className="line-clamp-2 text-xs text-muted-foreground">{s.description}</p>
-                  ) : null}
-                  {s.match_reason ? (
-                    <p className="line-clamp-2 rounded-md bg-primary/5 p-1.5 text-xs">
-                      <span className="font-medium">Why this fits: </span>
-                      {s.match_reason}
-                    </p>
-                  ) : null}
-                  {s.source_url ? (
-                    <a
-                      href={s.source_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-xs text-muted-foreground underline"
-                    >
-                      Source
-                    </a>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-            <SubmitButton pendingText="Adding..." className="self-start">
-              Add selected to prospects
-            </SubmitButton>
-          </form>
+      <FindForm
+        action={findAction.bind(null, businessId, productId, workspace.id)}
+        sources={sources}
+        defaultSourceId={defaultSource?.id ?? ""}
+        quota={list.quota}
+        note={gatewayNote(list)}
+        defaults={{
+          what: approvedIcp?.industries.join(", ") ?? "",
+          where: approvedIcp?.geographies.join("; ") ?? "",
+          hiringKeywords: approvedIcp ? [...approvedIcp.buying_signals, ...approvedIcp.existing_tools].join(", ") : "",
+        }}
+        primary={suggestions.length === 0}
+      />
 
-          <form
-            action={discardSuggestionsAction.bind(null, businessId, productId, workspace.id)}
-          >
-            {suggestions.map((s) => (
-              <input key={s.id} type="hidden" name="ids" value={s.id} />
-            ))}
-            <SubmitButton variant="ghost" size="sm" pendingText="Discarding...">
-              Discard all suggestions
-            </SubmitButton>
-          </form>
-        </>
-      )}
+      <SuggestionReviewList
+        suggestions={suggestions}
+        approveAction={approveSuggestionsAction.bind(null, businessId, productId, workspace.id)}
+        discardAction={discardSuggestionsAction.bind(null, businessId, productId, workspace.id)}
+      />
     </div>
   );
 }

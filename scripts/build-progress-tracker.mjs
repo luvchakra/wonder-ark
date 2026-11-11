@@ -42,6 +42,7 @@ const BACKLOGS = [
   { file: "14-SUBSCRIPTION-BILLING-BACKLOG.md", name: "Subscriptions & billing (Razorpay + Stripe)" },
   { file: "15-MULTI-USER-RBAC-BACKLOG.md", name: "Multi-user / multi-business RBAC" },
   { file: "16-BRANDING-BACKLOG.md", name: "WonderArk branding" },
+  { file: "17-DISCOVERY-DATA-AND-CONSUMER.md", name: "Discovery — prospect data and consumer discovery" },
 ];
 
 /** `## DISC-OFFER-P0-01.1 — Introduce Business Offering`, at any heading depth, with or
