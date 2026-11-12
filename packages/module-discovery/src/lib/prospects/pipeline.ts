@@ -136,8 +136,14 @@ export function deriveProspectPipelineState(
  * marks as "Needs next step", narrowed to the Sent stage. Derived on read from the same
  * rows as the stage; nothing is stored and no new threshold is introduced.
  */
-export function isFollowUpDue(prospect: Pick<ProspectPipelineState, "stage" | "isStuck">): boolean {
-  return prospect.stage === "sent" && prospect.isStuck;
+export function isFollowUpDue(
+  prospect: Pick<ProspectPipelineState, "stage" | "isStuck"> & {
+    /** DISC-CAMP-P0-04.1: a running campaign is already following this prospect up, so it
+     * is not also a follow-up for a person to send. */
+    inActiveCampaign?: boolean;
+  },
+): boolean {
+  return prospect.stage === "sent" && prospect.isStuck && !prospect.inActiveCampaign;
 }
 
 export type ConversionFunnelStep = { stage: ProspectStage; label: string; reached: number };

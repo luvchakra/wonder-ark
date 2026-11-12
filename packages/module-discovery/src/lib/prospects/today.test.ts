@@ -102,6 +102,19 @@ describe("Today list", () => {
     expect(row.href).toBe(`${PATH}?stage=${TODAY_FILTERS.replies.stage}`);
   });
 
+  // DISC-CAMP-P0-04.1: a running campaign is already following the prospect up.
+  it("leaves a prospect in a running campaign out of the follow-ups, in the count and in the list", async () => {
+    mock([
+      prospect("sent-8-days-ago", sent(8)),
+      prospect("in-a-running-campaign", { ...sent(8), outreach_enrollments: [{ status: "active" }] }),
+      prospect("campaign-finished", { ...sent(8), outreach_enrollments: [{ status: "completed" }] }),
+    ]);
+    const row = (await today()).find((r) => r.id === "follow_ups")!;
+    const list = await listBehind(row.href);
+    expect(list.map((p) => p.id).sort()).toEqual(["campaign-finished", "sent-8-days-ago"]);
+    expect(row.count).toBe(2);
+  });
+
   it("counts follow-ups due, and its link opens exactly those prospects", async () => {
     mock();
     const row = (await today()).find((r) => r.id === "follow_ups")!;

@@ -141,6 +141,7 @@ This table is the single source of truth for "who owns what". If Claude Code is 
 | Attachment / photo / signature | `core.attachments` (Supabase Storage) | all | job photos, product images, knowledge files, signed PDFs |
 | **Message / thread** (email, SMS, WhatsApp, LinkedIn, social DM) | `core.threads` + `core.messages` | discovery, fsm, crm | **kills the message triplication.** Existing `public.messages`/`public.conversations` converge here in Phase 3 |
 | Message template | `core.message_templates` | all | Kickserv Messaging Templates + reminders |
+| Outreach campaign / step / step text / enrollment / send, and the sender mailbox | `discovery.outreach_campaigns`, `outreach_campaign_steps`, `outreach_templates`, `outreach_enrollments`, `outreach_sends`, `sender_mailboxes` | discovery | Doc 19. Each email a campaign sends is still a row in `discovery.messages`. A step's text is not a `core.message_templates` row: it belongs to one campaign, step and line of work and is gated by the Discovery licence. `discovery.marketing_campaigns` is a different thing (planning records that send nothing) |
 | Notification | `core.notifications` + `core.notification_prefs` | all | |
 | Audit log | `core.audit_log` | all | StockPilot `audit_log` promotes to platform-wide |
 | Background job | `core.jobs` (DB-backed, per blueprint §23) | all | |

@@ -103,7 +103,7 @@ under the tabs lists the pages of the tab you are in:
 |---|---|
 | **Setup** | **Overview**, **Ideal customer** (your ICP and buyer personas) |
 | **Find** | **Search** (with what it found, under **To review**), **Import**, **History**, **Definitions** |
-| **Prospects** | **All**, **Opportunities**, **Watchlist** |
+| **Prospects** | **All**, **Opportunities**, **Watchlist**, **Campaigns** |
 | **Results** | **Performance**, **Conversions**, **Usage** |
 
 They aren't a checklist: use them in any order. Every page keeps the address it had, so
@@ -269,6 +269,62 @@ contact lookups. If the request to WorksLake can't be passed on, the address is 
 blocked for your business, the contact is not deleted, and the page says why, so you can
 try again.
 
+### Campaigns
+
+**Prospects → Campaigns** sends a short sequence of emails to your prospects from your own
+mailbox. Nothing is written or sent until you ask for it.
+
+- **New campaign** makes a draft with a starting structure of three emails (an introduction,
+  a follow-up 3 days later and a last note 5 days after that). It holds no text yet. Under
+  **Options** you can rename it, change who is enrolled, the days and hours emails go out,
+  and the steps (up to five, each at least 2 days after the one before).
+- **Audience** shows how many prospects would be enrolled now and why the rest are left
+  out, with a count for each reason: no email address, an address marked invalid, already
+  in a campaign, asked not to be emailed, and so on. A contact that **Find contacts** found
+  is written to only at a company mailbox such as `info@`; otherwise the prospect's general
+  company email is used.
+- **Write messages** drafts every step from your offering's profile, once for each line of
+  work in the audience (the twelve most common) and once for everyone else. Each text is
+  labelled **AI-generated**; **Edit** changes it, and it is then labelled as edited by you.
+  A message can use the merge fields `{{company}}`, `{{city}}`, `{{line_of_work}}`,
+  `{{first_name}}`, `{{offering}}`, `{{sender_name}}` and `{{business_name}}`. A prospect
+  with no value for a field a message uses is skipped for that step, with the reason shown;
+  it is never sent a message with a gap in it.
+- **Sending from** is where you connect the mailbox: the name and address emails come
+  from, your mail server (SMTP) and its port (587 or 465), your username and password or
+  app password, and how many emails a day may go out (30 unless you change it, 200 at
+  most). **Send a test to me** saves these and sends one message to your own account
+  address; the mailbox is verified only when your mail server accepts that message. The
+  password is stored encrypted and is never shown again. Your mail provider's own terms
+  apply to what you send from the mailbox.
+- **Launch** is shown once every step has text and the mailbox is verified; until then its
+  place says **Needs setup: connect a mailbox**. Its confirmation says how many prospects
+  are enrolled, how many emails a day go out at most and when, and what stops follow-ups.
+  After you confirm, emails are sent without you approving each one: a few straight away
+  if it is within the campaign's hours, the rest at the daily check.
+- **The daily limit** is the mailbox's, shared by all the offering's campaigns. What is
+  over it waits for the next day.
+- **What stops follow-ups to a prospect:** a reply, a bounce, an unsubscribe, a complaint,
+  marking the prospect won or lost, or deleting the contact. Someone who unsubscribes,
+  bounces or complains is also added to your do-not-contact list, so no later email from
+  your business is sent to that address. If you haven't given an incoming mail server
+  (IMAP), replies are not detected automatically: log the reply on the prospect's page and
+  its follow-ups stop.
+- **Pause** stops all sending at once; **Resume** starts it again. A campaign pauses itself
+  and says why if more than 8% of at least 20 sent emails bounce, or if your mailbox can't
+  be signed in to. **Finish campaign** ends it for good.
+- **Results** counts enrolled, sent, bounced, replied, interested and won, and lists each
+  prospect with its status, emails sent, and its next step or the reason it stopped. There
+  is no "delivered" figure: your own mailbox doesn't report delivery. A send whose outcome
+  isn't known is shown as failed with "Outcome unknown" and is never sent again
+  automatically.
+- A prospect in a running campaign is not also listed under **Follow-ups due** on Today.
+
+Campaigns send email only. Calls and WhatsApp or LinkedIn messages are yours to make.
+Sales calls to people who haven't asked for them are regulated in India, including calls to
+business numbers, and WhatsApp's policy requires a person's opt-in before a business
+messages them first.
+
 ### Opportunities (Today's Opportunities)
 
 **Prospects → Opportunities** sorts the offering's active opportunities into bins,
@@ -313,7 +369,9 @@ page. If Service isn't licensed, the button says so and offers **Go to licenses*
 
 ## Outreach, replies and unsubscribes
 
-Every outreach message is drafted by AI and sent only when a person sends it. With
+Every outreach message written for one prospect is drafted by AI and sent only when a
+person sends it. (A [campaign](#working-an-offering) is the one exception: once you launch it, its
+emails go out without you approving each one.) With
 [AI approvals](#ai-approvals) set to **Approve automatically**, **Let AI Auto-Populate Info**
 approves the outreach strategy for the one prospect it adds so it can draft a message; with
 **Review each step** it approves no strategy — see Overview.
@@ -326,7 +384,10 @@ address and email set up for the deployment. An address a contact lookup marked 
 can't be sent to; one marked **Risky** or **Not verified** asks you to confirm once before
 it sends. If a send fails, the message shows "Send failed"
 with the reason, and you can **Retry send**. Emails can use a saved template ("No template
-(AI writes freely)" is the default).
+(AI writes freely)" is the default). Pressing send twice sends the email once. When the
+offering has a verified mailbox under **Campaigns → Sending from**, these emails go out
+from that mailbox too. If a send's outcome can't be confirmed, the message shows as failed
+with "Outcome unknown" and is not sent again unless you choose to.
 
 Sending a message (or marking it sent) starts a **Conversation** thread. Use
 **Log reply** to record what the prospect said, **Generate reply** for an AI
@@ -336,7 +397,9 @@ The **Feedback** box on a prospect lets you record how it went — Good
 prospect, Bad prospect, Wrong person, Wrong timing, Good message, Bad message,
 Interested, Not interested, Already customer, Not relevant or Spam — with an
 optional note. Feedback is kept as a history, newest first. Replies that arrive by email
-are matched to the contact and classified by AI automatically.
+are matched to the contact and classified by AI automatically. A reply that asks to
+unsubscribe, a bounce and a spam complaint each add the address to your business's
+do-not-contact list.
 
 **Unsubscribe and opt-outs.** Every outreach email to a prospect or investor
 is sent with a one-click unsubscribe option that mail apps can offer, and

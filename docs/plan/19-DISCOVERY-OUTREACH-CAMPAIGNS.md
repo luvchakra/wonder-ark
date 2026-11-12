@@ -271,4 +271,12 @@ Where the build differs from the text above. The live repo wins (`CLAUDE.md`).
 - **Drafting an answer to an interested reply stays a person's click** ("Generate reply" on the conversation): the
   reply appears on Today under "Replies waiting for your answer". Drafting it on arrival is not built
   (`generateReply` reads through the person's session).
+- **Email steps only, for now.** `DISC-CAMP-P0-06.1` (call, WhatsApp and LinkedIn steps as Today rows with drafts)
+  is not built, so a campaign's steps can only be emails (`TASK_STEPS_AVAILABLE`). A step nobody has a screen to do
+  would hold every enrollment behind it.
+- **"Send a test to me" saves and tests in one action**, so the "Sending from" block has one button.
+- **The Launch dialog's lines are built on the server** from the campaign's rows (`launchLines`), and a line on the
+  campaign page warns when the daily check falls outside the campaign's sending hours, since nothing would send.
+- **`DISC-CAMP-P0-01.2` is done except the `CLAUDE.md` line**, which is the owner's to add (see "Waiting on the
+  owner").
 

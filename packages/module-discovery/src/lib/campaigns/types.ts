@@ -90,6 +90,10 @@ export type OutreachSend = {
   finished_at: string | null;
 };
 
+/** Whether a campaign may hold call, WhatsApp and LinkedIn steps, which a person does
+ * from a draft (DISC-CAMP-P0-06.1). Off until that screen exists. */
+export const TASK_STEPS_AVAILABLE = false;
+
 export const MAX_STEPS = 5;
 export const MIN_FOLLOW_UP_DAYS = 2;
 export const MAX_FOLLOW_UP_DAYS = 60;
@@ -175,3 +179,24 @@ export type EnrollmentSummary = {
 /** When the daily send check runs (apps/web/vercel.json), in UTC. The campaign page uses
  * it to say when a campaign whose hours exclude it would never send. */
 export const DAILY_TICK_UTC = { hour: 6, minute: 5 } as const;
+
+/**
+ * The daily send check's time of day in a campaign's timezone, and whether the
+ * campaign's sending hours include it. Emails go out at that check (and hourly once the
+ * hourly schedule is turned on), so hours that exclude it would mean nothing sends; the
+ * page says so rather than leaving a campaign silently idle.
+ */
+export function dailyCheckIn(campaign: Pick<Campaign, "timezone" | "send_from_hour" | "send_to_hour">): { time: string; hour: number; inHours: boolean } {
+  const at = new Date(Date.UTC(2026, 0, 5, DAILY_TICK_UTC.hour, DAILY_TICK_UTC.minute));
+  const format = (timeZone: string) => new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(at);
+  let time: string;
+  try {
+    time = format(campaign.timezone);
+  } catch {
+    time = format("UTC");
+  }
+  const hour = Number(time.slice(0, 2));
+  return { time, hour, inHours: hour >= campaign.send_from_hour && hour < campaign.send_to_hour };
+}
+
+export const WEEKDAY_LABEL = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] as const;

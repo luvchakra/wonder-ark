@@ -267,10 +267,13 @@ describe("changing a campaign", () => {
     expect(await replaceCampaignSteps(id, [{ channel: "call", delayDays: 0 }])).toMatchObject({ status: "refused" });
     expect(await replaceCampaignSteps(id, Array.from({ length: 6 }, () => ({ channel: "email" as const, delayDays: 3 })))).toMatchObject({ status: "refused" });
 
-    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "call", delayDays: 4 }])).toEqual({ status: "saved" });
+    // Call, WhatsApp and LinkedIn steps wait on DISC-CAMP-P0-06.1.
+    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "call", delayDays: 4 }])).toEqual({ status: "refused", message: "Only email steps are available for now." });
+
+    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 4 }])).toEqual({ status: "saved" });
     expect(db.rows("outreach_campaign_steps").map((step) => [step.position, step.channel, step.delay_days, step.purpose])).toEqual([
       [1, "email", 0, "intro"],
-      [2, "call", 4, "call"],
+      [2, "email", 4, "follow_up"],
     ]);
 
     await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }]);

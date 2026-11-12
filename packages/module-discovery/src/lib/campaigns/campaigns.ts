@@ -14,6 +14,7 @@ import {
   MAX_STEPS,
   MIN_FOLLOW_UP_DAYS,
   STARTING_STEPS,
+  TASK_STEPS_AVAILABLE,
   type Campaign,
   type CampaignAudience,
   type CampaignStep,
@@ -57,6 +58,29 @@ export async function listCampaigns(workspaceId: string): Promise<Campaign[]> {
     .order("created_at", { ascending: false });
   if (error) throw error;
   return (data ?? []) as Campaign[];
+}
+
+export type CampaignWithCounts = Campaign & { enrolled: number; sent: number; replied: number };
+
+/** The workspace's campaigns with the three counts the list shows, each a count of rows. */
+export async function listCampaignsWithCounts(workspaceId: string): Promise<CampaignWithCounts[]> {
+  const campaigns = await listCampaigns(workspaceId);
+  if (campaigns.length === 0) return [];
+  const supabase = await createClient();
+  const [enrollments, sends] = await Promise.all([
+    supabase.from("outreach_enrollments").select("campaign_id, status").eq("workspace_id", workspaceId),
+    supabase.from("outreach_sends").select("campaign_id, status").eq("workspace_id", workspaceId).eq("status", "sent"),
+  ]);
+  if (enrollments.error) throw enrollments.error;
+  if (sends.error) throw sends.error;
+  const count = (rows: { campaign_id: string }[], id: string) => rows.filter((row) => row.campaign_id === id).length;
+  const enrolled = (enrollments.data ?? []) as { campaign_id: string; status: string }[];
+  return campaigns.map((campaign) => ({
+    ...campaign,
+    enrolled: count(enrolled, campaign.id),
+    sent: count((sends.data ?? []) as { campaign_id: string }[], campaign.id),
+    replied: count(enrolled.filter((row) => row.status === "replied"), campaign.id),
+  }));
 }
 
 export type CampaignDetail = { campaign: Campaign; steps: CampaignStep[]; templates: CampaignTemplate[] };
@@ -196,6 +220,11 @@ export async function replaceCampaignSteps(campaignId: string, steps: StepInput[
   if (campaign.status !== "draft") return { status: "refused", message: "The steps can only be changed before the campaign is launched." };
   if (steps.length < 1 || steps.length > MAX_STEPS) return { status: "refused", message: `A campaign has between 1 and ${MAX_STEPS} steps.` };
   if (steps[0]!.channel !== "email") return { status: "refused", message: "The first step is an email." };
+  // DISC-CAMP-P0-06.1 is not built: a call, WhatsApp or LinkedIn step would wait for a
+  // person with no screen to do it from, and hold every enrollment behind it.
+  if (!TASK_STEPS_AVAILABLE && steps.some((step) => step.channel !== "email")) {
+    return { status: "refused", message: "Only email steps are available for now." };
+  }
   for (const [index, step] of steps.entries()) {
     if (index > 0 && (!Number.isInteger(step.delayDays) || step.delayDays < MIN_FOLLOW_UP_DAYS || step.delayDays > MAX_FOLLOW_UP_DAYS)) {
       return { status: "refused", message: `Each later step waits between ${MIN_FOLLOW_UP_DAYS} and ${MAX_FOLLOW_UP_DAYS} days after the one before.` };

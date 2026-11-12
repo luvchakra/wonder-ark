@@ -27,9 +27,10 @@ type Page<T> = PromiseLike<{ data: T[] | null; error: unknown }>;
 const PIPELINE_SELECT =
   "*, prospect_research(researched_at), prospect_scores(created_at), " +
   "outreach_strategies(status, updated_at), messages(status, created_at, sent_at), " +
-  "conversations(status, last_message_at)";
+  "conversations(status, last_message_at), outreach_enrollments(status)";
 
 type ProspectPipelineRow = Prospect & {
+  outreach_enrollments?: { status: string }[];
   prospect_research: { researched_at: string } | null;
   prospect_scores: { created_at: string }[];
   outreach_strategies: { status: "draft" | "approved"; updated_at: string }[];
@@ -72,7 +73,9 @@ function deriveRow(row: ProspectPipelineRow): ProspectExportRow {
     ),
   });
 
-  return { ...row, ...state, researchedAt: row.prospect_research?.researched_at ?? null };
+  // DISC-CAMP-P0-04.1: as listProspects derives it.
+  const inActiveCampaign = (row.outreach_enrollments ?? []).some((enrollment) => enrollment.status === "active");
+  return { ...row, ...state, inActiveCampaign, researchedAt: row.prospect_research?.researched_at ?? null };
 }
 
 /**
