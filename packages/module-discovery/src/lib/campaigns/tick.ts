@@ -591,7 +591,7 @@ export async function runCampaignTick(options: TickOptions = {}): Promise<TickSu
       }
       const workspace = await getWorkspace(workspaceId, db);
       const product = workspace ? await getProduct(workspace.product_id, db) : null;
-      const business = product ? await getBusiness(product.business_id, db) : null;
+      const business = product ? await getBusiness(product.business_id, core) : null;
       if (!product || !business) {
         summary.deferred += dueCount;
         continue;

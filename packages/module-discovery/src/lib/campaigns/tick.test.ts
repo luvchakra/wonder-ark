@@ -753,3 +753,14 @@ describe("inSendWindow", () => {
     expect(inSendWindow({ ...window, timezone: "Not/AZone" }, new Date("2026-11-12T10:00:00Z"))).toBe(true);
   });
 });
+
+describe("DISC-CAMP-P0-07.1: the business behind a campaign", () => {
+  it("is read through the core schema's client, where core.businesses lives, not discovery's", async () => {
+    await tick();
+    expect(h.getBusiness).toHaveBeenCalled();
+    for (const [, client] of h.getBusiness.mock.calls) {
+      expect(client).toBe(coreDb.client);
+      expect(client).not.toBe(db.client);
+    }
+  });
+});
