@@ -36,8 +36,9 @@ export type MailboxConnection = { host: string; port: number; username: string; 
 export type SendResult =
   /** The mail server accepted the message. `messageId` is its SMTP Message-ID. */
   | { status: "sent"; messageId: string | null }
-  /** The message did not go. */
-  | { status: "failed"; reason: string }
+  /** The message did not go. `mailbox` marks a failure of the mailbox itself (it could
+   * not be reached or signed in to), which every other send would meet too. */
+  | { status: "failed"; reason: string; mailbox?: true }
   /** The message may or may not have gone. Never retry this automatically. */
   | { status: "unknown"; reason: string };
 
@@ -85,12 +86,12 @@ export function classifySmtpError(error: unknown): Extract<SendResult, { status:
   const { code, command, responseCode, timeoutType, originalCode } = (typeof error === "object" && error !== null ? error : {}) as SmtpError;
   const signIn = "The mail server refused the sign-in. Check the username and password.";
   if (typeof responseCode === "number" && responseCode >= 400 && responseCode < 600) {
-    if (code === "EAUTH" || (typeof command === "string" && command.startsWith("AUTH"))) return { status: "failed", reason: signIn };
+    if (code === "EAUTH" || (typeof command === "string" && command.startsWith("AUTH"))) return { status: "failed", reason: signIn, mailbox: true };
     return { status: "failed", reason: `The mail server refused the message (code ${responseCode}).` };
   }
-  if (code === "EAUTH" || code === "ENOAUTH" || code === "EOAUTH2") return { status: "failed", reason: signIn };
+  if (code === "EAUTH" || code === "ENOAUTH" || code === "EOAUTH2") return { status: "failed", reason: signIn, mailbox: true };
   if (code === "ETLS" || code === "EREQUIRETLS") {
-    return { status: "failed", reason: "A secure connection to the mail server couldn't be made, so nothing was sent." };
+    return { status: "failed", reason: "A secure connection to the mail server couldn't be made, so nothing was sent.", mailbox: true };
   }
   if (typeof code === "string" && NOT_SENT_CODES.has(code)) {
     return { status: "failed", reason: "The mail server couldn't take the message, so nothing was sent." };
@@ -100,7 +101,7 @@ export function classifySmtpError(error: unknown): Extract<SendResult, { status:
     (typeof originalCode === "string" && NO_CONNECTION_CODES.has(originalCode)) ||
     (typeof code === "string" && NO_CONNECTION_CODES.has(code))
   ) {
-    return { status: "failed", reason: "The mail server couldn't be reached, so nothing was sent." };
+    return { status: "failed", reason: "The mail server couldn't be reached, so nothing was sent.", mailbox: true };
   }
   return { status: "unknown", reason: OUTCOME_UNKNOWN_REASON };
 }
@@ -108,6 +109,7 @@ export function classifySmtpError(error: unknown): Extract<SendResult, { status:
 function refused(host: Extract<SafeHost, { ok: false }>): SendResult {
   return {
     status: "failed",
+    mailbox: true,
     reason:
       host.reason === "private_address"
         ? "The mail server's address is on a private network, so nothing was sent."
@@ -141,7 +143,7 @@ export async function sendViaSmtp(mailbox: MailboxConnection, email: OutboundEma
       disableUrlAccess: true,
     });
   } catch {
-    return { status: "failed", reason: "The mail server couldn't be reached, so nothing was sent." };
+    return { status: "failed", reason: "The mail server couldn't be reached, so nothing was sent.", mailbox: true };
   }
 
   try {

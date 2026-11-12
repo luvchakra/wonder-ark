@@ -1,0 +1,41 @@
+name: Discovery campaign tick
+
+# DISC-CAMP-P0-07.1 (docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md): calls the campaign
+# tick once an hour, so campaign emails go out through the day rather than only at the
+# daily check that apps/web/vercel.json schedules.
+#
+# Off until the owner turns it on: with either repository secret missing, the one step
+# says so and exits without calling anything. To turn it on, add:
+#   CAMPAIGN_TICK_URL  the deployed route, https://<app host>/api/cron/discovery-campaigns
+#   CRON_SECRET        the same value the deployment has
+#
+# Calling the route more often than needed is safe: a campaign step is claimed once, the
+# daily limit is counted in the claim, and a campaign outside its sending hours is skipped.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: discovery-campaign-tick
+  cancel-in-progress: false
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Call the campaign tick
+        env:
+          CAMPAIGN_TICK_URL: ${{ secrets.CAMPAIGN_TICK_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$CAMPAIGN_TICK_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Not turned on: set the CAMPAIGN_TICK_URL and CRON_SECRET repository secrets."
+            exit 0
+          fi
+          # The response is a count summary; the secret is never echoed.
+          curl --silent --show-error --fail-with-body --max-time 90 \
+            -H "Authorization: Bearer $CRON_SECRET" "$CAMPAIGN_TICK_URL"

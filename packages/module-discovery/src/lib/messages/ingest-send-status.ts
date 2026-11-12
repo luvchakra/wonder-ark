@@ -1,4 +1,5 @@
 import { createAdminClient } from "../../db/admin";
+import { recordBounce } from "../campaigns/stops";
 import type { Message } from "./types";
 
 export type SendStatusEvent = {
@@ -49,6 +50,13 @@ export async function ingestSendStatus(event: SendStatusEvent): Promise<IngestRe
     .select()
     .single();
   if (error) throw error;
+
+  // DISC-CAMP-P0-04.1: a bounce or a complaint stops the campaign's follow-ups to that
+  // prospect and puts the address on the business's opt-out list. A plain "failed" says
+  // nothing about the address, so it does neither.
+  if (event.status === "bounced" || event.status === "complained") {
+    await recordBounce(admin, data, event.status === "bounced" ? "bounce" : "complaint");
+  }
 
   return { matched: true, message: data };
 }

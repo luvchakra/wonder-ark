@@ -254,4 +254,21 @@ Where the build differs from the text above. The live repo wins (`CLAUDE.md`).
 - **`{{city}}` is the first part of the prospect's stored location.** Nothing is looked up.
 - **No "delivered" count.** A business's own mailbox reports no delivery, so the funnel is enrolled, sent,
   bounced, replied, interested, won.
+- **New prospects join on the tick, not at approval.** A prospect approved from a suggestion is `new` and often has
+  no contact yet, so enrolling at that moment would add almost nobody. A campaign with "Add new prospects
+  automatically" on re-runs the same enrolment rule on every tick, so a prospect joins once it is eligible.
+- **A claim in flight is left alone.** A second tick that meets a `requested` send younger than fifteen minutes
+  sends nothing and changes nothing; an older one is closed as "Outcome unknown". The enrollment is stopped in both
+  the unknown case and a definite failure: a step is never retried, and a follow-up to an email that may not have
+  arrived is not sent.
+- **A mailbox that cannot be reached or signed in to pauses the workspace's running campaigns** with the reason,
+  and is marked failed, after the first such failure in a tick. The one enrollment that met it is stopped.
+- **A reply delivered twice is stored once** by a key in `discovery.messages.provider_message_id` for inbound rows
+  (migration `20261112130000`): the email's Message-ID when the webhook passes one (`messageId`), otherwise a hash
+  of the sender, the text and the day. Two identical replies from one person on one day are therefore one row.
+- **A reply with several possible owners and no email sent by any of them is not attributed.** It is reported as
+  unmatched, as an unknown sender is.
+- **Drafting an answer to an interested reply stays a person's click** ("Generate reply" on the conversation): the
+  reply appears on Today under "Replies waiting for your answer". Drafting it on arrival is not built
+  (`generateReply` reads through the person's session).
 

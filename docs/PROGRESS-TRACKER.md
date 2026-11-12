@@ -19,13 +19,13 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 601 |
+| ✅ Done | 605 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
-| ⬜ Not started | 11 |
+| ⬜ Not started | 7 |
 | **Total** | **695** |
 
 | Backlog | Done | Set aside | Remaining | Total |
@@ -42,20 +42,16 @@ file is stale, so it cannot quietly drift out of date.
 | [WonderArk branding](./plan/16-BRANDING-BACKLOG.md) | 13 | 0 | 0 | 13 |
 | [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 17 | 0 | 0 | 17 |
 | [Module menus](./plan/18-MODULE-MENUS.md) | 8 | 0 | 0 | 8 |
-| [Discovery — outreach campaigns](./plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md) | 5 | 0 | 11 | 16 |
+| [Discovery — outreach campaigns](./plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md) | 9 | 0 | 7 | 16 |
 
 ## What is left
 
-12 stories are neither built nor deliberately set aside:
+8 stories are neither built nor deliberately set aside:
 
 | ID | Story | Status | Note |
 |---|---|---|---|
 | `DISC-OFFER-P0-03.3` | Offering Navigation | ❔ Unverified | Discussed in `docs/design/discovery-offering-backlog-audit.md`, but no code cites it — confirm before relying on this |
-| `DISC-CAMP-P0-02.1` | Enrolment from the audience filter, with reasons for those left out | ⬜ Not started | — |
-| `DISC-CAMP-P0-02.2` | Tick | ⬜ Not started | — |
 | `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ⬜ Not started | — |
-| `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ⬜ Not started | — |
-| `DISC-CAMP-P0-04.2` | Reply matched to the right workspace; redelivery safe; draft answer for interested replies | ⬜ Not started | — |
 | `DISC-CAMP-P0-04.3` | Automatic pause on bounce or complaint rate | ⬜ Not started | — |
 | `DISC-CAMP-P0-05.1` | Campaigns page, new campaign, Launch dialog, pause and resume | ⬜ Not started | — |
 | `DISC-CAMP-P0-05.2` | Campaign results | ⬜ Not started | — |
@@ -1318,16 +1314,16 @@ Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUT
 
 | ID | Story | Status | Evidence / note |
 |---|---|---|---|
-| `DISC-CAMP-P0-01.1` | Tables, RLS, audit triggers, claim function | ✅ Done | `scripts/test-discovery-outreach-campaigns-rls.mjs` +1 |
+| `DISC-CAMP-P0-01.1` | Tables, RLS, audit triggers, claim function | ✅ Done | `packages/module-discovery/src/lib/campaigns/types.ts` +2 |
 | `DISC-CAMP-P0-01.2` | Ownership-map row, CLAUDE.md exception, security rules line on campaign sends | ✅ Done | `supabase/migrations/20261112100000_discovery_outreach_campaigns.sql` |
-| `DISC-CAMP-P0-02.1` | Enrolment from the audience filter, with reasons for those left out | ⬜ Not started | — |
-| `DISC-CAMP-P0-02.2` | Tick | ⬜ Not started | — |
+| `DISC-CAMP-P0-02.1` | Enrolment from the audience filter, with reasons for those left out | ✅ Done | `packages/module-discovery/src/lib/campaigns/audience.test.ts` +4 |
+| `DISC-CAMP-P0-02.2` | Tick | ✅ Done | `packages/core/src/privacy/suppression.ts` |
 | `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ✅ Done | `packages/module-discovery/src/lib/messages/send.test.ts` +3 |
 | `DISC-CAMP-P0-02.4` | Sender mailbox | ✅ Done | `packages/module-discovery/src/lib/campaigns/host-guard.test.ts` +8 |
-| `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ✅ Done | `packages/core/src/ai/operation-registry.ts` |
+| `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ✅ Done | `packages/core/src/ai/operation-registry.ts` +5 |
 | `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ⬜ Not started | — |
-| `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ⬜ Not started | — |
-| `DISC-CAMP-P0-04.2` | Reply matched to the right workspace; redelivery safe; draft answer for interested replies | ⬜ Not started | — |
+| `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ✅ Done | `packages/module-discovery/src/lib/conversations/ingest-inbound-email.ts` +2 |
+| `DISC-CAMP-P0-04.2` | Reply matched to the right workspace; redelivery safe; draft answer for interested replies | ✅ Done | `apps/web/app/api/webhooks/email-inbound/route.ts` +1 |
 | `DISC-CAMP-P0-04.3` | Automatic pause on bounce or complaint rate | ⬜ Not started | — |
 | `DISC-CAMP-P0-05.1` | Campaigns page, new campaign, Launch dialog, pause and resume | ⬜ Not started | — |
 | `DISC-CAMP-P0-05.2` | Campaign results | ⬜ Not started | — |

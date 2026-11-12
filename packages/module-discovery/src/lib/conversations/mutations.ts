@@ -1,3 +1,4 @@
+import { STOP_REASON, stopEnrollmentsForProspect } from "../campaigns/stops";
 import { createClient } from "../../db/server";
 import { classifyReply } from "../ai/classify-reply";
 import { getConversation, getOpenConversation } from "./queries";
@@ -102,6 +103,9 @@ export async function logInboundReply(conversationId: string, content: string): 
   if (error) throw error;
 
   await markConversationReplied(conversation.id);
+  // DISC-CAMP-P0-04.1: a reply a person logs by hand stops the campaign's follow-ups to
+  // this prospect, as one that arrived by email does.
+  await stopEnrollmentsForProspect(supabase, conversation.prospect_id, "replied", STOP_REASON.replied);
 
   // Best-effort, same as the inbound-email webhook: the reply is worth keeping even if
   // classification fails.
