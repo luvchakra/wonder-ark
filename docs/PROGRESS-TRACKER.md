@@ -1339,5 +1339,5 @@ Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUT
 | `DISC-CAMP-P0-05.3` | Preview with real emails, Send me a test, This looks right, then Activate | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/campaigns/actions.ts` +8 |
 | `DISC-CAMP-P0-05.4` | Schedule | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/campaigns/actions.ts` +8 |
 | `DISC-CAMP-P0-06.1` | Call, WhatsApp and LinkedIn steps as Today rows with drafts | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/campaigns/[campaignId]/page.tsx` +22 |
-| `DISC-CAMP-P0-07.1` | Cron route, daily schedule, hourly workflow | ✅ Done | `.github/workflows/discovery-campaign-tick.yml` +2 |
+| `DISC-CAMP-P0-07.1` | Cron route, daily schedule, hourly workflow | ✅ Done | `.github/workflows/discovery-campaign-tick.yml` +4 |
 | `DISC-CAMP-P0-07.2` | Add new prospects automatically | ✅ Done | `packages/module-discovery/src/lib/campaigns/tick.ts` |

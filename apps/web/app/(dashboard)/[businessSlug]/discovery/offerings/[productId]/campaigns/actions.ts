@@ -34,7 +34,7 @@ async function campaignsPath(businessId: string, productId: string) {
   return `${await businessPath(businessId)}/discovery/offerings/${productId}/campaigns`;
 }
 
-/** How many emails go out straight after Activate; the rest wait for the scheduled check. */
+/** How many emails go out straight after Activate or Resume; the rest wait for the scheduled check. */
 const FIRST_BATCH = 5;
 
 export async function createCampaignAction(businessId: string, productId: string, workspaceId: string) {
@@ -208,13 +208,23 @@ export async function activateCampaignAction(businessId: string, productId: stri
     const outcome = await activateCampaign(campaignId);
     revalidatePath(`${await campaignsPath(businessId, productId)}/${campaignId}`);
     if (outcome.status !== "activated") throw new Error(outcome.message);
-    after(async () => {
-      try {
-        await runCampaignTick({ campaignId, maxSends: FIRST_BATCH });
-      } catch (error) {
-        console.error("The first campaign batch failed:", error instanceof Error ? error.message : error);
-      }
-    });
+    sendFirstBatchAfterResponse(campaignId);
+  });
+}
+
+/**
+ * DISC-CAMP-P0-07.1: after Activate or Resume, the emails already due (inside the
+ * campaign's own days, hours and daily limit) go out straight after the response, through
+ * the same tick as every scheduled send, instead of waiting for the next daily check.
+ * The tick claims each step once, so this never repeats a send.
+ */
+function sendFirstBatchAfterResponse(campaignId: string) {
+  after(async () => {
+    try {
+      await runCampaignTick({ campaignId, maxSends: FIRST_BATCH });
+    } catch (error) {
+      console.error("The first campaign batch failed:", error instanceof Error ? error.message : error);
+    }
   });
 }
 
@@ -252,7 +262,10 @@ async function changeStatus(
 
 export const pauseCampaignAction = async (businessId: string, productId: string, campaignId: string) =>
   changeStatus(businessId, productId, campaignId, pauseCampaign);
-export const resumeCampaignAction = async (businessId: string, productId: string, campaignId: string) =>
-  changeStatus(businessId, productId, campaignId, resumeCampaign);
+export const resumeCampaignAction = async (businessId: string, productId: string, campaignId: string) => {
+  const state = await changeStatus(businessId, productId, campaignId, resumeCampaign);
+  if (state === null) sendFirstBatchAfterResponse(campaignId);
+  return state;
+};
 export const finishCampaignAction = async (businessId: string, productId: string, campaignId: string) =>
   changeStatus(businessId, productId, campaignId, finishCampaign);
