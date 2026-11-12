@@ -28,7 +28,7 @@ vi.mock("../ai/generate-icp", () => ({ generateIcp: h.generateIcp }));
 vi.mock("../icp/mutations", () => ({ approveIcpProfile: h.approveIcpProfile }));
 vi.mock("../icp/queries", () => ({ getIcpProfile: h.getIcpProfile }));
 vi.mock("../ai/discover-prospects", () => ({ discoverProspects: h.discoverProspects }));
-vi.mock("../prospects/mutations", () => ({ approveProspectSuggestions: h.approveProspectSuggestions }));
+vi.mock("../data-sources/approval", () => ({ approveSuggestionsAndQueueEnrichment: h.approveProspectSuggestions }));
 vi.mock("../prospects/queries", () => ({ getMostRecentProspect: h.getMostRecentProspect }));
 vi.mock("../ai/research-prospect", () => ({ researchProspect: h.researchProspect }));
 vi.mock("../scoring/score-prospect", () => ({ scoreProspect: h.scoreProspect }));
@@ -43,7 +43,7 @@ beforeEach(() => {
   h.getWorkspaceForProduct.mockResolvedValue({ id: "w1" });
   h.generateIcp.mockResolvedValue({ id: "icp1", status: "draft" });
   h.discoverProspects.mockResolvedValue([{ id: "s1" }]);
-  h.approveProspectSuggestions.mockResolvedValue(1);
+  h.approveProspectSuggestions.mockResolvedValue({ added: 1, duplicates: 0, prospects: [], enrichmentQueuedFor: [] });
   h.getMostRecentProspect.mockResolvedValue({ id: "p1" });
   h.generateOutreachStrategy.mockResolvedValue({ id: "st1" });
 });

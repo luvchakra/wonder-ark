@@ -10,7 +10,7 @@ import { seedBuyerPersonasFromIcp } from "../personas/mutations";
 import { listBuyerPersonas } from "../personas/queries";
 import { seedDiscoveryDefinitionFromIcp } from "../discovery-definitions/mutations";
 import { listDiscoveryDefinitions } from "../discovery-definitions/queries";
-import { approveProspectSuggestions } from "../prospects/mutations";
+import { approveSuggestionsAndQueueEnrichment } from "../data-sources/approval";
 import { listProspects } from "../prospects/queries";
 import { listContacts } from "../contacts/queries";
 import { listMessages } from "../messages/queries";
@@ -187,7 +187,9 @@ export async function runAccountDiscoveryStage(ctx: StageContext): Promise<Stage
       awaitingApproval: true,
     };
   }
-  const approved = await approveProspectSuggestions(
+  // DISC-DATA-P0-04.1: an automatic approval queues each company's free lookup of its
+  // missing details exactly as an approval on the To review list does.
+  const { added: approved } = await approveSuggestionsAndQueueEnrichment(
     ctx.workspaceId,
     suggestions.map((s) => s.id),
   );

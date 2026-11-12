@@ -25,7 +25,7 @@ vi.mock("../personas/mutations", () => ({ seedBuyerPersonasFromIcp: vi.fn() }));
 vi.mock("../personas/queries", () => ({ listBuyerPersonas: vi.fn() }));
 vi.mock("../discovery-definitions/mutations", () => ({ seedDiscoveryDefinitionFromIcp: vi.fn() }));
 vi.mock("../discovery-definitions/queries", () => ({ listDiscoveryDefinitions: vi.fn() }));
-vi.mock("../prospects/mutations", () => ({ approveProspectSuggestions: h.approveProspectSuggestions }));
+vi.mock("../data-sources/approval", () => ({ approveSuggestionsAndQueueEnrichment: h.approveProspectSuggestions }));
 vi.mock("../prospects/queries", () => ({ listProspects: vi.fn() }));
 vi.mock("../contacts/queries", () => ({ listContacts: vi.fn() }));
 vi.mock("../messages/queries", () => ({ listMessages: vi.fn() }));
@@ -54,7 +54,7 @@ beforeEach(() => {
   h.generateIcp.mockResolvedValue(DRAFT_ICP);
   h.approveIcpProfile.mockResolvedValue({ ...DRAFT_ICP, status: "approved" });
   h.discoverProspects.mockResolvedValue([{ id: "s1" }, { id: "s2" }]);
-  h.approveProspectSuggestions.mockResolvedValue(2);
+  h.approveProspectSuggestions.mockResolvedValue({ added: 2, duplicates: 0, prospects: [], enrichmentQueuedFor: [] });
 });
 
 describe("runIcpStage", () => {

@@ -1273,9 +1273,9 @@ Source: [`docs/plan/17-DISCOVERY-DATA-AND-CONSUMER.md`](./plan/17-DISCOVERY-DATA
 | `DISC-DATA-P0-03.1` | Find screen | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +6 |
 | `DISC-DATA-P0-03.2` | Staging results and the review list | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +6 |
 | `DISC-DATA-P0-03.3` | Approval carries the source and refuses duplicates | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +4 |
-| `DISC-DATA-P0-04.1` | Enrich on approval and Fill missing details | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +16 |
+| `DISC-DATA-P0-04.1` | Enrich on approval and Fill missing details | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +18 |
 | `DISC-DATA-P0-04.2` | Find contacts, address status and sending rules | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +18 |
-| `DISC-DATA-P0-04.3` | Removal | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +4 |
+| `DISC-DATA-P0-04.3` | Removal | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +6 |
 | `DISC-NAV-P0-01.1` | Four-tab offering navigation | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +11 |
 | `DISC-NAV-P0-01.2` | Today list at the top of Prospects | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +6 |
 | `DISC-NAV-P0-01.3` | Plain labels | ✅ Done | `packages/core/src/lib/offering-nav.ts` +2 |

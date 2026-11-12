@@ -11,7 +11,7 @@ offerings and data:
 - **Funding** — your funding profile, investor readiness, rounds, investors,
   outreach, data room and due diligence.
 
-Last updated: 2026-11-11
+Last updated: 2026-11-12
 
 
 ## How Discovery is organised
@@ -226,7 +226,8 @@ was found, with a link to the record when there is one. **Edit details** unfolds
 for changing any of it. If you change a value a source filled in, it is no longer credited
 to that source.
 
-**Filling in blanks.** When you approve a company under **To review**, WonderArk looks up
+**Filling in blanks.** When a company is approved, by you under **To review** or by AI
+Discovery when your business uses **Approve automatically**, WonderArk looks up
 the details it is missing (industry, company size, description, phone, general email,
 LinkedIn page, location) from free sources. It fills only what is blank and never changes a
 value you typed. If the lookup fails, the page says **Enrichment unavailable** and nothing
@@ -252,9 +253,12 @@ If the WorksLake connection isn't set up, the page says **Needs setup** in place
 lookups; if it doesn't answer, the lookup reports **Unavailable** and changes nothing.
 
 **Removing a contact.** **Delete** removes a contact. If the person asked you to stop
-contacting them, tick **They asked not to be contacted**: WonderArk then also asks WorksLake
-to leave that address out of later contact lookups. If that request can't be passed on, the
-contact is not deleted and the page says why, so you can try again.
+contacting them, tick **They asked not to be contacted**: WonderArk then adds the address to
+your business's do-not-contact list, so no later email from your business is sent to it
+(even if someone adds the address again), and asks WorksLake to leave it out of later
+contact lookups. If the request to WorksLake can't be passed on, the address is still
+blocked for your business, the contact is not deleted, and the page says why, so you can
+try again.
 
 ### Opportunities (Today's Opportunities)
 

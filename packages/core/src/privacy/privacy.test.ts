@@ -9,7 +9,7 @@ vi.mock("../db/admin", () => ({ createAdminClient }));
 const { createUnsubscribeToken, emailHash, verifyUnsubscribeToken, UnsubscribeNotConfiguredError } = await import(
   "./unsubscribe-token"
 );
-const { prepareOutreachEmail, recordUnsubscribe } = await import("./suppression");
+const { prepareOutreachEmail, recordUnsubscribe, suppressEmailOnRequest } = await import("./suppression");
 
 const BUSINESS = "b0000000-0000-4000-8000-000000000001";
 const OTHER = "b0000000-0000-4000-8000-000000000002";
@@ -113,5 +113,42 @@ describe("recordUnsubscribe (PRIV-1)", () => {
   it("surfaces any other failure", async () => {
     createAdminClient.mockReturnValue(createFakeSupabase({ query: () => ({ data: null, error: { code: "42501", message: "denied" } }) }));
     await expect(recordUnsubscribe(BUSINESS, emailHash("a@b.c"))).rejects.toMatchObject({ code: "42501" });
+  });
+});
+
+describe("suppressEmailOnRequest (DISC-DATA-P0-04.3)", () => {
+  const signedIn = (supabase: ReturnType<typeof createFakeSupabase>, userId: string | null) =>
+    Object.assign(supabase, { auth: { getUser: async () => ({ data: { user: userId ? { id: userId } : null } }) } });
+
+  it("adds only the hash to the business's opt-out list, as the signed-in member, idempotently", async () => {
+    const supabase = signedIn(createFakeSupabase({}), "u1");
+    createClient.mockResolvedValue(supabase);
+
+    await suppressEmailOnRequest(BUSINESS, " Ravi@Example.in ");
+
+    const upsert = supabase.queries("communication_suppressions")[0]!.ops.find((op) => op.method === "upsert")!;
+    expect(upsert.args[0]).toEqual({
+      business_id: BUSINESS,
+      email_hash: emailHash("ravi@example.in"),
+      reason: "manual",
+      created_by: "u1",
+    });
+    expect(upsert.args[1]).toMatchObject({ onConflict: "business_id,email_hash", ignoreDuplicates: true });
+    expect(JSON.stringify(supabase.calls)).not.toContain("example.in");
+    // The caller's own client, so the table's insert policy decides; never the service role.
+    expect(createAdminClient).not.toHaveBeenCalled();
+  });
+
+  it("refuses without a signed-in user", async () => {
+    const supabase = signedIn(createFakeSupabase({}), null);
+    createClient.mockResolvedValue(supabase);
+    await expect(suppressEmailOnRequest(BUSINESS, "a@b.c")).rejects.toThrow("Not signed in");
+    expect(supabase.queries("communication_suppressions")).toHaveLength(0);
+  });
+
+  it("surfaces a refused write, so the caller does not report the address as blocked", async () => {
+    const supabase = signedIn(createFakeSupabase({ query: () => ({ data: null, error: { code: "42501", message: "denied" } }) }), "u1");
+    createClient.mockResolvedValue(supabase);
+    await expect(suppressEmailOnRequest(BUSINESS, "a@b.c")).rejects.toMatchObject({ code: "42501" });
   });
 });

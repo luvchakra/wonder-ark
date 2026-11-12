@@ -11,8 +11,10 @@
  *  - a generic mailbox fills the general company email only when that is empty;
  *  - with no contact provider connected, the result says so plainly;
  *  - a failed lookup adds nothing and is recorded as failed;
- *  - "They asked not to be contacted" deletes the contact only after the gateway accepts
- *    the address, and keeps it, saying why, when the gateway cannot be reached.
+ *  - "They asked not to be contacted" adds the address to the business's own opt-out
+ *    list first, so no later send reaches it, then deletes the contact only after the
+ *    gateway accepts the address, and keeps it, saying why, when the gateway cannot be
+ *    reached (the address stays blocked for the business either way).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createMemoryDb } from "./memory-db";
@@ -37,10 +39,12 @@ const h = vi.hoisted(() => ({
   addPartyContact: vi.fn(),
   ensureProspectParty: vi.fn(),
   writeAuditLog: vi.fn(),
+  suppressEmailOnRequest: vi.fn(),
 }));
 
 vi.mock("@cofounderai/core/licensing/queries", () => ({ requireModule: h.requireModule }));
 vi.mock("@cofounderai/core/audit/mutations", () => ({ writeAuditLog: h.writeAuditLog }));
+vi.mock("@cofounderai/core/privacy/suppression", () => ({ suppressEmailOnRequest: h.suppressEmailOnRequest }));
 vi.mock("@cofounderai/core/parties/mutations", () => ({ addPartyContact: h.addPartyContact }));
 vi.mock("@cofounderai/core/events/mutations", () => ({ publish: vi.fn() }));
 vi.mock("../../../db/server", () => ({ createClient: h.createClient }));
@@ -423,6 +427,36 @@ describe("They asked not to be contacted", () => {
     expect(contacts()).toHaveLength(0);
   });
 
+  it("adds the address to the business's own opt-out list before asking the gateway", async () => {
+    setup(prospect(), [contact]);
+    const order: string[] = [];
+    h.suppressEmailOnRequest.mockImplementation(async () => void order.push("opt-out list"));
+    fetchMock.mockImplementation(async () => {
+      order.push("gateway");
+      return new Response(JSON.stringify(suppressResponse), { status: 200 });
+    });
+
+    await removeContactOnRequest("c1");
+
+    expect(h.suppressEmailOnRequest).toHaveBeenCalledWith(TENANT_ID, "a.b@acme.example");
+    expect(order).toEqual(["opt-out list", "gateway"]);
+  });
+
+  it("keeps the contact and asks the gateway nothing when the opt-out list cannot be written", async () => {
+    setup(prospect(), [contact]);
+    h.suppressEmailOnRequest.mockRejectedValueOnce(new Error("db down"));
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    const outcome = await removeContactOnRequest("c1");
+
+    expect(outcome).toMatchObject({ status: "failed", reason: "unavailable" });
+    expect(outcome.status === "failed" && outcome.message).toContain("The contact was not deleted");
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(contacts()).toHaveLength(1);
+    expect(JSON.stringify(error.mock.calls)).not.toContain("acme.example");
+    error.mockRestore();
+  });
+
   it("records the removal in the audit log without the address", async () => {
     setup(prospect(), [contact]);
     gatewayAnswers(suppressResponse);
@@ -434,7 +468,7 @@ describe("They asked not to be contacted", () => {
       action: "discovery.contact.removed_on_request",
       entityType: "discovery_contact",
       entityId: "c1",
-      after: { passed_to_gateway: true },
+      after: { added_to_opt_out_list: true, passed_to_gateway: true },
     });
     expect(JSON.stringify(h.writeAuditLog.mock.calls)).not.toContain("acme.example");
   });
@@ -451,6 +485,9 @@ describe("They asked not to be contacted", () => {
 
     expect(outcome).toMatchObject({ status: "failed", reason });
     expect(outcome.status === "failed" && outcome.message).toContain("The contact was not deleted");
+    // The address is blocked for this business even though WorksLake could not take it.
+    expect(h.suppressEmailOnRequest).toHaveBeenCalledWith(TENANT_ID, "a.b@acme.example");
+    expect(outcome.status === "failed" && outcome.message).toContain("No email from your business will be sent to this address");
     expect(contacts()).toHaveLength(1);
     expect(h.writeAuditLog).not.toHaveBeenCalled();
   });
@@ -470,6 +507,7 @@ describe("They asked not to be contacted", () => {
     setup(prospect(), [{ ...contact, email: null }]);
 
     expect(await removeContactOnRequest("c1")).toEqual({ status: "removed", passedOn: false });
+    expect(h.suppressEmailOnRequest).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
     expect(contacts()).toHaveLength(0);
   });
@@ -483,6 +521,7 @@ describe("They asked not to be contacted", () => {
     setup(prospect(), [contact]);
     h.requireModule.mockRejectedValueOnce(new Error("Discovery is not licensed."));
     await expect(removeContactOnRequest("c1")).rejects.toThrow("not licensed");
+    expect(h.suppressEmailOnRequest).not.toHaveBeenCalled();
     expect(fetchMock).not.toHaveBeenCalled();
     expect(contacts()).toHaveLength(1);
   });
