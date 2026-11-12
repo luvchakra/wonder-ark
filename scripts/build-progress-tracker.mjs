@@ -44,6 +44,7 @@ const BACKLOGS = [
   { file: "16-BRANDING-BACKLOG.md", name: "WonderArk branding" },
   { file: "17-DISCOVERY-DATA-AND-CONSUMER.md", name: "Discovery — prospect data and consumer discovery" },
   { file: "18-MODULE-MENUS.md", name: "Module menus" },
+  { file: "19-DISCOVERY-OUTREACH-CAMPAIGNS.md", name: "Discovery — outreach campaigns" },
 ];
 
 /** `## DISC-OFFER-P0-01.1 — Introduce Business Offering`, at any heading depth, with or

@@ -25,8 +25,8 @@ file is stale, so it cannot quietly drift out of date.
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
-| ⬜ Not started | 0 |
-| **Total** | **675** |
+| ⬜ Not started | 16 |
+| **Total** | **691** |
 
 | Backlog | Done | Set aside | Remaining | Total |
 |---|---|---|---|---|
@@ -42,14 +42,31 @@ file is stale, so it cannot quietly drift out of date.
 | [WonderArk branding](./plan/16-BRANDING-BACKLOG.md) | 13 | 0 | 0 | 13 |
 | [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 17 | 0 | 0 | 17 |
 | [Module menus](./plan/18-MODULE-MENUS.md) | 4 | 0 | 0 | 4 |
+| [Discovery — outreach campaigns](./plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md) | 0 | 0 | 16 | 16 |
 
 ## What is left
 
-1 stories are neither built nor deliberately set aside:
+17 stories are neither built nor deliberately set aside:
 
 | ID | Story | Status | Note |
 |---|---|---|---|
 | `DISC-OFFER-P0-03.3` | Offering Navigation | ❔ Unverified | Discussed in `docs/design/discovery-offering-backlog-audit.md`, but no code cites it — confirm before relying on this |
+| `DISC-CAMP-P0-01.1` | Tables, RLS, audit triggers, claim function | ⬜ Not started | — |
+| `DISC-CAMP-P0-01.2` | Ownership-map row, CLAUDE.md exception, security rules line on campaign sends | ⬜ Not started | — |
+| `DISC-CAMP-P0-02.1` | Enrolment from the audience filter, with reasons for those left out | ⬜ Not started | — |
+| `DISC-CAMP-P0-02.2` | Tick | ⬜ Not started | — |
+| `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ⬜ Not started | — |
+| `DISC-CAMP-P0-02.4` | Sender mailbox | ⬜ Not started | — |
+| `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ⬜ Not started | — |
+| `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ⬜ Not started | — |
+| `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ⬜ Not started | — |
+| `DISC-CAMP-P0-04.2` | Reply matched to the right workspace; redelivery safe; draft answer for interested replies | ⬜ Not started | — |
+| `DISC-CAMP-P0-04.3` | Automatic pause on bounce or complaint rate | ⬜ Not started | — |
+| `DISC-CAMP-P0-05.1` | Campaigns page, new campaign, Launch dialog, pause and resume | ⬜ Not started | — |
+| `DISC-CAMP-P0-05.2` | Campaign results | ⬜ Not started | — |
+| `DISC-CAMP-P0-06.1` | Call, WhatsApp and LinkedIn steps as Today rows with drafts | ⬜ Not started | — |
+| `DISC-CAMP-P0-07.1` | Cron route, daily schedule, hourly workflow | ⬜ Not started | — |
+| `DISC-CAMP-P0-07.2` | Add new prospects automatically | ⬜ Not started | — |
 
 ## Platform build-out
 
@@ -1293,3 +1310,28 @@ Source: [`docs/plan/18-MODULE-MENUS.md`](./plan/18-MODULE-MENUS.md)
 | `PLATFORM-NAV-P0-01.2` | Inventory menu | ✅ Done | `packages/module-inventory/src/manifest.ts` +1 |
 | `PLATFORM-NAV-P0-01.3` | CRM menu | ✅ Done | `packages/module-crm/src/manifest.ts` +1 |
 | `PLATFORM-NAV-P0-01.4` | Finance menu | ✅ Done | `packages/module-registry/src/index.ts` |
+
+## Discovery — outreach campaigns
+
+Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md)
+
+### Story index
+
+| ID | Story | Status | Evidence / note |
+|---|---|---|---|
+| `DISC-CAMP-P0-01.1` | Tables, RLS, audit triggers, claim function | ⬜ Not started | — |
+| `DISC-CAMP-P0-01.2` | Ownership-map row, CLAUDE.md exception, security rules line on campaign sends | ⬜ Not started | — |
+| `DISC-CAMP-P0-02.1` | Enrolment from the audience filter, with reasons for those left out | ⬜ Not started | — |
+| `DISC-CAMP-P0-02.2` | Tick | ⬜ Not started | — |
+| `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ⬜ Not started | — |
+| `DISC-CAMP-P0-02.4` | Sender mailbox | ⬜ Not started | — |
+| `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ⬜ Not started | — |
+| `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ⬜ Not started | — |
+| `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ⬜ Not started | — |
+| `DISC-CAMP-P0-04.2` | Reply matched to the right workspace; redelivery safe; draft answer for interested replies | ⬜ Not started | — |
+| `DISC-CAMP-P0-04.3` | Automatic pause on bounce or complaint rate | ⬜ Not started | — |
+| `DISC-CAMP-P0-05.1` | Campaigns page, new campaign, Launch dialog, pause and resume | ⬜ Not started | — |
+| `DISC-CAMP-P0-05.2` | Campaign results | ⬜ Not started | — |
+| `DISC-CAMP-P0-06.1` | Call, WhatsApp and LinkedIn steps as Today rows with drafts | ⬜ Not started | — |
+| `DISC-CAMP-P0-07.1` | Cron route, daily schedule, hourly workflow | ⬜ Not started | — |
+| `DISC-CAMP-P0-07.2` | Add new prospects automatically | ⬜ Not started | — |
