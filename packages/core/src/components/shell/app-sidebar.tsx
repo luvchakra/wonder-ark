@@ -18,7 +18,7 @@ import {
 } from "../../lib/nav-group-folds";
 import type { NavGroupFolds } from "../../lib/nav-group-folds";
 import { SELECTED_MODULE_STORAGE_KEY as MODULE_STORAGE_KEY } from "../../lib/module-selection";
-import { buildDiscoveryNav, offeringIdFromPath } from "../../lib/discovery-nav";
+import { buildDiscoveryNav, businessNavLink, offeringIdFromPath } from "../../lib/discovery-nav";
 import { readOfferingFocus, writeOfferingFocus, type OfferingFocus } from "../../lib/offering-focus";
 import { useSidebar } from "./sidebar-context";
 import { SidebarAccountMenu } from "./sidebar-account-menu";
@@ -55,7 +55,9 @@ export function inferModuleFromPath(pathname: string | null): string | null {
   // spellings the proxy still redirects from, recognised here so the rail highlights the
   // right module during that redirect rather than flickering to the default.
   if (section === "finance" || section === "compliance" || section === "gst") return "gst";
-  if (!section || section === "discovery" || section === "business") return "discovery";
+  // PLATFORM-NAV-P0-03.2: the Business page is a row of its own above the modules, so it
+  // opens no module's menu; the menu that was open stays as it was.
+  if (!section || section === "discovery") return "discovery";
   return null;
 }
 
@@ -198,9 +200,9 @@ function NavGroup({
   );
 }
 
-/** The expanded module's own sub-navigation. Discovery is the one module whose real
- * content is live data (this business's offerings) rather than a static manifest tree,
- * so it renders its own shape; every other module renders its manifest nav groups. */
+/** The expanded module's own sub-navigation. Discovery's is four plain links, one of
+ * which follows the offering last worked in (lib/discovery-nav.ts); every other module
+ * renders its manifest nav groups. */
 function ModuleNav({
   module,
   pathname,
@@ -248,13 +250,12 @@ function ModuleNav({
   const base = businessHref(businessId);
 
   if (module.key === "discovery") {
-    // DISC-NAV-01..05: Overview, Business, then the four expandable sections -- see
-    // lib/discovery-nav.ts for the tree and its active-route rules. Each section uses the
-    // same fold mechanism (and storage) as every other module's sections (§3.4).
-    const tree = buildDiscoveryNav(base, productsByBusiness?.[businessId] ?? [], pathname, rememberedOfferingId);
+    // PLATFORM-NAV-P0-03.1: four plain links, nothing to unfold. Each section's pages are
+    // the tabs on its own page -- see lib/discovery-nav.ts.
+    const links = buildDiscoveryNav(base, productsByBusiness?.[businessId] ?? [], pathname, rememberedOfferingId);
     return (
       <div className="flex flex-col gap-0.5">
-        {tree.top.map((link) => (
+        {links.map((link) => (
           <NavLink
             key={link.id}
             href={link.href}
@@ -264,29 +265,6 @@ function ModuleNav({
             onNavigate={onNavigate}
             indent
           />
-        ))}
-        {tree.groups.map((group) => (
-          <NavGroup
-            key={group.id}
-            heading={group.heading}
-            collapsed={!isGroupExpanded(group.id, group.holdsActive)}
-            onToggle={() => onToggleGroup(group.id, group.holdsActive)}
-          >
-            {group.items.length === 0 ? (
-              <p className="ml-7 py-1.5 text-sm text-sidebar-muted">{group.emptyMessage}</p>
-            ) : (
-              group.items.map((link) => (
-                <NavLink
-                  key={link.id}
-                  href={link.href}
-                  label={link.label}
-                  isActive={link.active}
-                  onNavigate={onNavigate}
-                  indent
-                />
-              ))
-            )}
-          </NavGroup>
         ))}
       </div>
     );
@@ -486,6 +464,7 @@ export function AppSidebar({
   }
 
   const isExecutiveActive = pathname === "/dashboard";
+  const businessLink = effectiveBusinessId ? businessNavLink(businessHref(effectiveBusinessId), pathname) : null;
 
   return (
     <>
@@ -562,6 +541,26 @@ export function AppSidebar({
         </Link>
 
         <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-3 pb-3">
+          {/* PLATFORM-NAV-P0-03.2: the business's own details and offerings. It belongs to
+              the business, not to any one module, so it sits above them all. */}
+          {businessLink ? (
+            <Link
+              href={businessLink.href}
+              onClick={closeDrawer}
+              aria-current={businessLink.active ? "page" : undefined}
+              className={cn(
+                "flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm transition-colors",
+                businessLink.active
+                  ? "bg-sidebar-primary font-medium text-sidebar-primary-foreground"
+                  : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              )}
+            >
+              <span className="flex size-7 shrink-0 items-center justify-center">
+                <ModuleIcon name="Building2" className="size-4.5" />
+              </span>
+              <span className="min-w-0 flex-1 truncate">Business</span>
+            </Link>
+          ) : null}
           {modules.map((module) => {
             const isExpanded = module.licensed && expandedModule === module.key;
             return (

@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { expectNoAppCrash } from "../support/assertions";
 import { getTestBusinessSlug } from "../support/business";
-import { expandNavGroup, openSidebar } from "../support/sidebar";
+import { openSidebar } from "../support/sidebar";
 
 // MKT-03..14 / DISC-NAV-04. Every Marketing page renders for real (the Server/Client
 // boundary crash class only shows up in a browser), and the sidebar reaches them.
@@ -17,14 +17,18 @@ test.describe("Discovery › Marketing", () => {
     });
   }
 
-  test("the sidebar lists Marketing's pages under Discovery", async ({ page }) => {
+  // PLATFORM-NAV-P0-03.1: Marketing is one link in the sidebar; its pages are the tabs on
+  // the page it opens.
+  test("the sidebar opens Marketing, whose pages are tabs on the page", async ({ page }) => {
     const slug = await getTestBusinessSlug(page);
     await page.goto(`/${slug}/discovery/dashboard`);
     await openSidebar(page);
-    await expandNavGroup(page, "Marketing");
-    const nav = page.locator('nav[aria-label="Main"]');
+    await page.locator('nav[aria-label="Main"]').getByRole("link", { name: "Marketing", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/${slug}/discovery/marketing$`));
+    await expectNoAppCrash(page);
+    const tabs = page.locator('nav[aria-label="Section"]');
     for (const label of ["Strategy", "Campaigns", "Content", "Assets", "Website & SEO"]) {
-      await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
+      await expect(tabs.getByRole("link", { name: label, exact: true })).toBeVisible();
     }
   });
 

@@ -113,9 +113,11 @@ export async function saveOptionsAction(
 }
 
 /**
- * "Send a test to me": saves what the form holds, then sends one message through the
- * mailbox to the acting user's own account address. The mailbox is verified only when
- * the mail server accepted that message.
+ * Connect: saves what the form holds, then sends one message through the mailbox to the
+ * acting user's own account address. The mailbox is verified only when the mail server
+ * accepted that message. With the servers left blank they are worked out from the
+ * address (`saveSenderMailbox`). The fold's fields are absent from the form while it is
+ * closed, which reads the same as blank.
  */
 export async function testMailboxAction(
   businessId: string,
@@ -141,7 +143,9 @@ export async function testMailboxAction(
     if (saved.status === "invalid") throw new Error(saved.message);
     const tested = await sendMailboxTest(workspaceId);
     revalidatePath(path);
-    if (tested.status === "failed") throw new Error(`Saved, but the test wasn't sent. ${tested.message}`);
+    if (tested.status === "failed") {
+      throw new Error(`Saved, but the test wasn't sent. ${tested.message}${saved.signInHint && /sign-in/.test(tested.message) ? ` ${saved.signInHint}` : ""}`);
+    }
   });
 }
 

@@ -99,9 +99,55 @@ async function main() {
       assertEqual(claim(e1, aliceStep1), "-|deferred|campaign_not_active|false", "a draft campaign's send is deferred and nothing is written");
       psql(`update discovery.sender_mailboxes set status = 'verified', verified_at = now()`);
       psqlAs(ALICE, `insert into discovery.outreach_campaigns (workspace_id, name) values ('${aliceWorkspace}', 'No steps')`);
+      psqlAs(ALICE, `update discovery.outreach_campaigns set preview_confirmed_at = now() where name = 'No steps'`);
       assertThrows(() => psqlAs(ALICE, `update discovery.outreach_campaigns set status = 'active' where name = 'No steps'`), "launch is refused without a step");
+
+      console.log("Verifying activation needs a confirmed preview, and a change clears it (20261112140000)...");
+      const confirmed = (id) => psql(`select coalesce(preview_confirmed_by::text, 'no') from discovery.outreach_campaigns where id = '${id}'`);
+      assertThrows(() => psqlAs(ALICE, `update discovery.outreach_campaigns set status = 'active' where id = '${aliceCampaign}'`), "activation is refused before the preview is confirmed");
+      assertThrows(
+        () => psqlAs(ALICE, `insert into discovery.outreach_campaigns (workspace_id, name, preview_confirmed_at) values ('${aliceWorkspace}', 'Pre-confirmed', now()); update discovery.outreach_campaigns set status = 'active' where name = 'Pre-confirmed'`),
+        "a campaign cannot be created already confirmed",
+      );
+      const confirm = (id, who = ALICE) => psqlAs(who, `update discovery.outreach_campaigns set preview_confirmed_at = '2000-01-01', preview_confirmed_by = '${BOB}' where id = '${id}'`);
+      confirm(aliceCampaign);
+      assertEqual(confirmed(aliceCampaign), ALICE, "a confirmation is the person's own: it names who made it, not who they said");
+      assertEqual(psql(`select (preview_confirmed_at > now() - interval '1 minute') from discovery.outreach_campaigns where id = '${aliceCampaign}'`), "t", "and is dated now, not when they said");
+      for (const [label, change] of [
+        ["who is enrolled", `update discovery.outreach_campaigns set audience = '{"onlyQualified":false}' where id = '${aliceCampaign}'`],
+        ["the sending days", `update discovery.outreach_campaigns set send_days = '{1,2}' where id = '${aliceCampaign}'`],
+        ["the sending hours", `update discovery.outreach_campaigns set send_to_hour = 17 where id = '${aliceCampaign}'`],
+        ["the campaign's emails a day", `update discovery.outreach_campaigns set daily_limit = 10 where id = '${aliceCampaign}'`],
+        ["adding new prospects automatically", `update discovery.outreach_campaigns set auto_enroll = true where id = '${aliceCampaign}'`],
+        ["a step's text", `update discovery.outreach_templates set body = 'Changed {{company}}' where campaign_id = '${aliceCampaign}' and step_id = '${aliceStep1}'`],
+        ["a step's subject", `update discovery.outreach_templates set subject = 'Changed' where campaign_id = '${aliceCampaign}' and step_id = '${aliceStep1}'`],
+        ["a step's gap", `update discovery.outreach_campaign_steps set delay_days = 4 where id = '${aliceStep2}'`],
+        ["a new step", `insert into discovery.outreach_campaign_steps (campaign_id, workspace_id, position, delay_days, purpose) values ('${aliceCampaign}', '${aliceWorkspace}', 3, 1, 'last_note')`],
+        ["a removed step", `delete from discovery.outreach_campaign_steps where campaign_id = '${aliceCampaign}' and position = 3`],
+        ["a new text", `insert into discovery.outreach_templates (campaign_id, step_id, workspace_id, segment, subject, body, origin) values ('${aliceCampaign}', '${aliceStep1}', '${aliceWorkspace}', 'plumber', 'Hi', 'Hello plumber', 'user_provided')`],
+        ["a removed text", `delete from discovery.outreach_templates where campaign_id = '${aliceCampaign}' and segment = 'plumber'`],
+        ["the From name", `update discovery.sender_mailboxes set from_name = 'Someone Else' where workspace_id = '${aliceWorkspace}'`],
+      ]) {
+        confirm(aliceCampaign);
+        assertEqual(confirmed(aliceCampaign), ALICE, `confirmed again before changing ${label}`);
+        psqlAs(ALICE, change);
+        assertEqual(confirmed(aliceCampaign), "no", `changing ${label} clears the confirmation`);
+        assertThrows(() => psqlAs(ALICE, `update discovery.outreach_campaigns set status = 'active' where id = '${aliceCampaign}'`), `and activation is refused after changing ${label}`);
+      }
+      confirm(aliceCampaign);
+      psqlAs(ALICE, `update discovery.outreach_campaigns set name = 'First campaign' where id = '${aliceCampaign}'`);
+      psqlAs(ALICE, `update discovery.outreach_templates set origin = 'user_modified' where campaign_id = '${aliceCampaign}' and step_id = '${aliceStep1}'`);
+      assertEqual(confirmed(aliceCampaign), ALICE, "a change to something the preview did not show (the name, a label) keeps the confirmation");
+      psqlAs(ALICE, `update discovery.outreach_campaigns set preview_confirmed_at = now(), audience = '{}' where id = '${aliceCampaign}'`);
+      assertEqual(confirmed(aliceCampaign), "no", "a confirmation cannot ride along with a change to what was previewed");
+      assertThrows(() => psqlAs(ALICE, `insert into discovery.outreach_campaign_steps (campaign_id, workspace_id, position, delay_days, purpose) values ('${aliceCampaign}', '${aliceWorkspace}', 3, 31, 'last_note')`), "a follow-up more than 30 days later is refused");
+      psql(`update discovery.outreach_campaign_steps set delay_days = 3 where id = '${aliceStep2}'`);
+      psql(`update discovery.outreach_campaigns set send_days = '{1,2,3,4,5}', send_to_hour = 18, daily_limit = null, auto_enroll = false where id = '${aliceCampaign}'`);
+      psql(`update discovery.sender_mailboxes set from_name = 'Sender', status = 'verified' where workspace_id = '${aliceWorkspace}'`);
+      confirm(aliceCampaign);
       psqlAs(ALICE, `update discovery.outreach_campaigns set status = 'active' where id = '${aliceCampaign}'`);
       assertEqual(psql(`select status || ':' || (launched_at is not null) || ':' || launched_by from discovery.outreach_campaigns where id = '${aliceCampaign}'`), `active:true:${ALICE}`, "launch records when and by whom");
+      psql(`update discovery.outreach_campaigns set preview_confirmed_at = now() where id = '${bobCampaign}'`);
       psql(`update discovery.outreach_campaigns set status = 'active' where id = '${bobCampaign}'`);
       assertThrows(() => psqlAs(ALICE, `update discovery.outreach_campaigns set status = 'draft' where id = '${aliceCampaign}'`), "a launched campaign cannot go back to draft");
 
@@ -132,7 +178,7 @@ async function main() {
 
       console.log("Verifying the sequence rules...");
       assertThrows(() => psqlAs(ALICE, `insert into discovery.outreach_campaign_steps (campaign_id, workspace_id, position, delay_days, purpose) values ('${aliceCampaign}', '${aliceWorkspace}', 6, 3, 'last_note')`), "a sixth step is refused");
-      assertThrows(() => psqlAs(ALICE, `insert into discovery.outreach_campaign_steps (campaign_id, workspace_id, position, delay_days, purpose) values ('${aliceCampaign}', '${aliceWorkspace}', 3, 1, 'last_note')`), "a follow-up less than two days later is refused");
+      assertThrows(() => psqlAs(ALICE, `insert into discovery.outreach_campaign_steps (campaign_id, workspace_id, position, delay_days, purpose) values ('${aliceCampaign}', '${aliceWorkspace}', 3, 0, 'last_note')`), "a follow-up on the same day is refused");
       assertThrows(
         () => psqlAs(ALICE, `insert into discovery.outreach_campaigns (workspace_id, name) values ('${aliceWorkspace}', 'Second'); insert into discovery.outreach_enrollments (campaign_id, workspace_id, prospect_id) select c.id, c.workspace_id, e.prospect_id from discovery.outreach_campaigns c, discovery.outreach_enrollments e where c.name = 'Second' and e.id = '${e1}'`),
         "a prospect cannot be active in two campaigns of one workspace",
@@ -181,6 +227,19 @@ async function main() {
       psqlAs(ALICE, `update discovery.outreach_enrollments set status = 'active', stop_reason = null where id = '${e3}'`);
       assertEqual(claim(e3, aliceStep1, "'suppressed'").split("|").slice(1).join("|"), "skipped|suppressed|true", "a send the caller knows must not happen is recorded as skipped with its reason");
       assertEqual(claim(e3, aliceStep1).split("|").slice(1).join("|"), "skipped|suppressed|false", "and a skipped step is not claimed again");
+
+      console.log("Verifying a campaign's own daily limit holds beside the mailbox's (20261112140000)...");
+      psql(`update discovery.outreach_enrollments set status = 'active', stop_reason = null, next_step_position = 2 where id = '${e1}'`);
+      psql(`update discovery.outreach_campaigns set daily_limit = 2 where id = '${aliceCampaign}'`);
+      assertEqual(psql(`select status from discovery.outreach_campaigns where id = '${aliceCampaign}'`), "active", "a running campaign stays running when its limit is changed");
+      assertEqual(claim(e1, aliceStep2), "-|deferred|campaign_daily_limit|false", "the campaign's own limit of 2 defers its third send of the day, though the mailbox allows 50");
+      assertEqual(psql(`select count(*) from discovery.outreach_sends where enrollment_id = '${e1}' and step_id = '${aliceStep2}'`), "0", "and writes nothing, so the step stays due");
+      psql(`update discovery.outreach_campaigns set daily_limit = 4 where id = '${aliceCampaign}'`);
+      psql(`update discovery.sender_mailboxes set daily_limit = 2 where workspace_id = '${aliceWorkspace}'`);
+      assertEqual(claim(e1, aliceStep2), "-|deferred|daily_limit|false", "the mailbox's limit still holds when the campaign's is higher");
+      psql(`update discovery.sender_mailboxes set daily_limit = 50 where workspace_id = '${aliceWorkspace}'`);
+      psql(`update discovery.outreach_campaigns set daily_limit = null where id = '${aliceCampaign}'`);
+      psql(`update discovery.outreach_enrollments set next_step_position = 1 where id = '${e1}'`);
 
       console.log("Verifying the audit trail...");
       const audit = (action) => psql(`select count(*) from core.audit_log where action = '${action}'`);
