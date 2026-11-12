@@ -4,7 +4,8 @@ import { businessPath } from "@/lib/business-path";
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { runFind } from "@cofounderai/module-discovery/lib/data-sources/find";
-import type { FindState } from "@cofounderai/module-discovery/lib/data-sources/types";
+import type { FindState, SaveWeeklySearchState } from "@cofounderai/module-discovery/lib/data-sources/types";
+import { saveWeeklySearch, setSavedSearchEnabled } from "@cofounderai/module-discovery/lib/data-sources/saved-searches";
 import { after } from "next/server";
 import { approveSuggestionsAndQueueEnrichment } from "@cofounderai/module-discovery/lib/data-sources/approval";
 import { runQueuedEnrichmentNow } from "@cofounderai/module-discovery/lib/data-sources/enrichment";
@@ -54,6 +55,52 @@ export async function findAction(
       message: error instanceof Error ? error.message : "Something went wrong.",
     };
   }
+}
+
+/**
+ * DISC-DATA-P0-05.1: "Run this weekly". Saves the search that was just run, as the form
+ * posts it back; `saveWeeklySearch` checks the licence and that the source is a free,
+ * active WorksLake source before storing anything. With one already saved it changes
+ * nothing and says so, unless `replace` was posted, which the page sends only from its
+ * "Replace it" button. Returned as state so a refusal reaches the screen.
+ */
+export async function saveWeeklySearchAction(
+  businessId: string,
+  productId: string,
+  workspaceId: string,
+  _prevState: SaveWeeklySearchState,
+  formData: FormData,
+): Promise<SaveWeeklySearchState> {
+  const field = (name: string) => String(formData.get(name) ?? "").trim();
+  try {
+    const outcome = await saveWeeklySearch(
+      workspaceId,
+      {
+        sourceId: field("sourceId"),
+        what: field("what"),
+        where: field("where"),
+        companySize: field("companySize") || undefined,
+        hasWebsite: formData.get("hasWebsite") !== null,
+      },
+      { replace: formData.get("replace") !== null },
+    );
+    if (outcome.status === "saved") revalidatePath(await discoverPath(businessId, productId));
+    return outcome;
+  } catch (error) {
+    unstable_rethrow(error);
+    return { status: "failed", message: error instanceof Error ? error.message : "The search couldn't be saved." };
+  }
+}
+
+/** DISC-DATA-P0-05.1: pause or resume the offering's weekly search. */
+export async function setWeeklySearchEnabledAction(
+  businessId: string,
+  productId: string,
+  workspaceId: string,
+  enabled: boolean,
+) {
+  await setSavedSearchEnabled(workspaceId, enabled);
+  revalidatePath(await discoverPath(businessId, productId));
 }
 
 export async function approveSuggestionsAction(

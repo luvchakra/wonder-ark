@@ -26,13 +26,36 @@ export function createMemoryDb(seed: Record<string, Row[]> = {}, unique: Record<
         if (method === "eq") return row[column] === value;
         if (method === "is") return (row[column] ?? null) === value;
         if (method === "in") return (value as unknown[]).includes(row[column]);
+        if (method === "lte") return row[column] != null && String(row[column]) <= String(value);
+        if (method === "ilike") return String(row[column] ?? "").toLowerCase() === String(value).toLowerCase();
         return true;
       });
 
     let result: Row[];
     const insert = op("insert");
     const update = op("update");
-    if (insert) {
+    const upsert = op("upsert");
+    if (upsert) {
+      // `onConflict` names the key columns. A row that matches an existing one on all of
+      // them is left alone with `ignoreDuplicates` (and does not come back), otherwise
+      // it is overwritten in place.
+      const options = (upsert.args[1] ?? {}) as { onConflict?: string; ignoreDuplicates?: boolean };
+      const keys = (options.onConflict ?? "id").split(",");
+      result = [];
+      for (const incoming of ([] as Row[]).concat(upsert.args[0] as Row | Row[])) {
+        const existing = rows.find((row) => keys.every((key) => row[key] === incoming[key]));
+        if (existing) {
+          if (options.ignoreDuplicates) continue;
+          Object.assign(existing, incoming);
+          result.push(existing);
+        } else {
+          sequence += 1;
+          const added: Row = { id: `${call.table}-${sequence}`, created_at: new Date(Date.UTC(2026, 10, 11, 9, 0, sequence)).toISOString(), ...incoming };
+          rows.push(added);
+          result.push(added);
+        }
+      }
+    } else if (insert) {
       const added = ([] as Row[]).concat(insert.args[0] as Row | Row[]).map((row): Row => {
         sequence += 1;
         return { id: `${call.table}-${sequence}`, created_at: new Date(Date.UTC(2026, 10, 11, 9, 0, sequence)).toISOString(), ...row };

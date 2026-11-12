@@ -163,7 +163,18 @@ describe("a search of WorksLake business data", () => {
       skipped: { alreadyProspect: 0, alreadyInReview: 0, icp: 0, icpReasons: [], unreadable: 0 },
       unitsSpent: 0,
       providerIssues: [],
+      // DISC-DATA-P0-05.1: a free source's search can be saved to run weekly.
+      weekly: { sourceId: "stored", what: input.what, where: input.where },
     });
+  });
+
+  it("does not offer a weekly run for a source that uses paid lookups", async () => {
+    mockDb();
+    sources({ sources: [{ ...stored, paid: true }, webSearch, fileImport] });
+    searchReturns([business("a")]);
+    const outcome = await runFind(WORKSPACE, input);
+    expect(outcome).toMatchObject({ status: "completed" });
+    expect(outcome).not.toHaveProperty("weekly");
   });
 
   it("writes to the review list only, never straight into prospects", async () => {
@@ -217,7 +228,7 @@ describe("a search of WorksLake business data", () => {
 
     expect(h.order).toEqual(["licence", "usage", "gateway"]);
     expect(h.requireModule).toHaveBeenCalledWith(TENANT_ID, "discovery");
-    expect(h.assertWithinUsageLimit).toHaveBeenCalledWith(WORKSPACE);
+    expect(h.assertWithinUsageLimit).toHaveBeenCalledWith(WORKSPACE, undefined);
   });
 
   it("records the run with its source, result count and units spent", async () => {
@@ -307,10 +318,11 @@ describe("what is left out, and why", () => {
 
     const outcome = await runFind(WORKSPACE, input);
 
-    expect(h.findDuplicateProspect).toHaveBeenCalledWith(WORKSPACE, {
-      companyName: "Company known",
-      website: "https://known.example/",
-    });
+    expect(h.findDuplicateProspect).toHaveBeenCalledWith(
+      WORKSPACE,
+      { companyName: "Company known", website: "https://known.example/" },
+      undefined,
+    );
     expect(stagedRows(supabase).map((row) => row.external_id)).toEqual(["new"]);
     expect(outcome).toMatchObject({ found: 2, added: 1, skipped: { alreadyProspect: 1 } });
   });

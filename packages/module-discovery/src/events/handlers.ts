@@ -2,6 +2,7 @@ import { registerEventHandler } from "@cofounderai/core/events/registry";
 import type { DomainEvent } from "@cofounderai/core/events/types";
 import { createAdminClient } from "../db/admin";
 import { ENRICHMENT_REQUESTED_EVENT, enrichProspect } from "../lib/data-sources/enrichment";
+import { SAVED_SEARCH_RUN_REQUESTED_EVENT, runSavedSearch } from "../lib/data-sources/saved-searches";
 import { UsageLimitExceededError } from "../lib/usage/limits";
 
 /**
@@ -44,4 +45,23 @@ registerEventHandler(ENRICHMENT_REQUESTED_EVENT, async (event: DomainEvent) => {
   if (outcome.status === "failed" && (outcome.reason === "unavailable" || outcome.reason === "quota")) {
     throw new Error(`Enrichment did not run (${outcome.reason}).`);
   }
+});
+
+/**
+ * DISC-DATA-P0-05.1: one queued run of an offering's weekly saved search. Published by
+ * /api/cron/run-saved-searches with `required_module: 'discovery'`, so it is parked for
+ * a business without the licence. `runSavedSearch` runs it for the event's business
+ * only, with free sources, through the usual usage check, and stages what is new for a
+ * person to review.
+ *
+ * Safe to redeliver: the run is in the ledger under the search and its due date, so a
+ * second delivery asks the gateway nothing. A search that failed (gateway down, quota,
+ * source not set up, allowance used) is recorded as failed on the saved search and
+ * returns here without throwing: next week's run is the retry, so retries never pile
+ * up. Only a database error throws, for the drain to retry with backoff.
+ */
+registerEventHandler(SAVED_SEARCH_RUN_REQUESTED_EVENT, async (event: DomainEvent) => {
+  const { savedSearchId, dueAt } = event.payload as { savedSearchId?: unknown; dueAt?: unknown };
+  if (typeof savedSearchId !== "string" || !savedSearchId || typeof dueAt !== "string" || !dueAt) return;
+  await runSavedSearch(savedSearchId, dueAt, event.business_id);
 });

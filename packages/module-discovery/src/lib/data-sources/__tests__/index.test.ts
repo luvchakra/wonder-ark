@@ -71,7 +71,7 @@ describe("listDataSources", () => {
 
     await listDataSources(WORKSPACE);
 
-    expect(h.getBusinessIdForWorkspace).toHaveBeenCalledWith(WORKSPACE);
+    expect(h.getBusinessIdForWorkspace).toHaveBeenCalledWith(WORKSPACE, undefined);
     expect(h.listSources).toHaveBeenCalledWith({ tenantId: TENANT_ID });
   });
 
