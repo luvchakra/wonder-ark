@@ -26,6 +26,7 @@
     "@cofounderai/module-inventory": "*",
     "@supabase/supabase-js": "^2.115.0",
     "exceljs": "^4.4.0",
+    "imapflow": "^2.11.0",
     "mammoth": "^1.12.2",
     "nodemailer": "^10.5.0",
     "pdf-parse": "^1.1.4",

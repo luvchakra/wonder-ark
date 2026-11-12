@@ -279,4 +279,17 @@ Where the build differs from the text above. The live repo wins (`CLAUDE.md`).
   campaign page warns when the daily check falls outside the campaign's sending hours, since nothing would send.
 - **`DISC-CAMP-P0-01.2` is done except the `CLAUDE.md` line**, which is the owner's to add (see "Waiting on the
   owner").
+- **The mailbox is read at the start of every tick, whatever the hour**, before anything is sent, so someone who
+  replied or bounced is stopped before the next step. If a mailbox that is set to be read cannot be, nothing is
+  sent for that workspace in that tick and the reason is kept on the mailbox (`last_error`) and shown on the
+  campaign page.
+- **Other mail is judged by its envelope only.** A message is kept if its From address is someone the workspace
+  enrolled, or if it looks like a failure notice (a `multipart/report`, or a mail-system sender with a failure
+  subject) and its text names an address the workspace sent to. The body of anything else is never fetched. The
+  inbox is opened read-only, so nothing is marked read.
+- **The first read starts at the workspace's earliest campaign launch**, not at the start of the mailbox; later
+  reads start after `last_seen_uid`, which moves only once everything read has been dealt with. A changed
+  UIDVALIDITY starts again from that date; replies are stored once by Message-ID either way.
+- **A reply read from the mailbox with no Message-ID** is keyed by the mailbox's own id for it.
+- **`imapflow` is the IMAP client**; its log output is switched off, since its debug lines carry mailbox content.
 

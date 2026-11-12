@@ -307,8 +307,12 @@ mailbox. Nothing is written or sent until you ask for it.
 - **What stops follow-ups to a prospect:** a reply, a bounce, an unsubscribe, a complaint,
   marking the prospect won or lost, or deleting the contact. Someone who unsubscribes,
   bounces or complains is also added to your do-not-contact list, so no later email from
-  your business is sent to that address. If you haven't given an incoming mail server
-  (IMAP), replies are not detected automatically: log the reply on the prospect's page and
+  your business is sent to that address. If you give an incoming mail server (IMAP) under
+  **Sending from**, WonderArk checks the mailbox before each round of sending: it reads
+  only replies from people the campaign wrote to and delivery-failure notices about those
+  addresses, and leaves the rest of your mail unread and untouched. If the mailbox can't be
+  read, nothing is sent until it can, and the page says why. Without an incoming mail
+  server, replies are not detected automatically: log the reply on the prospect's page and
   its follow-ups stop.
 - **Pause** stops all sending at once; **Resume** starts it again. A campaign pauses itself
   and says why if more than 8% of at least 20 sent emails bounce, or if your mailbox can't

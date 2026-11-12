@@ -6,6 +6,8 @@ import { createAdminClient } from "../../db/admin";
 import { emailSendCheck } from "../messages/email-status";
 import { getBusiness, getBusinessIdForWorkspace, getProduct, getWorkspace } from "../tenancy/queries";
 import { enrolAudience, getCampaignDetail, type CampaignDetail } from "./campaigns";
+import type { ImapDeps } from "./imap";
+import { syncMailboxInbox } from "./inbox";
 import { loadMailboxForSending, type SendingMailbox } from "./mailbox";
 import { MERGE_FIELD_LABEL, cityOf, renderTemplate, type MergeValues } from "./render";
 import { OUTCOME_UNKNOWN_REASON, sendViaSmtp, type SmtpDeps } from "./smtp";
@@ -61,6 +63,9 @@ export type TickSummary = {
   skipped: number;
   /** Left due: the daily limit, a check that could not be made, outside the hours. */
   deferred: number;
+  /** Replies and bounces read from the workspaces' own mailboxes in this tick. */
+  repliesRead: number;
+  bouncesRead: number;
   stopped: number;
   completed: number;
   enrolled: number;
@@ -76,6 +81,7 @@ export type TickOptions = {
   /** At most this many sends: the first batch after Launch is small. */
   maxSends?: number;
   smtp?: SmtpDeps;
+  imap?: ImapDeps;
 };
 
 /** Whether `now` falls on one of the campaign's days, inside its hours, in its timezone. */
@@ -400,7 +406,7 @@ export async function runCampaignTick(options: TickOptions = {}): Promise<TickSu
   const startedAt = Date.now();
   const budgetMs = options.budgetMs ?? TICK_BUDGET_MS;
   const db = createAdminClient();
-  const summary: TickSummary = { campaigns: 0, sent: 0, failed: 0, skipped: 0, deferred: 0, stopped: 0, completed: 0, enrolled: 0, paused: [], outOfTime: false };
+  const summary: TickSummary = { campaigns: 0, sent: 0, failed: 0, skipped: 0, deferred: 0, repliesRead: 0, bouncesRead: 0, stopped: 0, completed: 0, enrolled: 0, paused: [], outOfTime: false };
   const outOfTime = () => Date.now() - startedAt > budgetMs;
   const sendsLeft = () => (options.maxSends === undefined ? Infinity : options.maxSends - summary.sent);
 
@@ -421,6 +427,21 @@ export async function runCampaignTick(options: TickOptions = {}): Promise<TickSu
       if (!businessId) continue;
       const core = createCoreAdminClient({ schema: "core" });
 
+      // DISC-CAMP-P0-04.1: first read what arrived in the workspace's mailbox, whatever
+      // the hour, so a prospect who replied or bounced is stopped before its next step.
+      // If the mailbox is meant to be read and cannot be, nothing is sent for it now.
+      const mailbox = await loadMailboxForSending(workspaceId, db);
+      let inboxReadable = true;
+      if (mailbox?.imap) {
+        const inbox = await syncMailboxInbox(db, workspaceId, mailbox, options.imap, now);
+        if (inbox.ok) {
+          summary.repliesRead += inbox.replies;
+          summary.bouncesRead += inbox.bounces;
+        } else {
+          inboxReadable = false;
+        }
+      }
+
       const details: CampaignDetail[] = [];
       for (const campaignId of campaignIds) {
         const detail = await getCampaignDetail(campaignId, db);
@@ -434,6 +455,11 @@ export async function runCampaignTick(options: TickOptions = {}): Promise<TickSu
           } catch (enrolError) {
             console.error("New prospects could not be added to a campaign:", enrolError instanceof Error ? enrolError.message : enrolError);
           }
+        }
+        // A bounce just read may have taken a campaign over the limit.
+        if (await pauseIfBouncing(db, detail.campaign.id)) {
+          summary.paused.push(detail.campaign.id);
+          continue;
         }
         if (inSendWindow(detail.campaign, now)) details.push(detail);
       }
@@ -456,8 +482,8 @@ export async function runCampaignTick(options: TickOptions = {}): Promise<TickSu
       if (dueCount === 0) continue;
 
       // No verified mailbox: the claim would refuse every send, so none is attempted.
-      const mailbox = await loadMailboxForSending(workspaceId, db);
-      if (!mailbox) {
+      // Replies that could not be read: nobody is written to until they can be.
+      if (!mailbox || !inboxReadable) {
         summary.deferred += dueCount;
         continue;
       }

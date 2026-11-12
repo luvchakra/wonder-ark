@@ -115,7 +115,7 @@ export function StepList({ steps }: { steps: CampaignStep[] }) {
 export function MailboxForm({ mailbox, action, defaultLimit }: { mailbox: SenderMailboxView | null; action: FormAction; defaultLimit: number }) {
   const status =
     mailbox?.status === "verified"
-      ? `Verified${mailbox.verifiedAt ? ` on ${day(mailbox.verifiedAt)}` : ""}. Emails go out from ${mailbox.fromEmail}.`
+      ? `Verified${mailbox.verifiedAt ? ` on ${day(mailbox.verifiedAt)}` : ""}. Emails go out from ${mailbox.fromEmail}.${mailbox.lastError ? ` ${mailbox.lastError}` : ""}`
       : mailbox?.status === "failed"
         ? `The last test failed: ${mailbox.lastError ?? "no reason was recorded."}`
         : mailbox

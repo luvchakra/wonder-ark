@@ -140,6 +140,10 @@ export default async function CampaignPage({ params }: { params: Promise<{ busin
             <p className="text-sm text-muted-foreground">
               Replies are not detected automatically for this mailbox. When a prospect replies, log the reply on its page and its follow-ups stop.
             </p>
+          ) : mailbox.lastError ? (
+            <p role="status" className="text-sm text-destructive">
+              {mailbox.lastError}
+            </p>
           ) : null}
           <CampaignResultsView results={results} prospectsPath={`${offeringPath}/prospects`} />
         </section>
