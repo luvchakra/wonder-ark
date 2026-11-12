@@ -8,8 +8,7 @@ import { listPartiesForBusiness } from "@cofounderai/core/parties/queries";
 import { formatDate } from "@cofounderai/core/lib/format";
 import { Badge } from "@cofounderai/core/ui/badge";
 import { EmptyState } from "@cofounderai/core/ui/empty-state";
-import { NativeSelect } from "@cofounderai/core/ui/native-select";
-import { SubmitButton } from "@cofounderai/core/ui/submit-button";
+import { AutoSubmitSelect } from "@cofounderai/core/ui/auto-submit-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@cofounderai/core/ui/table";
 import { Users } from "lucide-react";
 import type { EmployeeOption } from "@cofounderai/module-crm/lib/tickets/types";
@@ -48,21 +47,18 @@ function StatusForm({
       action={updateLeadStatusAction.bind(null, businessId, leadId)}
       className={`flex items-center gap-2 ${align === "end" ? "justify-end" : "justify-start"}`}
     >
-      <NativeSelect name="status" defaultValue={status} className={`h-9 capitalize ${selectClassName}`} aria-label="Status">
+      <AutoSubmitSelect name="status" defaultValue={status} className={`h-9 capitalize ${selectClassName}`} aria-label="Status">
         {LEAD_STATUSES.map((s) => (
           <option key={s} value={s} className="capitalize">
             {s}
           </option>
         ))}
-      </NativeSelect>
-      <SubmitButton size="sm" variant="outline" pendingText="Updating..." className="shrink-0">
-        Update
-      </SubmitButton>
+      </AutoSubmitSelect>
     </form>
   );
 }
 
-/** CRM-05.4's inline assign form -- "unassigned items are visible" via NativeSelect's
+/** CRM-05.4's inline assign form -- "unassigned items are visible" via the select's
  * own "Unassigned" option always showing as the current value rather than a blank. */
 function AssignForm({
   businessId,
@@ -84,31 +80,31 @@ function AssignForm({
       action={assignLeadAction.bind(null, businessId, leadId)}
       className={`flex items-center gap-2 ${align === "end" ? "justify-end" : "justify-start"}`}
     >
-      <NativeSelect name="ownerId" defaultValue={ownerId ?? ""} className={`h-9 ${selectClassName}`} aria-label="Owner">
+      <AutoSubmitSelect name="ownerId" defaultValue={ownerId ?? ""} className={`h-9 ${selectClassName}`} aria-label="Owner">
         <option value="">Unassigned</option>
         {employees.map((e) => (
           <option key={e.id} value={e.id}>
             {e.full_name ?? e.email ?? "Unnamed"}
           </option>
         ))}
-      </NativeSelect>
-      <SubmitButton size="sm" variant="outline" pendingText="Assigning..." className="shrink-0">
-        Assign
-      </SubmitButton>
+      </AutoSubmitSelect>
     </form>
   );
 }
 
 /**
  * CRM-04.1's Lead Lifecycle list. Status is changeable inline (the row's own edit
- * mechanism, per docs/design/claude-ui-design-rules.md rule 4) via the same
- * SubmitButton-driven form pattern the prospect detail page's own status control
- * already uses. Desktop gets a real table (rule 5/6: comparable records, aligned
+ * mechanism, per docs/design/claude-ui-design-rules.md rule 4) through a one-field
+ * form per row. Desktop gets a real table (rule 5/6: comparable records, aligned
  * columns, actions on the right); below `md` the same rows render as cards instead of a
  * cropped or side-scrolling table (CLAUDE.md rule 12).
  *
  * CRM-05.4 adds the Owner column/assign form: "unassigned items are visible" via an
  * explicit "Unassigned" badge/option rather than a blank cell.
+ *
+ * PLATFORM-NAV-P0-02.3: choosing a status or an owner saves it, the way the Inbox's own
+ * status and assignee selects already do, so a row no longer carries an Update and an
+ * Assign button beside them. The same two server actions run, with the same checks.
  */
 export default async function CrmLeadsPage({ params }: { params: Promise<{ businessSlug: string }> }) {
   const { businessSlug } = await params;

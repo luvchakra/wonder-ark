@@ -16,13 +16,14 @@ Last updated: 2026-10-17
 
 ## Navigation
 
-**Overview**: Dashboard, Exceptions
-**Accounting**: Chart of Accounts, Journal, Banking, Invoices, Receivables,
-Payables, Bills, Expenses, Financial Reports, Operational Reports,
-Dimensions, Budget, Recurring Entries, Accounting Periods, Backfill
-**Tax & GST**: GST Profile, GST Registrations, GST Ledger, Filing Readiness,
-GST Filing, GSTR-2B Reconciliation, e-Invoicing, e-Way Bill
-**Records**: Evidence, Audit Log
+Everyday pages, at the top of the menu: Dashboard, Invoices, Bills, Expenses, Banking,
+GST Filing
+**Accounting**: Chart of Accounts, Journal, Receivables, Payables, Recurring Entries,
+Accounting Periods, Budget, Dimensions
+**Tax & GST**: Filing Readiness, GST Ledger, GSTR-2B Reconciliation, e-Invoicing,
+e-Way Bill, GST Profile, GST Registrations
+**Reports and records**: Financial Reports, Operational Reports, Exceptions, Evidence,
+Audit Log, Backfill
 
 ## The Finance dashboard
 
