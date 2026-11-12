@@ -254,7 +254,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "Why does a campaign say Needs setup: connect a mailbox?",
     answer:
-      "Campaign emails go out from your own mailbox, not from WonderArk's. Open Sending from on the campaign, enter your mail server (SMTP), username and password or app password, and click Send a test to me. The mailbox is verified when your mail server accepts that test, and Launch then appears. If you change the server, the username, the password or the from address, send the test again.",
+      "Campaign emails go out from your own mailbox, not from WonderArk's. Open Sending from on the campaign, enter the mailbox's email address and its password or app password, and click Connect. For a GoDaddy, Google, Microsoft 365 or Zoho mailbox the mail servers are filled in from the address (a Google mailbox needs an app password); for any other provider enter them under Server settings. Connect sends one test email to your own address, and the mailbox is verified when your mail server accepts it. If you change the server, the username, the password or the address, connect again.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },

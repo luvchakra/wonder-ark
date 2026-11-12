@@ -29,7 +29,7 @@ vi.mock("@cofounderai/core/rbac/require-permission", () => ({ requirePermission:
 vi.mock("@cofounderai/core/audit/mutations", () => ({ writeAuditLog: h.writeAuditLog }));
 vi.mock("../../db/server", () => ({ createClient: h.createClient }));
 vi.mock("../../db/admin", () => ({ createAdminClient: h.createAdminClient }));
-vi.mock("../tenancy/queries", () => ({ getBusinessIdForWorkspace: h.getBusinessIdForWorkspace }));
+vi.mock("../tenancy/queries", () => ({ getBusinessIdForWorkspace: h.getBusinessIdForWorkspace, getBusiness: vi.fn(async () => ({ id: "b1", name: "Acme Software" })) }));
 
 const { getSenderMailbox, loadMailboxForSending, saveSenderMailbox, sendMailboxTest } = await import("./mailbox");
 
@@ -113,6 +113,84 @@ describe("saving a mailbox", () => {
     expect(outcome.status).toBe("invalid");
     expect(outcome.status === "invalid" && outcome.message).toContain(words);
     expect(db.rows("sender_mailboxes")).toHaveLength(0);
+  });
+
+  describe("with only the address and the password", () => {
+    const only = { fromEmail: "asha@acme.example", password: PASSWORD };
+    const mx = (...exchanges: string[]) => async () => exchanges.map((exchange, priority) => ({ exchange, priority }));
+
+    it.each([
+      ["GoDaddy", ["smtp.secureserver.net", "mailstore1.secureserver.net"], "smtpout.secureserver.net", 465, "imap.secureserver.net"],
+      ["Google", ["aspmx.l.google.com"], "smtp.gmail.com", 465, "imap.gmail.com"],
+      ["Microsoft 365", ["acme-example.mail.protection.outlook.com"], "smtp.office365.com", 587, "outlook.office365.com"],
+      ["Zoho", ["mx.zoho.com"], "smtp.zoho.com", 465, "imap.zoho.com"],
+      ["Zoho India", ["mx.zoho.in"], "smtp.zoho.in", 465, "imap.zoho.in"],
+    ])("fills the servers from the fixed table for %s", async (_label, exchanges, smtpHost, smtpPort, imapHost) => {
+      const outcome = await saveSenderMailbox(WORKSPACE, only, { lookup: publicLookup, resolveMx: mx(...exchanges) });
+
+      expect(outcome.status).toBe("saved");
+      expect(stored()).toMatchObject({
+        from_email: "asha@acme.example",
+        from_name: "Acme Software",
+        username: "asha@acme.example",
+        smtp_host: smtpHost,
+        smtp_port: smtpPort,
+        imap_host: imapHost,
+        imap_port: 993,
+        daily_limit: 30,
+      });
+      // Nothing DNS returned is stored: only hosts from the table.
+      expect(JSON.stringify(stored())).not.toContain(exchanges[0]);
+    });
+
+    it("passes on the provider's sign-in hint for a Google mailbox only", async () => {
+      expect(await saveSenderMailbox(WORKSPACE, only, { lookup: publicLookup, resolveMx: mx("aspmx.l.google.com") })).toEqual({
+        status: "saved",
+        signInHint: "Google mailboxes need an app password here, not your usual password.",
+      });
+      setup();
+      expect(await saveSenderMailbox(WORKSPACE, only, { lookup: publicLookup, resolveMx: mx("mailstore1.secureserver.net") })).toEqual({ status: "saved" });
+    });
+
+    it.each([
+      ["the provider is not in the table", mx("mx1.unknownhost.example")],
+      ["the domain has no MX records", mx()],
+      ["the lookup fails", async () => { throw new Error("ESERVFAIL"); }],
+    ])("asks for the servers, and stores nothing, when %s", async (_label, resolveMx) => {
+      const outcome = await saveSenderMailbox(WORKSPACE, only, { lookup: publicLookup, resolveMx });
+      expect(outcome).toEqual({ status: "invalid", message: "We couldn't work out the mail servers from that address. Open Server settings and enter them." });
+      expect(db.rows("sender_mailboxes")).toHaveLength(0);
+    });
+
+    it("still puts the suggested host through the address guard", async () => {
+      const outcome = await saveSenderMailbox(WORKSPACE, only, { lookup: async () => [{ address: "10.0.0.5", family: 4 }], resolveMx: mx("mailstore1.secureserver.net") });
+      expect(outcome).toMatchObject({ status: "invalid" });
+      expect(outcome.status === "invalid" && outcome.message).toContain("private network");
+      expect(db.rows("sender_mailboxes")).toHaveLength(0);
+    });
+
+    it("uses servers a person typed as typed, without looking anything up", async () => {
+      const resolveMx = vi.fn(mx("mailstore1.secureserver.net"));
+      await saveSenderMailbox(WORKSPACE, { ...only, smtpHost: "mail.acme.example", smtpPort: 587 }, { lookup: publicLookup, resolveMx });
+      expect(resolveMx).not.toHaveBeenCalled();
+      expect(stored()).toMatchObject({ smtp_host: "mail.acme.example", smtp_port: 587, imap_host: null });
+    });
+
+    it("keeps the saved servers when the same address reconnects with the settings folded away", async () => {
+      await saveSenderMailbox(WORKSPACE, { ...only, fromName: "Asha", smtpHost: "mail.acme.example", smtpPort: 587, imapHost: "imap.acme.example", dailyLimit: 50 }, { lookup: publicLookup });
+      const resolveMx = vi.fn(mx("mailstore1.secureserver.net"));
+
+      expect(await saveSenderMailbox(WORKSPACE, { fromEmail: "asha@acme.example", password: "new-password" }, { lookup: publicLookup, resolveMx })).toEqual({ status: "saved" });
+
+      expect(resolveMx).not.toHaveBeenCalled();
+      expect(stored()).toMatchObject({ from_name: "Asha", smtp_host: "mail.acme.example", smtp_port: 587, imap_host: "imap.acme.example", daily_limit: 50 });
+    });
+
+    it("starts again from the new address's own domain when the address changes", async () => {
+      await saveSenderMailbox(WORKSPACE, { ...only, smtpHost: "mail.acme.example", smtpPort: 587 }, { lookup: publicLookup });
+      await saveSenderMailbox(WORKSPACE, { fromEmail: "asha@other.example", password: PASSWORD }, { lookup: publicLookup, resolveMx: mx("aspmx.l.google.com") });
+      expect(stored()).toMatchObject({ from_email: "asha@other.example", username: "asha@other.example", smtp_host: "smtp.gmail.com", imap_host: "imap.gmail.com" });
+    });
   });
 
   it("needs a password the first time, and keeps the stored one when an edit leaves it blank", async () => {

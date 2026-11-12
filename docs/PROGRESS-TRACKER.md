@@ -1315,7 +1315,7 @@ Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUT
 | `DISC-CAMP-P0-02.1` | Enrolment from the audience filter, with reasons for those left out | ✅ Done | `packages/module-discovery/src/lib/campaigns/audience.test.ts` +4 |
 | `DISC-CAMP-P0-02.2` | Tick | ✅ Done | `packages/core/src/privacy/suppression.ts` +2 |
 | `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ✅ Done | `packages/module-discovery/src/lib/messages/send.test.ts` +3 |
-| `DISC-CAMP-P0-02.4` | Sender mailbox | ✅ Done | `packages/module-discovery/src/lib/campaigns/host-guard.test.ts` +8 |
+| `DISC-CAMP-P0-02.4` | Sender mailbox | ✅ Done | `packages/module-discovery/src/lib/campaigns/host-guard.test.ts` +10 |
 | `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ✅ Done | `packages/core/src/ai/operation-registry.ts` +5 |
 | `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ⬜ Not started | — |
 | `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ✅ Done | `packages/module-discovery/src/exports/customer-acquisition/queries.ts` +13 |

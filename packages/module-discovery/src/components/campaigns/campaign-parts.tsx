@@ -108,9 +108,12 @@ export function StepList({ steps }: { steps: CampaignStep[] }) {
 }
 
 /**
- * "Sending from": the mailbox's fields and one action, "Send a test to me", which saves
- * them and sends one message to the person's own account address. The password field is
- * always empty: the stored password is never sent back to the page.
+ * "Sending from": the address, the password and one action, Connect. Connect saves what
+ * the form holds and sends one test message to the person's own account address; the
+ * mailbox is verified only when the mail server accepts it. The servers are worked out
+ * from the address when its mail provider is one WonderArk knows, and can be entered or
+ * changed under "Server settings". The password field is always empty: the stored
+ * password is never sent back to the page.
  */
 export function MailboxForm({ mailbox, action, defaultLimit }: { mailbox: SenderMailboxView | null; action: FormAction; defaultLimit: number }) {
   const status =
@@ -119,36 +122,47 @@ export function MailboxForm({ mailbox, action, defaultLimit }: { mailbox: Sender
       : mailbox?.status === "failed"
         ? `The last test failed: ${mailbox.lastError ?? "no reason was recorded."}`
         : mailbox
-          ? "Not verified yet. Send a test to check it."
+          ? "Not verified yet. Connect sends a test to check it."
           : "Needs setup: no mailbox is connected.";
   return (
     <div className="flex flex-col gap-3">
       <p className="text-sm">{status}</p>
       <p className="text-xs text-muted-foreground">
-        Your mail provider&apos;s own terms apply to what you send from this mailbox (some restrict unsolicited bulk email), which is why the daily limit is low.
+        Connect saves these and sends one test email to your own address. Your mail provider&apos;s own terms apply to what you send from this mailbox (some restrict
+        unsolicited bulk email), which is why the daily limit is low.
       </p>
-      <AiActionForm action={action} buttonLabel="Send a test to me" pendingText="Sending the test..." formClassName="flex flex-col gap-3" buttonProps={{ variant: "outline", className: "self-start" }}>
+      <AiActionForm action={action} buttonLabel="Connect" pendingText="Connecting..." formClassName="flex flex-col gap-3" buttonProps={{ variant: "outline", className: "self-start" }}>
         <div className="grid gap-3 sm:grid-cols-2">
-          <Field label="From name" name="fromName" defaultValue={mailbox?.fromName} autoComplete="off" />
-          <Field label="From address" name="fromEmail" type="email" defaultValue={mailbox?.fromEmail} autoComplete="off" />
-          <Field label="Outgoing mail server (SMTP)" name="smtpHost" defaultValue={mailbox?.smtpHost} placeholder="smtp.example.com" autoComplete="off" />
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="mailbox-smtpPort">Port</Label>
-            <NativeSelect id="mailbox-smtpPort" name="smtpPort" defaultValue={String(mailbox?.smtpPort ?? 587)}>
-              <option value="587">587 (STARTTLS)</option>
-              <option value="465">465 (TLS)</option>
-            </NativeSelect>
-          </div>
-          <Field label="Username" name="username" defaultValue={mailbox?.username} autoComplete="off" />
+          <Field label="Email address" name="fromEmail" type="email" defaultValue={mailbox?.fromEmail} autoComplete="off" />
           <Field
             label={mailbox ? "Password (leave blank to keep the saved one)" : "Password or app password"}
             name="password"
             type="password"
             autoComplete="new-password"
           />
-          <Field label="Incoming mail server for replies (IMAP, optional)" name="imapHost" defaultValue={mailbox?.imapHost ?? ""} placeholder="imap.example.com" autoComplete="off" />
-          <Field label="Emails a day, at most" name="dailyLimit" type="number" defaultValue={String(mailbox?.dailyLimit ?? defaultLimit)} min={1} max={200} />
         </div>
+        <Fold label="Server settings" variant="ghost">
+          <div className="grid gap-3 pt-2 sm:grid-cols-2">
+            <p className="text-xs text-muted-foreground sm:col-span-2">
+              {mailbox
+                ? "Change these only if your mail provider's settings differ."
+                : "Leave these blank and they are filled in from your address when its mail provider is one WonderArk knows (GoDaddy, Google, Microsoft 365, Zoho)."}
+            </p>
+            <Field label="From name" name="fromName" defaultValue={mailbox?.fromName} autoComplete="off" />
+            <Field label="Username (blank uses the address)" name="username" defaultValue={mailbox?.username} autoComplete="off" />
+            <Field label="Outgoing mail server (SMTP)" name="smtpHost" defaultValue={mailbox?.smtpHost} placeholder="smtp.example.com" autoComplete="off" />
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="mailbox-smtpPort">Port</Label>
+              <NativeSelect id="mailbox-smtpPort" name="smtpPort" defaultValue={mailbox ? String(mailbox.smtpPort) : ""}>
+                {mailbox ? null : <option value="">From your address</option>}
+                <option value="587">587 (STARTTLS)</option>
+                <option value="465">465 (TLS)</option>
+              </NativeSelect>
+            </div>
+            <Field label="Incoming mail server for replies (IMAP)" name="imapHost" defaultValue={mailbox?.imapHost ?? ""} placeholder="imap.example.com" autoComplete="off" />
+            <Field label="Emails a day, at most" name="dailyLimit" type="number" defaultValue={String(mailbox?.dailyLimit ?? defaultLimit)} min={1} max={200} />
+          </div>
+        </Fold>
       </AiActionForm>
     </div>
   );

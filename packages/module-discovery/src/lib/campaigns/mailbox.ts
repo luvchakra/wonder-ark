@@ -7,7 +7,9 @@ import { requirePermission } from "@cofounderai/core/rbac/require-permission";
 import { createAdminClient } from "../../db/admin";
 import { createClient } from "../../db/server";
 import { getBusinessIdForWorkspace } from "../tenancy/queries";
+import { getBusiness } from "../tenancy/queries";
 import { HOST_REFUSAL_MESSAGE, IMAP_PORT, SMTP_PORTS, resolveSafeHost, type HostLookup } from "./host-guard";
+import { suggestMailSettings, type MxResolver } from "./mail-provider";
 import { sendViaSmtp, type MailboxConnection, type SmtpDeps } from "./smtp";
 
 /**
@@ -97,54 +99,87 @@ export async function getSenderMailbox(workspaceId: string): Promise<SenderMailb
 }
 
 const MailboxInput = z.object({
-  fromName: z.string().trim().min(1, "Enter the name emails are sent from.").max(100),
+  /** Blank uses the business's name. */
+  fromName: z.string().trim().max(100).optional(),
   fromEmail: z.string().trim().toLowerCase().max(254).regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Enter the address emails are sent from."),
-  smtpHost: z.string().trim().min(1, "Enter the outgoing mail server.").max(253),
-  smtpPort: z.coerce.number().int(),
-  username: z.string().trim().min(1, "Enter the mailbox's username.").max(320),
+  /** Blank is worked out from the address's domain, when its provider is one we know. */
+  smtpHost: z.string().trim().max(253).optional(),
+  smtpPort: z.union([z.literal(""), z.coerce.number().int()]).optional(),
+  /** Blank uses the address. */
+  username: z.string().trim().max(320).optional(),
   /** Blank on an edit keeps the stored password. */
   password: z.string().max(500).optional(),
   imapHost: z.string().trim().max(253).optional(),
-  dailyLimit: z.coerce.number().int().min(1, "The daily limit is at least 1.").max(MAILBOX_DAILY_LIMIT_MAX, `The daily limit is at most ${MAILBOX_DAILY_LIMIT_MAX}.`),
+  /** Blank keeps the saved limit, or the default for a new mailbox. */
+  dailyLimit: z.union([z.literal(""), z.coerce.number().int().min(1, "The daily limit is at least 1.").max(MAILBOX_DAILY_LIMIT_MAX, `The daily limit is at most ${MAILBOX_DAILY_LIMIT_MAX}.`)]).optional(),
 });
 export type SenderMailboxInput = z.input<typeof MailboxInput>;
 
-export type SaveMailboxOutcome = { status: "saved" } | { status: "invalid"; message: string };
+export type SaveMailboxOutcome = { status: "saved"; signInHint?: string } | { status: "invalid"; message: string };
 
-/** Saves the mailbox's settings. It is not usable until "Send a test to me" succeeds. */
+/**
+ * Saves the mailbox's settings. It is not usable until a test message is accepted.
+ *
+ * Only the address and the password are needed when the address's mail provider is one
+ * this code knows: with the outgoing server left blank, the servers come from the fixed
+ * table in `mail-provider.ts`, chosen by the domain's MX records. A server a person
+ * typed is used as typed. Either way it passes the address guard here and again at
+ * every connection.
+ */
 export async function saveSenderMailbox(
   workspaceId: string,
   input: SenderMailboxInput,
-  deps: { lookup?: HostLookup } = {},
+  deps: { lookup?: HostLookup; resolveMx?: MxResolver } = {},
 ): Promise<SaveMailboxOutcome> {
   const businessId = await authorise(workspaceId);
   const parsed = MailboxInput.safeParse(input);
   if (!parsed.success) return { status: "invalid", message: parsed.error.issues[0]?.message ?? "Check the mailbox details." };
   const values = parsed.data;
 
-  const smtp = await resolveSafeHost(values.smtpHost, values.smtpPort, SMTP_PORTS, deps.lookup);
+  const supabase = await createClient();
+  const { data: existingRow, error: readError } = await supabase.from("sender_mailboxes").select(VIEW_COLUMNS).eq("workspace_id", workspaceId).maybeSingle();
+  if (readError) throw readError;
+  const existing = existingRow as ViewRow | null;
+  if (!existing && !values.password) return { status: "invalid", message: "Enter the mailbox's password or app password." };
+
+  // A field left blank keeps what is saved, as long as the address is the same one. (The
+  // server settings are folded, and a closed fold posts nothing.) A new address starts
+  // again from what its own domain says.
+  const kept = existing && existing.from_email === values.fromEmail ? existing : null;
+  let smtpHost = values.smtpHost || kept?.smtp_host || "";
+  let smtpPort = typeof values.smtpPort === "number" ? values.smtpPort : values.smtpHost ? null : (kept?.smtp_port ?? null);
+  let imapInput = values.imapHost || kept?.imap_host || "";
+  let signInHint: string | undefined;
+  if (!smtpHost) {
+    const suggestion = await suggestMailSettings(values.fromEmail, deps.resolveMx);
+    if (!suggestion) {
+      return { status: "invalid", message: "We couldn't work out the mail servers from that address. Open Server settings and enter them." };
+    }
+    smtpHost = suggestion.smtpHost;
+    smtpPort = suggestion.smtpPort;
+    if (!imapInput) imapInput = suggestion.imapHost;
+    signInHint = suggestion.signInHint;
+  }
+
+  const smtp = await resolveSafeHost(smtpHost, smtpPort ?? 587, SMTP_PORTS, deps.lookup);
   if (!smtp.ok) return { status: "invalid", message: HOST_REFUSAL_MESSAGE[smtp.reason] };
   let imapHost: string | null = null;
-  if (values.imapHost) {
-    const imap = await resolveSafeHost(values.imapHost, IMAP_PORT, [IMAP_PORT], deps.lookup);
+  if (imapInput) {
+    const imap = await resolveSafeHost(imapInput, IMAP_PORT, [IMAP_PORT], deps.lookup);
     if (!imap.ok) return { status: "invalid", message: HOST_REFUSAL_MESSAGE[imap.reason] };
     imapHost = imap.host;
   }
 
-  const supabase = await createClient();
-  const { data: existing, error: readError } = await supabase.from("sender_mailboxes").select("id").eq("workspace_id", workspaceId).maybeSingle();
-  if (readError) throw readError;
-  if (!existing && !values.password) return { status: "invalid", message: "Enter the mailbox's password or app password." };
-
+  const fromName = values.fromName || kept?.from_name || (await getBusiness(businessId))?.name?.slice(0, 100) || values.fromEmail;
   const row = {
-    from_name: values.fromName,
+    from_name: fromName,
     from_email: values.fromEmail,
     smtp_host: smtp.host,
-    smtp_port: values.smtpPort,
-    username: values.username,
+    smtp_port: smtpPort ?? 587,
+    username: values.username || kept?.username || values.fromEmail,
     imap_host: imapHost,
     imap_port: imapHost ? IMAP_PORT : null,
-    daily_limit: values.dailyLimit,
+    daily_limit: typeof values.dailyLimit === "number" ? values.dailyLimit : (existing?.daily_limit ?? MAILBOX_DAILY_LIMIT_DEFAULT),
     ...(values.password ? { secret_encrypted: encryptApiKey(values.password) } : {}),
   };
   const { error } = existing
@@ -159,12 +194,12 @@ export async function saveSenderMailbox(
       entityType: "discovery_sender_mailbox",
       entityId: existing?.id ?? null,
       // Where it connects and as whom; never the password, in any form.
-      after: { workspaceId, smtpHost: smtp.host, smtpPort: values.smtpPort, readsReplies: imapHost !== null, passwordChanged: Boolean(values.password) },
+      after: { workspaceId, smtpHost: smtp.host, smtpPort: smtpPort ?? 587, readsReplies: imapHost !== null, passwordChanged: Boolean(values.password) },
     });
   } catch (auditError) {
     console.error("Could not record a mailbox change:", auditError instanceof Error ? auditError.message : auditError);
   }
-  return { status: "saved" };
+  return signInHint ? { status: "saved", signInHint } : { status: "saved" };
 }
 
 /** A verified mailbox as the send path needs it. Held in memory for one send only. */
