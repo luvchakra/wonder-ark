@@ -236,4 +236,22 @@ Where the build differs from the text above. The live repo wins (`CLAUDE.md`).
 - **The mailbox is saved through the member's session and verified with the service role.** The database resets a
   mailbox to unverified when its server, port, username, password or From address changes.
 - **`nodemailer` 10 ships its own types**, so there is no `@types/nodemailer`.
+- **Who is "qualified".** A prospect's status is `new`, `qualified` or `disqualified`, set by a person. A new
+  campaign enrols only qualified prospects when the workspace has any, and otherwise everyone not marked
+  disqualified (`audience.onlyQualified`, set from the workspace's own data and changeable under Audience).
+- **An enrollment writes to a contact or to the prospect's general company email** (`recipient`, migration
+  `20261112120000`). A contact a lookup found is written to automatically only at an organisation's mailbox
+  (`info@`, `sales@` ...); a named person found by a lookup is left out with the reason shown.
+- **One model request per line of work, not per step.** It writes every email step of the sequence, so a campaign
+  costs at most thirteen requests and the follow-ups follow from the first email (development principle 5). The
+  workspace's monthly allowance is 200 runs; one per step would have used up to 65.
+- **The cache is the stored text.** `ai_runs` records what a request cost, not its answer. A request whose
+  `input_hash` and `prompt_version` already succeeded is answered by copying the unedited templates that run
+  produced; if a person has edited them since, the request is made again.
+- **The model may not use `{{first_name}}`**, and its answer is refused if it contains a link, an email address, a
+  phone number, a bracket placeholder or a field outside the list. A person may add `{{first_name}}` when
+  editing; a prospect with no first name is then skipped for that step with the reason.
+- **`{{city}}` is the first part of the prospect's stored location.** Nothing is looked up.
+- **No "delivered" count.** A business's own mailbox reports no delivery, so the funnel is enrolled, sent,
+  bounced, replied, interested, won.
 

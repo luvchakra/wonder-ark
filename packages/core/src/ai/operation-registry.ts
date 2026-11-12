@@ -13,6 +13,7 @@ export type AiOperation =
   | "discover_prospects"
   | "generate_outreach_strategy"
   | "generate_outreach_message"
+  | "write_campaign_messages"
   | "generate_reply"
   | "classify_reply"
   | "chat"
@@ -68,6 +69,9 @@ const OPERATION_REGISTRY: Record<AiOperation, AiOperationSpec> = {
   // strongest tier for -- BYOK preserves that choice rather than downgrading it.
   generate_outreach_strategy: { qualityTier: "reasoning", requiresWebSearch: false },
   generate_outreach_message: { qualityTier: "balanced", requiresWebSearch: false },
+  // DISC-CAMP-P0-03.1: a campaign's messages for one line of work. The same bounded
+  // writing task as generate_outreach_message, from the offering's own profile.
+  write_campaign_messages: { qualityTier: "balanced", requiresWebSearch: false },
   generate_reply: { qualityTier: "balanced", requiresWebSearch: false },
   classify_reply: { qualityTier: "fast", requiresWebSearch: false },
   // Reasoning, the strongest tier: the founder asked for this directly after the
