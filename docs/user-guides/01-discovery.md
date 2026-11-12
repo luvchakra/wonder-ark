@@ -1,10 +1,10 @@
-# Discovery: Customer Acquisition, Marketing & Funding
+# Discovery: Acquisition, Marketing & Funding
 
 Discovery is where a business finds its customers, markets to them and raises
 money to grow. It has three working areas that share the same business,
 offerings and data:
 
-- **Customer Acquisition** — who to sell each offering to, finding them, and
+- **Acquisition** — who to sell each offering to, finding them, and
   handing qualified opportunities to your sales process.
 - **Marketing** — strategy, campaigns, content, assets, website & SEO and
   analytics.
@@ -21,7 +21,7 @@ Discovery's menu in the sidebar is four links, with nothing to unfold:
 | Item | What it opens |
 |---|---|
 | **Overview** | The Discovery dashboard (below) |
-| **Customer Acquisition** | The offering you last worked in. Its tabs — Setup, Find, Prospects, Results — are across the top of the page |
+| **Acquisition** | The offering you last worked in. Its tabs — Setup, Find, Prospects, Results — are across the top of the page |
 | **Marketing** | The Marketing overview. Overview, Campaigns, Content and Website & SEO are tabs across the top |
 | **Funding** | The Funding dashboard. Funding Profile, Investor Readiness, Fundraising, Investors, Investor Outreach, Data Room, Due Diligence and Analytics are tabs across the top |
 
@@ -33,8 +33,8 @@ holds your business profile and the list of your offerings; open an offering fro
 header of every offering page has an **Offering** selector. Switching keeps
 you on the same section — from Ideal customer to the other offering's Ideal customer,
 from Prospects to its Prospects. The sidebar also remembers the offering you last
-worked in, so going to Marketing and back to Customer Acquisition returns to
-it rather than to the first offering. With no offering yet, Customer Acquisition opens
+worked in, so going to Marketing and back to Acquisition returns to
+it rather than to the first offering. With no offering yet, Acquisition opens
 the Business page, where you add one.
 
 ## Before you start: business offerings
@@ -590,7 +590,7 @@ failed.
 
 Marketing works across the whole business, not per offering, and uses the
 same customers, offerings and prospects as the rest of Discovery. It has four tabs:
-**Overview**, **Campaigns**, **Content** and **Website & SEO**. As on Customer Acquisition,
+**Overview**, **Campaigns**, **Content** and **Website & SEO**. As on Acquisition,
 each tab is one page, and anything beyond its main content is a section with a title, a
 one-line summary and a chevron; click it to open it. Strategy, Analytics and Assets, once
 tabs of their own, are sections now; their old addresses still open them on their own.

@@ -1,6 +1,6 @@
 /**
  * DISC-OFFER-P0-03.1 "Offering Context Selector": which offering each business was last
- * worked in, so the rail's Customer Acquisition section stays on it while the founder is
+ * worked in, so the rail's Acquisition section stays on it while the founder is
  * on a page that names no offering (see `buildDiscoveryNav`'s `rememberedOfferingId`).
  *
  * Client-only storage, the rail's established pattern (`nav-group-folds.ts`): a per-viewer

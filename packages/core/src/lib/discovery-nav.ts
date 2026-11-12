@@ -1,10 +1,10 @@
 /**
  * PLATFORM-NAV-P0-03.1 — the Discovery menu in the sidebar: four plain links, no folds.
  *
- *   Overview · Customer Acquisition · Marketing · Funding
+ *   Overview · Acquisition · Marketing · Funding
  *
  * It replaced a tree of two links and four folding sections (DISC-NAV-01..05) that listed
- * every offering and every page of Marketing, Customer Acquisition and Funding: up to
+ * every offering and every page of Marketing, Acquisition and Funding: up to
  * 26 rows plus one per offering. Each of those pages already shows its own tabs across
  * the top (the offering's four tabs, Marketing's and Funding's section tabs), so the
  * sidebar repeated them. Now a section is one link that opens its first page, and the
@@ -46,7 +46,7 @@ export function businessNavLink(base: string, pathname: string | null): { href: 
 }
 
 /**
- * Customer Acquisition opens the offering in focus: the one in the URL, else the one the
+ * Acquisition opens the offering in focus: the one in the URL, else the one the
  * founder last worked in (`rememberedOfferingId`, DISC-OFFER-P0-03.1, ignored when it no
  * longer exists), else the first. With no offering yet it opens the Business page, which
  * is where one is added. Exactly one link is active on any Discovery page.
@@ -74,7 +74,7 @@ export function buildDiscoveryNav(
     { id: "overview", label: "Overview", href: overviewHref, icon: "LayoutDashboard", active: path === overviewHref },
     {
       id: "customer-acquisition",
-      label: "Customer Acquisition",
+      label: "Acquisition",
       href: focus ? `${offeringsRoot}/${focus.id}` : `${base}/business`,
       icon: "Users",
       active: under(path, offeringsRoot),

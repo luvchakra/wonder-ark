@@ -18,10 +18,10 @@ test.describe("Discovery", () => {
     await openSidebar(page);
     const nav = page.locator('nav[aria-label="Main"]');
     await expect(nav.getByRole("link", { name: "Business", exact: true })).toHaveAttribute("href", `/${slug}/business`);
-    for (const label of ["Overview", "Customer Acquisition", "Marketing", "Funding"]) {
+    for (const label of ["Overview", "Acquisition", "Marketing", "Funding"]) {
       await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
     }
-    for (const heading of ["Business Offerings", "Customer Acquisition", "Marketing", "Funding"]) {
+    for (const heading of ["Business Offerings", "Acquisition", "Marketing", "Funding"]) {
       await expect(nav.getByRole("button", { name: heading, exact: true })).toHaveCount(0);
     }
   });

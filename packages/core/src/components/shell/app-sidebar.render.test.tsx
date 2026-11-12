@@ -60,7 +60,7 @@ describe("AppSidebar with Discovery open", () => {
       ["Executive Dashboard", "/dashboard"],
       ["Business", "/acme/business"],
       ["Overview", "/acme/discovery/dashboard"],
-      ["Customer Acquisition", "/acme/discovery/offerings/p1"],
+      ["Acquisition", "/acme/discovery/offerings/p1"],
       ["Marketing", "/acme/discovery/marketing"],
       ["Funding", "/acme/discovery/funding"],
     ]);
@@ -79,7 +79,7 @@ describe("AppSidebar with Discovery open", () => {
   it("marks exactly one row as the current page", () => {
     const current = (path: string) => [...render(path).matchAll(/<a [^>]*aria-current="page"[^>]*>(.*?)<\/a>/g)].map((m) => m[1]!.replace(/<[^>]+>/g, ""));
     expect(current("/acme/business")).toEqual(["Business"]);
-    expect(current("/acme/discovery/offerings/p1/campaigns/c1")).toEqual(["Customer Acquisition"]);
+    expect(current("/acme/discovery/offerings/p1/campaigns/c1")).toEqual(["Acquisition"]);
     expect(current("/acme/discovery/funding/data-room")).toEqual(["Funding"]);
   });
 });
