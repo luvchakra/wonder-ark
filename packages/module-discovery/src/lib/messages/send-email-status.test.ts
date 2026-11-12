@@ -30,6 +30,8 @@ vi.mock("../conversations/mutations", () => ({
   getOrCreateConversation: vi.fn(async () => ({ id: "conv-1" })),
   markConversationAwaitingReply: vi.fn(),
 }));
+vi.mock("@cofounderai/core/audit/mutations", () => ({ writeAuditLog: vi.fn() }));
+vi.mock("../campaigns/mailbox", () => ({ loadMailboxForSending: vi.fn(async () => null) }));
 vi.mock("@cofounderai/core/privacy/suppression", () => ({ prepareOutreachEmail: h.prepareOutreachEmail }));
 vi.mock("@cofounderai/core/email/render", () => ({ renderEmailHtml: () => "<html></html>", renderEmailText: () => "body" }));
 
@@ -108,7 +110,7 @@ describe("sendMessage and the address's status", () => {
 
     expect(h.send).toHaveBeenCalledTimes(1);
     expect(h.send.mock.calls[0]![0].to).toBe("buyer@acme.example");
-    const update = supabase.queries("messages").find((call) => usedOp(call, "update"))!;
+    const update = supabase.queries("messages").filter((call) => usedOp(call, "update")).at(-1)!;
     expect(writtenRow(update)).toMatchObject({ status: "sent" });
   });
 

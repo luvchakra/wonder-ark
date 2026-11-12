@@ -223,3 +223,17 @@ messages a business starts.
 ## As built
 
 Where the build differs from the text above. The live repo wins (`CLAUDE.md`).
+
+- **`20261112100000` is applied and frozen.** Later schema changes are new files: `20261112110000` adds
+  `discovery.messages.send_claimed_at` and `send_attempt` for the one-send-per-message claim.
+- **"Failed" needs proof; everything else is "unknown".** The SMTP library labels a socket error or a socket timeout
+  the same way whether it struck while connecting or after the body was written, so those are "Outcome unknown". A
+  send is "failed" only on the server's own rejection code or an error that can only occur before a message is
+  handed over (sign-in, TLS set-up, the set-up timeouts, a refused connection).
+- **A one-at-a-time send that never reported back** (its claim is older than ten minutes) is marked failed with
+  "Outcome unknown" on the next click, which sends nothing; the person may then send it again. On the platform
+  provider's path the attempt number, and so the idempotency key, is kept for that case.
+- **The mailbox is saved through the member's session and verified with the service role.** The database resets a
+  mailbox to unverified when its server, port, username, password or From address changes.
+- **`nodemailer` 10 ships its own types**, so there is no `@types/nodemailer`.
+

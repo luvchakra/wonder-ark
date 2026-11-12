@@ -28,6 +28,11 @@ export type Message = {
   sent_at: string | null;
   failure_reason: string | null;
   provider_message_id: string | null;
+  /** DISC-CAMP-P0-02.3: set while a send is in flight; the compare-and-set that makes a
+   * message send once. */
+  send_claimed_at?: string | null;
+  /** Counts definite failures; part of the provider idempotency key. */
+  send_attempt?: number;
   /** Set when this message was generated from one of the founder's Resend templates
    * (resend.com/docs/dashboard/templates) instead of free-form AI copy -- send.ts sends
    * via Resend's `template: { id, variables }` API when set, raw html/text otherwise.
