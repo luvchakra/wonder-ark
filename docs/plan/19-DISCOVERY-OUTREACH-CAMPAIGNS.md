@@ -347,3 +347,16 @@ Preview, Activate and Schedule (`05.3`, `05.4`), as built:
   The preview is a new view: the link back, one link per step when there are several, Previous and Next
   prospect, one "Send me a test" per line of work, and "This looks right".
 
+Replies, as refined after review:
+
+- **A reply is also recognised by the email it answers.** People often answer from another address than the one
+  written to (written to `info@`, answered from a personal address). The mailbox reader matches the envelope's
+  In-Reply-To against the Message-IDs of the emails the workspace sent to people it enrolled
+  (`discovery.messages.provider_message_id`). Envelope only, so the privacy rule holds: a message that answers
+  someone else's thread stays unread. Such a reply is stored for the prospect the answered email went to, stops
+  that enrollment, and an unsubscribe request opts out both addresses. `References` is not read: the envelope does
+  not carry it, and fetching headers for every message is more than the match needs.
+- **A reply's text is its text/plain part, else its text/html part stripped to text** (`htmlToText`): tags,
+  scripts and styles removed, line breaks kept, entities decoded, before the 20,000 character cap. A message
+  with neither has no text and is ignored; an attachment or an arbitrary first part is never read as text.
+
