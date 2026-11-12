@@ -1,6 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
+import { Fold } from "@cofounderai/core/ui/fold";
 import { Switch } from "@cofounderai/core/ui/switch";
 import { toast } from "@cofounderai/core/ui/sonner";
 import type { TechnicianRosterRow } from "../../lib/employees/types";
@@ -9,7 +10,11 @@ import type { TechnicianRosterRow } from "../../lib/employees/types";
  * the minimal roster this story needs to make "assign to a technician" usable at all: a
  * business member either counts as a technician (has an active `core.employees` row)
  * or doesn't. A fuller employee record (job title, employment type, time-off) stays a
- * future story's job. */
+ * future story's job.
+ *
+ * PLATFORM-NAV-P0-02.1: who counts as a technician is set up once and rarely changed, so
+ * the list sits behind one "Technicians" button under the calendar instead of showing a
+ * switch for every team member on every visit. */
 export function TechnicianRosterPanel({
   roster,
   toggleAction,
@@ -22,9 +27,8 @@ export function TechnicianRosterPanel({
   if (roster.length === 0) return null;
 
   return (
-    <div className="rounded-2xl border border-border p-4">
-      <h2 className="text-sm font-semibold text-muted-foreground uppercase">Technicians</h2>
-      <p className="mt-1 text-xs text-muted-foreground">Who can be assigned schedule events.</p>
+    <Fold label="Technicians" contentClassName="rounded-2xl border border-border p-4">
+      <p className="text-xs text-muted-foreground">Who can be assigned schedule events.</p>
       <div className="mt-3 flex flex-col gap-2">
         {roster.map((m) => (
           <label key={m.user_id} className="flex items-center justify-between gap-3 text-sm">
@@ -48,6 +52,6 @@ export function TechnicianRosterPanel({
           </label>
         ))}
       </div>
-    </div>
+    </Fold>
   );
 }

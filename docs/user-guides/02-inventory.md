@@ -3,7 +3,7 @@
 Inventory manages your product catalog, warehouses, purchasing, sales orders and stock
 levels — one shared inventory per business, however many Discovery offerings sit on top of it.
 
-Last updated: 2026-10-16
+Last updated: 2026-11-12
 
 ## Setup order
 
@@ -33,16 +33,19 @@ or charged as IGST.
 ## Day-to-day workflows
 
 - **Products** — the catalog, with Category and Supplier columns. Cost fields are visible
-  only to roles that can see costs; editing needs the edit permission. **Deactivate** /
-  **Activate** a product, and print labels with **Barcode / QR** (Code 128, EAN-13 or QR
-  code; **Generate & preview**).
+  only to roles that can see costs; editing needs the edit permission. **Edit** on a row
+  opens the product, where you can also **Deactivate** or **Activate** it. **More** holds
+  **Barcode / QR** label printing (Code 128, EAN-13 or QR code; **Generate & preview**) and
+  **Import**.
 - **Purchase Orders** — a PO goes Draft → **Approve** → **Mark as sent** → received →
-  **Close order**. Once approved (or sent), click **Receive** on each line as goods arrive;
+  **Close order**. **View** on a row opens the order, which holds its next step and, for a
+  draft, **Edit**. Once approved (or sent), click **Receive** on each line as goods arrive;
   partial receipts are fine. Each line's **GST %** is filled in from the product and can be
   changed; the tax amounts are calculated for you. **Receiving a line is the moment stock
   increases.**
 - **Sales Orders** — **Confirm order** → **Start processing** → **Mark as packed** →
-  **Ship order** → **Mark as delivered**. Confirming reserves the stock (and fails if there
+  **Ship order** → **Mark as delivered**, each from the order that **View** opens.
+  Confirming reserves the stock (and fails if there
   isn't enough); shipping takes it out of stock and releases the reservation. You can cancel
   until the order ships. Confirming and shipping are separate permissions.
 - **Sales Invoices** — **New invoice**, pick a confirmed or shipped order, then **Generate
@@ -66,15 +69,16 @@ or charged as IGST.
 - **Alerts** — low-stock alerts, also in the topbar bell. **Acknowledge**, **Resolve** or
   **Dismiss** each one.
 - **Audit Log** — a history of changes.
-- **Dashboard** — filter by warehouse once you have more than one:
+- **Dashboard** — once you have more than one warehouse, choose one in **Warehouse** to
+  filter (it applies as soon as you choose; **All warehouses** clears it):
   - tiles for **Inventory value** (only if your role can see costs), **Available stock**,
     **Reserved stock**, **Incoming stock**, **Stockout risk**, **Pending purchases** and
     **Sales today**;
   - a **Daily brief** with a healthy / low-stock / out-of-stock bar and, when there's GST
     activity this month, **GST this month** (paid on purchases, collected on sales, net
     position) with **View filing**;
-  - a **Reorder watchlist**, an **Attention center** (overdue POs, transfers in transit,
-    alerts, tax-setup and supplier-GSTIN problems) and **Quick links**;
+  - a **Reorder watchlist** (with **All alerts**) and an **Attention center** (overdue POs,
+    transfers in transit, alerts, tax-setup and supplier-GSTIN problems);
   - charts of stock movement over 14 days and, with more than one warehouse, units on hand
     by warehouse.
 

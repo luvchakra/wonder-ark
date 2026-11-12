@@ -86,7 +86,7 @@ export function SalesOrdersList({
   const [detailTarget, setDetailTarget] = useState<SalesOrder | null>(null);
   const [detailItems, setDetailItems] = useState<SalesOrderItem[]>([]);
   const [formItems, setFormItems] = useState<SalesOrderItem[]>([]);
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const canRunPrimaryAction = (status: string) => {
     const action = primaryAction(status as SalesOrder["status"]);
@@ -159,16 +159,9 @@ export function SalesOrdersList({
 
                 <div className="flex items-center justify-between">
                   <span className="text-base font-semibold">{inr.format(so.total_amount)}</span>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => openDetail(so)}>
-                      View
-                    </Button>
-                    {primaryAction(so.status) && canRunPrimaryAction(so.status) ? (
-                      <Button size="sm" disabled={pending} onClick={() => runPrimaryAction(so)}>
-                        {primaryAction(so.status)!.label}
-                      </Button>
-                    ) : null}
-                  </div>
+                  <Button variant="outline" size="sm" onClick={() => openDetail(so)}>
+                    View
+                  </Button>
                 </div>
               </li>
             ))}
@@ -198,16 +191,11 @@ export function SalesOrdersList({
                     <Badge variant={STATUS_VARIANT[so.status]}>{so.status}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openDetail(so)}>
-                        View
-                      </Button>
-                      {primaryAction(so.status) && canRunPrimaryAction(so.status) ? (
-                        <Button size="sm" disabled={pending} onClick={() => runPrimaryAction(so)}>
-                          {primaryAction(so.status)!.label}
-                        </Button>
-                      ) : null}
-                    </div>
+                    {/* PLATFORM-NAV-P0-02.2: one action per row. Confirm, ship, edit, cancel
+                        and return are in the order View opens. */}
+                    <Button variant="outline" size="sm" onClick={() => openDetail(so)}>
+                      View
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}

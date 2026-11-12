@@ -2,7 +2,6 @@ import Link from "next/link";
 import { Card, CardContent, CardHeader, CardTitle } from "@cofounderai/core/ui/card";
 import { StatCard } from "@cofounderai/core/ui/stat-card";
 import { Badge } from "@cofounderai/core/ui/badge";
-import { Button } from "@cofounderai/core/ui/button";
 import { BreakdownBars } from "@cofounderai/core/ui/breakdown-bars";
 import { formatDate, formatDateTime, inr } from "@cofounderai/core/lib/format";
 import {
@@ -19,10 +18,10 @@ import type { DispatcherDashboard } from "../../lib/dashboard/types";
  * `/fsm`'s own dispatcher dashboard (PRD §5) -- the five action-queue widget cards
  * below, unchanged, each linking through to the fuller page that actually manages that
  * data (Schedule, Jobs, Invoices, Opportunities), PLUS a metrics/visual layer on top
- * (KPIs, revenue trend, job-status mix) and a schedule-range filter + quick-action
- * buttons. The queue cards stay the dispatcher's morning action list; the layer added
- * here is a separate, additional read of the same underlying data, matching what
- * discovery's and inventory's own dashboards already do.
+ * (KPIs, revenue trend, job-status mix) and a schedule-range filter. The queue cards
+ * stay the dispatcher's morning action list; the layer added here is a separate,
+ * additional read of the same underlying data, matching what discovery's and
+ * inventory's own dashboards already do.
  */
 export function DispatcherDashboardView({
   businessId,
@@ -43,32 +42,24 @@ export function DispatcherDashboardView({
 
   return (
     <div className="flex flex-col gap-4 lg:gap-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="flex gap-1 rounded-md border p-1 text-sm">
-          <Link
-            href={`${base}?range=today`}
-            className={range === "today" ? "rounded-sm bg-accent px-3 py-1 font-medium" : "rounded-sm px-3 py-1 text-muted-foreground hover:bg-accent/60"}
-          >
-            Today
-          </Link>
-          <Link
-            href={`${base}?range=week`}
-            className={range === "week" ? "rounded-sm bg-accent px-3 py-1 font-medium" : "rounded-sm px-3 py-1 text-muted-foreground hover:bg-accent/60"}
-          >
-            This week
-          </Link>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button asChild size="sm" variant="outline">
-            <Link href={`${base}/opportunities`}>New opportunity</Link>
-          </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href={`${base}/jobs`}>New job</Link>
-          </Button>
-          <Button asChild size="sm" variant="outline">
-            <Link href={`${base}/schedule`}>Schedule</Link>
-          </Button>
-        </div>
+      {/* PLATFORM-NAV-P0-02.1: the range switch is the only control up here. The three
+          buttons that sat beside it ("New opportunity", "New job", "Schedule") only opened
+          the list pages the menu and each card's "View all" already open. */}
+      <div className="flex w-fit gap-1 rounded-md border p-1 text-sm">
+        <Link
+          href={`${base}?range=today`}
+          aria-current={range === "today" ? "true" : undefined}
+          className={range === "today" ? "rounded-sm bg-accent px-3 py-1 font-medium" : "rounded-sm px-3 py-1 text-muted-foreground hover:bg-accent/60"}
+        >
+          Today
+        </Link>
+        <Link
+          href={`${base}?range=week`}
+          aria-current={range === "week" ? "true" : undefined}
+          className={range === "week" ? "rounded-sm bg-accent px-3 py-1 font-medium" : "rounded-sm px-3 py-1 text-muted-foreground hover:bg-accent/60"}
+        >
+          This week
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">

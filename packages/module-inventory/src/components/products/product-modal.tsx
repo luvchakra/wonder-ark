@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { X } from "lucide-react";
 import { Button } from "@cofounderai/core/ui/button";
 import { Input } from "@cofounderai/core/ui/input";
@@ -24,6 +24,7 @@ export function ProductModal({
   product,
   categoryName,
   suppliers,
+  onToggleStatus,
   onClose,
 }: {
   action: (prevState: ProductActionState, formData: FormData) => Promise<ProductActionState>;
@@ -33,9 +34,14 @@ export function ProductModal({
    * name) since this form edits the name, not the id. */
   categoryName?: string;
   suppliers: LookupOption[];
+  /** PLATFORM-NAV-P0-02.2: editing only. Activates an inactive product or deactivates an
+   * active one -- the action that used to sit on every row of the list beside Edit. */
+  onToggleStatus?: () => Promise<void>;
   onClose: () => void;
 }) {
   const [state, formAction] = useActionState<ProductActionState, FormData>(action, null);
+  const [toggling, startToggle] = useTransition();
+  const [toggleError, setToggleError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -163,14 +169,39 @@ export function ProductModal({
           </div>
 
           {state && "error" in state ? <p className="text-sm text-destructive">{state.error}</p> : null}
+          {toggleError ? <p className="text-sm text-destructive">{toggleError}</p> : null}
 
-          <div className="mt-2 flex justify-end gap-3">
-            <Button type="button" variant="ghost" onClick={onClose}>
-              Cancel
-            </Button>
-            <SubmitButton pendingText={product ? "Saving..." : "Creating..."}>
-              {product ? "Save changes" : "Create product"}
-            </SubmitButton>
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+            {product && onToggleStatus ? (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={toggling}
+                onClick={() => {
+                  setToggleError(null);
+                  startToggle(async () => {
+                    try {
+                      await onToggleStatus();
+                      onClose();
+                    } catch (error) {
+                      setToggleError(error instanceof Error ? error.message : "Could not change the product's status.");
+                    }
+                  });
+                }}
+              >
+                {product.status === "active" ? "Deactivate" : "Activate"}
+              </Button>
+            ) : (
+              <span />
+            )}
+            <div className="flex gap-3">
+              <Button type="button" variant="ghost" onClick={onClose}>
+                Cancel
+              </Button>
+              <SubmitButton pendingText={product ? "Saving..." : "Creating..."}>
+                {product ? "Save changes" : "Create product"}
+              </SubmitButton>
+            </div>
           </div>
         </form>
       </div>

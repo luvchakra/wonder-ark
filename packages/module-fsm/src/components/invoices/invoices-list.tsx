@@ -50,7 +50,31 @@ export function InvoicesList({ invoices, businessId }: { invoices: InvoiceListIt
       {shown.length === 0 ? (
         <EmptyState variant="inline" message={tab === "unpaid" ? "No unpaid invoices." : "No invoices yet."} />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-border">
+        <>
+        {/* PLATFORM-NAV-P0-02.1: CLAUDE.md principle 12 -- compact cards below md, the same
+            shape the Jobs list uses, never a seven-column table scrolled sideways on a phone. */}
+        <ul className="divide-y rounded-2xl border border-border md:hidden">
+          {shown.map((inv) => (
+            <li key={inv.id}>
+              <a href={invoiceHref(inv.id)} className="flex min-w-0 flex-col gap-1 p-3 text-sm">
+                <div className="flex min-w-0 items-start justify-between gap-2">
+                  <span className="font-medium break-words">{inv.party_name}</span>
+                  <Badge variant={STATUS_VARIANT[inv.status]}>{STATUS_LABEL[inv.status]}</Badge>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                  <span>{inv.number ?? "Draft"}</span>
+                  {inv.job_number ? <span>Job {inv.job_number}</span> : null}
+                  <span>{formatDate(inv.created_at)}</span>
+                </div>
+                <div className="flex flex-wrap items-baseline justify-between gap-3">
+                  <span className="text-xs text-muted-foreground">Total {inr.format(inv.total_amount)}</span>
+                  <span className="font-semibold">Balance {inr.format(inv.balance_amount)}</span>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <div className="hidden overflow-x-auto rounded-2xl border border-border md:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -84,6 +108,7 @@ export function InvoicesList({ invoices, businessId }: { invoices: InvoiceListIt
             </TableBody>
           </Table>
         </div>
+        </>
       )}
     </div>
   );
