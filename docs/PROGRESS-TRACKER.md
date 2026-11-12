@@ -1323,8 +1323,8 @@ Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUT
 | `DISC-CAMP-P0-01.2` | Ownership-map row, CLAUDE.md exception, security rules line on campaign sends | ✅ Done | `supabase/migrations/20261112100000_discovery_outreach_campaigns.sql` |
 | `DISC-CAMP-P0-02.1` | Enrolment from the audience filter, with reasons for those left out | ⬜ Not started | — |
 | `DISC-CAMP-P0-02.2` | Tick | ⬜ Not started | — |
-| `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ✅ Done | `packages/module-discovery/src/lib/messages/send.test.ts` +2 |
-| `DISC-CAMP-P0-02.4` | Sender mailbox | ✅ Done | `packages/module-discovery/src/lib/messages/send.ts` +2 |
+| `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ✅ Done | `packages/module-discovery/src/lib/messages/send.test.ts` +3 |
+| `DISC-CAMP-P0-02.4` | Sender mailbox | ✅ Done | `packages/module-discovery/src/lib/campaigns/host-guard.test.ts` +8 |
 | `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ⬜ Not started | — |
 | `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ⬜ Not started | — |
 | `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ⬜ Not started | — |
