@@ -1,11 +1,13 @@
 import { writeAuditLog } from "@cofounderai/core/audit/mutations";
 import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render";
 import { prepareOutreachEmail } from "@cofounderai/core/privacy/suppression";
+import { createAdminClient } from "../../db/admin";
 import { createClient } from "../../db/server";
 import { getBusiness, getProduct, getWorkspace } from "../tenancy/queries";
 import { authoriseCampaigns, getCampaignDetail, previewAudience, previewBlocker, writtenSegments } from "./campaigns";
 import { addressOf, composeStep, composeTask, scheduleLines, type StepRecipient, type TaskDetail } from "./compose";
 import { getSenderMailbox, loadMailboxForSending } from "./mailbox";
+import { getOpeningLine, openingProspect, type OpeningDeps } from "./opening-line";
 import { sendViaSmtp, type SmtpDeps } from "./smtp";
 import { GENERAL_SEGMENT, isTaskChannel, type CampaignStep, type LeftOutReason, type TaskChannel, type TemplateOrigin } from "./types";
 
@@ -38,7 +40,19 @@ export const PREVIEW_PROSPECTS = 5;
 export const TEST_SENDS_PER_HOUR = 5;
 
 export type PreviewEmail =
-  | { ok: true; kind: "email"; prospectId: string; company: string; from: string; to: string; subject: string; text: string }
+  | {
+      ok: true;
+      kind: "email";
+      prospectId: string;
+      company: string;
+      from: string;
+      to: string;
+      subject: string;
+      text: string;
+      /** DISC-CAMP-P0-03.2: with "Personal opening line" on, whether this email starts
+       * with an AI-written sentence, or why it goes without one. */
+      opening?: { written: true } | { written: false; reason: string };
+    }
   /** A step a person does: the draft and what it is done with. Nothing is sent. */
   | { ok: true; kind: "task"; channel: TaskChannel; prospectId: string; company: string; detail: TaskDetail; text: string; origin: TemplateOrigin }
   | { ok: false; prospectId: string; company: string; reason: string };
@@ -72,7 +86,7 @@ export type PreviewResult = { status: "ready"; preview: CampaignPreview } | { st
 
 type Member = { prospectId: string; contactId: string | null; recipient: "contact" | "company_email"; segment: string };
 
-async function load(campaignId: string, choice: { step?: number; index?: number }) {
+async function load(campaignId: string, choice: { step?: number; index?: number }, openingDeps?: OpeningDeps) {
   const detail = await getCampaignDetail(campaignId);
   if (!detail) throw new Error("Campaign not found.");
   const businessId = await authoriseCampaigns(detail.campaign.workspace_id);
@@ -129,7 +143,7 @@ async function load(campaignId: string, choice: { step?: number; index?: number 
   const chosen = segments.map((segment) => bySegment.get(segment)![index]).filter((member): member is Member => Boolean(member));
   const [prospects, contacts] = await Promise.all([
     chosen.length
-      ? supabase.from("prospects").select("id, company_name, industry, location, company_email, phone, linkedin_url").in("id", chosen.map((member) => member.prospectId))
+      ? supabase.from("prospects").select("id, company_name, industry, location, company_email, phone, linkedin_url, description, website").in("id", chosen.map((member) => member.prospectId))
       : { data: [], error: null },
     chosen.some((member) => member.contactId)
       ? supabase.from("contacts").select("id, email, first_name, email_status, phone, linkedin_url").in("id", chosen.filter((member) => member.contactId).map((member) => member.contactId as string))
@@ -168,7 +182,32 @@ async function load(campaignId: string, choice: { step?: number; index?: number 
       });
       continue;
     }
-    const composed = composeStep({ campaign, step, templates, recipient, suppressed: compliance?.suppressed === true, sender });
+    // DISC-CAMP-P0-03.2: the tick's own opening line, written now if it isn't kept yet,
+    // so the preview shows the sentence the prospect would get.
+    const opening =
+      campaign.personal_opening && step.position === 1 && compliance && !compliance.suppressed
+        ? await getOpeningLine(
+            createAdminClient(),
+            {
+              workspaceId: campaign.workspace_id,
+              campaignId: campaign.id,
+              prospectId: prospect.id,
+              offeringName: product.name,
+              businessName: business.name,
+              prospect: openingProspect(prospect as StepRecipient["prospect"] & { description?: string | null; website?: string | null }),
+            },
+            openingDeps,
+          )
+        : null;
+    const composed = composeStep({
+      campaign,
+      step,
+      templates,
+      recipient,
+      suppressed: compliance?.suppressed === true,
+      sender,
+      opening: opening?.ok ? opening.line : null,
+    });
     if (!composed.ok || !compliance || compliance.suppressed) {
       lines.push({
         segment,
@@ -189,6 +228,7 @@ async function load(campaignId: string, choice: { step?: number; index?: number 
         to: composed.to,
         subject: composed.subject,
         text: renderEmailText(composed.body, compliance.unsubscribeUrl),
+        ...(opening ? { opening: opening.ok ? ({ written: true } as const) : ({ written: false, reason: opening.reason } as const) } : {}),
       },
       composed: { to: composed.to, subject: composed.subject, body: composed.body, unsubscribeUrl: compliance.unsubscribeUrl },
     });
@@ -215,8 +255,12 @@ async function load(campaignId: string, choice: { step?: number; index?: number 
   };
 }
 
-export async function buildCampaignPreview(campaignId: string, choice: { step?: number; index?: number } = {}): Promise<PreviewResult> {
-  const loaded = await load(campaignId, choice);
+export async function buildCampaignPreview(
+  campaignId: string,
+  choice: { step?: number; index?: number } = {},
+  openingDeps?: OpeningDeps,
+): Promise<PreviewResult> {
+  const loaded = await load(campaignId, choice, openingDeps);
   return "blocked" in loaded ? loaded.blocked! : { status: "ready", preview: loaded.preview };
 }
 

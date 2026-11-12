@@ -208,6 +208,11 @@ export function AudienceForm({ campaign, action }: { campaign: Campaign; action:
           <input type="checkbox" name="includeUnverified" className="size-4" defaultChecked={campaign.include_unverified} />
           Include unverified addresses
         </label>
+        {/* DISC-CAMP-P0-03.2: off by default; the preview shows each sentence before Activate. */}
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="personalOpening" className="size-4" defaultChecked={campaign.personal_opening} />
+          Personal opening line (one AI-written sentence per company, first email only)
+        </label>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="campaign-lines">Lines of work (blank for all)</Label>

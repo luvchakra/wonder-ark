@@ -1,5 +1,6 @@
 import { emailSendCheck } from "../messages/email-status";
 import { MERGE_FIELD_LABEL, cityOf, renderTemplate, type MergeValues } from "./render";
+import { withOpening } from "./opening-text";
 import { STOP_REASON } from "./stops";
 import {
   GENERAL_SEGMENT,
@@ -74,6 +75,12 @@ export function composeStep(input: {
   /** Whether the address is on the business's opt-out list. */
   suppressed: boolean;
   sender: Sender;
+  /**
+   * DISC-CAMP-P0-03.2: the checked AI-written opening for this prospect, when the
+   * campaign has "Personal opening line" on and this is its first step. Null or absent:
+   * the reviewed text alone.
+   */
+  opening?: string | null;
 }): ComposedStep {
   const { recipient, templates, step } = input;
   if (recipient.recipient === "contact" && !recipient.contact) return { ok: false, code: "contact_deleted", reason: STOP_REASON.contactDeleted };
@@ -105,7 +112,8 @@ export function composeStep(input: {
       ? { ok: false, code: "missing_merge_field", reason: `Not sent: this prospect has no value for ${rendered.missing.map((field) => MERGE_FIELD_LABEL[field]).join(", ")}` }
       : { ok: false, code: "invalid_template", reason: "Not sent: the step's text has a merge field that can't be filled" };
   }
-  return { ok: true, to, subject: rendered.subject, body: rendered.body, segment: template.segment };
+  const body = input.opening ? withOpening(rendered.body, input.opening) : rendered.body;
+  return { ok: true, to, subject: rendered.subject, body, segment: template.segment };
 }
 
 /** A stored phone number as it is shown and dialled, or null when it is not one. The

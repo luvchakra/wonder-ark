@@ -322,6 +322,15 @@ mailbox. Nothing is written or sent until you ask for it.
   reason. **Send me a test** sends the email you are looking at to your mailbox's own
   address, marked "[Test]"; it is never sent to the prospect, and you can send five an
   hour. At the bottom, **This looks right** confirms the preview.
+- **Personal opening line** (in the Audience fold, off unless you turn it on) starts the
+  first email to each prospect with one sentence about that company, written by AI from
+  the prospect's record. The rest of the email is your text. The sentence is checked
+  before use: one sentence, no links, addresses or phone numbers. The preview shows it,
+  marked "The first sentence is AI-generated for this company". If there is no usable
+  sentence (for example, your AI usage limit for the month is reached), the preview
+  says why and the email goes with your text alone. Each sentence is written once per
+  prospect and counts towards your AI usage. Turning it on or off means the preview must
+  be confirmed again.
 - **Activate** appears only after you confirm the preview. Its confirmation says how many
   prospects are enrolled, how many emails a day go out at most and when, and what stops
   follow-ups. After you confirm, emails are sent without you approving each one: a few

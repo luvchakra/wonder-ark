@@ -88,6 +88,7 @@ export async function saveAudienceAction(businessId: string, productId: string, 
       },
       autoEnroll: formData.get("autoEnroll") !== null,
       includeUnverified: formData.get("includeUnverified") !== null,
+      personalOpening: formData.get("personalOpening") !== null,
     });
     if (outcome.status === "refused") throw new Error(outcome.message);
     revalidatePath(`${await campaignsPath(businessId, productId)}/${campaignId}`);

@@ -19,13 +19,13 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 615 |
+| ✅ Done | 616 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
-| ⬜ Not started | 1 |
+| ⬜ Not started | 0 |
 | **Total** | **699** |
 
 | Backlog | Done | Set aside | Remaining | Total |
@@ -42,16 +42,15 @@ file is stale, so it cannot quietly drift out of date.
 | [WonderArk branding](./plan/16-BRANDING-BACKLOG.md) | 13 | 0 | 0 | 13 |
 | [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 17 | 0 | 0 | 17 |
 | [Module menus](./plan/18-MODULE-MENUS.md) | 10 | 0 | 0 | 10 |
-| [Discovery — outreach campaigns](./plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md) | 17 | 0 | 1 | 18 |
+| [Discovery — outreach campaigns](./plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md) | 18 | 0 | 0 | 18 |
 
 ## What is left
 
-2 stories are neither built nor deliberately set aside:
+1 stories are neither built nor deliberately set aside:
 
 | ID | Story | Status | Note |
 |---|---|---|---|
 | `DISC-OFFER-P0-03.3` | Offering Navigation | ❔ Unverified | Discussed in `docs/design/discovery-offering-backlog-audit.md`, but no code cites it — confirm before relying on this |
-| `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ⬜ Not started | — |
 
 ## Platform build-out
 
@@ -1317,7 +1316,7 @@ Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUT
 | `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ✅ Done | `packages/module-discovery/src/lib/messages/send.test.ts` +3 |
 | `DISC-CAMP-P0-02.4` | Sender mailbox | ✅ Done | `packages/module-discovery/src/lib/campaigns/host-guard.test.ts` +10 |
 | `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ✅ Done | `packages/core/src/ai/operation-registry.ts` +5 |
-| `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ⬜ Not started | — |
+| `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ✅ Done | `packages/core/src/ai/operation-registry.ts` +7 |
 | `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ✅ Done | `packages/module-discovery/src/exports/customer-acquisition/queries.ts` +13 |
 | `DISC-CAMP-P0-04.2` | Reply matched to the right workspace; redelivery safe; draft answer for interested replies | ✅ Done | `apps/web/app/api/webhooks/email-inbound/route.ts` +3 |
 | `DISC-CAMP-P0-04.3` | Automatic pause on bounce or complaint rate | ✅ Done | `packages/module-discovery/src/lib/campaigns/tick.ts` |

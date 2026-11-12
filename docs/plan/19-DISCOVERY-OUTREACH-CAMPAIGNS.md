@@ -411,3 +411,23 @@ Replies, as refined after review:
   scripts and styles removed, line breaks kept, entities decoded, before the 20,000 character cap. A message
   with neither has no text and is ignored; an attachment or an arbitrary first part is never read as text.
 
+Personal opening line (`03.2`), as built:
+
+- **Off by default; one checkbox in the Audience fold.** It is inside a fold, so the closed page's control count
+  does not change. Turning it on or off clears the preview's confirmation (the existing trigger already covered
+  `personal_opening`).
+- **First email only.** For step 1 of an email campaign, `getOpeningLine` (`lib/campaigns/opening-line.ts`) asks
+  the model (`write_opening_line`, fast tier) for one sentence from the prospect's company name, line of work,
+  location, description and website, all fenced as untrusted (`prompts/outreach/write_opening_line_v1.ts`). The
+  answer is Zod-validated, then checked by code (`validateOpeningLine`: 20–220 characters, one line, one sentence,
+  no link, address, phone number, markup, merge field, greeting or instruction-like text).
+- **Kept once, shared by preview, test and tick.** Valid sentences are stored in
+  `discovery.outreach_opening_lines` (migration `20261112150000`), unique per (campaign, prospect, input hash).
+  The hash covers the prompt and its version, so a changed record or prompt writes a new line. Members read;
+  only the service role writes. Every call is metered by `assertWithinUsageLimit` and recorded in `ai_runs`,
+  and the line keeps its `ai_run_id`.
+- **A missing line never holds an email back.** If the usage limit is reached, the provider fails, or the answer
+  is malformed or refused, the reviewed text goes alone. The preview shows the reason and labels a written line
+  as AI-generated. The preview shows the actual
+  sentence for the prospects it lists; every other prospect's sentence passes the same checks.
+

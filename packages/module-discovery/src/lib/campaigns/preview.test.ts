@@ -25,6 +25,7 @@ const h = vi.hoisted(() => ({
   loadMailboxForSending: vi.fn(),
   prepareOutreachEmail: vi.fn(),
   writeAuditLog: vi.fn(),
+  getOpeningLine: vi.fn(),
 }));
 vi.mock("@cofounderai/core/licensing/queries", () => ({ requireModule: h.requireModule }));
 vi.mock("@cofounderai/core/rbac/require-permission", () => ({ requirePermission: h.requirePermission }));
@@ -39,6 +40,8 @@ vi.mock("../tenancy/queries", () => ({
   getProduct: vi.fn(async () => ({ id: "prod", name: "FieldDesk", business_id: "b1", website: "https://fielddesk.example" })),
   getBusiness: vi.fn(async () => ({ id: "b1", name: "Acme Software", website: null })),
 }));
+vi.mock("../../db/admin", () => ({ createAdminClient: vi.fn(() => ({ admin: true })) }));
+vi.mock("./opening-line", () => ({ getOpeningLine: h.getOpeningLine, openingProspect: (prospect: unknown) => prospect }));
 vi.mock("./mailbox", () => ({ getSenderMailbox: h.getSenderMailbox, loadMailboxForSending: h.loadMailboxForSending, MAILBOX_DAILY_LIMIT_MAX: 200 }));
 
 const { PREVIEW_PROSPECTS, TEST_SENDS_PER_HOUR, buildCampaignPreview, sendCampaignTest } = await import("./preview");
@@ -117,6 +120,34 @@ describe("the preview", () => {
     // The dentist has no text of its own, so it gets the general one, with its own values.
     expect(preview.lines[0]!.email).toMatchObject({ ok: true, prospectId: "p3", subject: "An idea for Company p3" });
     expect(JSON.stringify(preview)).not.toContain("{{");
+  });
+
+  it("DISC-CAMP-P0-03.2: shows the AI-written opening in the first email, labelled, and says when one is missing", async () => {
+    setup({}, { personal_opening: true });
+    h.getOpeningLine.mockImplementation(async (_admin: unknown, input: { prospectId: string }) =>
+      input.prospectId === "p1"
+        ? { ok: true, line: "Your plumbing crews across Pune stay busy all year.", cached: false }
+        : { ok: false, reason: "No opening line: this month's AI usage limit is reached" },
+    );
+    const preview = await ready();
+    expect(preview.lines[1]!.email).toMatchObject({
+      ok: true,
+      opening: { written: true },
+      text: expect.stringMatching(/^Your plumbing crews across Pune stay busy all year\.\n\nHello Company p1, plumbers/),
+    });
+    expect(preview.lines[0]!.email).toMatchObject({ ok: true, opening: { written: false, reason: expect.stringContaining("usage limit") }, text: expect.stringMatching(/^Hello Company p3/) });
+    expect(h.getOpeningLine).toHaveBeenCalledWith({ admin: true }, expect.objectContaining({ workspaceId: W, campaignId: "c1" }), undefined);
+
+    // A follow-up has no opening, and nothing is asked for it.
+    h.getOpeningLine.mockClear();
+    const later = await ready({ step: 2 });
+    expect(later.lines[1]!.email).not.toHaveProperty("opening");
+    expect(h.getOpeningLine).not.toHaveBeenCalled();
+  });
+
+  it("asks for no opening line when the campaign has it off", async () => {
+    await ready();
+    expect(h.getOpeningLine).not.toHaveBeenCalled();
   });
 
   it("says the schedule in words, from the campaign's own settings", async () => {

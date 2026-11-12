@@ -32,6 +32,7 @@ const h = vi.hoisted(() => ({
   getProduct: vi.fn(),
   getBusiness: vi.fn(),
   loadMailboxForSending: vi.fn(),
+  getOpeningLine: vi.fn(),
 }));
 
 vi.mock("../../db/admin", () => ({ createAdminClient: h.createAdminClient }));
@@ -46,6 +47,7 @@ vi.mock("../tenancy/queries", () => ({
   getProduct: h.getProduct,
   getBusiness: h.getBusiness,
 }));
+vi.mock("./opening-line", () => ({ getOpeningLine: h.getOpeningLine, openingProspect: (prospect: unknown) => prospect }));
 vi.mock("./mailbox", () => ({ loadMailboxForSending: h.loadMailboxForSending, getSenderMailbox: vi.fn() }));
 
 const { AUTO_PAUSE_MIN_SENDS, inSendWindow, pauseIfBouncing, runCampaignTick } = await import("./tick");
@@ -269,6 +271,36 @@ describe("a due enrollment", () => {
     await tick();
     expect(sentTo()).toEqual(["info@acme.example"]);
     expect(messages()[0]).toMatchObject({ contact_id: null, status: "sent" });
+  });
+});
+
+describe("DISC-CAMP-P0-03.2: the personal opening line", () => {
+  const OPENING = "Your crews in Pune keep busy all year, so this may be useful.";
+
+  it("starts the first email with the checked sentence when the campaign has it on", async () => {
+    Object.assign(db.rows("outreach_campaigns")[0]!, { personal_opening: true });
+    h.getOpeningLine.mockResolvedValue({ ok: true, line: OPENING, cached: true });
+    await tick();
+    expect(String(sendMail.mock.calls[0]![0].text)).toContain(`${OPENING}\n\nHello Company p1 in Pune, from FieldDesk.`);
+    expect(h.getOpeningLine).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ workspaceId: W1, campaignId: "c1", prospectId: "p1" }), undefined);
+  });
+
+  it("sends the reviewed text alone when there is no valid sentence, never holding the email back", async () => {
+    Object.assign(db.rows("outreach_campaigns")[0]!, { personal_opening: true });
+    h.getOpeningLine.mockResolvedValue({ ok: false, reason: "No opening line: the AI provider could not be reached" });
+    const summary = await tick();
+    expect(summary).toMatchObject({ sent: 1 });
+    expect(String(sendMail.mock.calls[0]![0].text)).toMatch(/^Hello Company p1 in Pune, from FieldDesk\./);
+  });
+
+  it("asks for nothing on a follow-up, or when the campaign has it off", async () => {
+    await tick();
+    expect(h.getOpeningLine).not.toHaveBeenCalled();
+    Object.assign(db.rows("outreach_campaigns")[0]!, { personal_opening: true });
+    Object.assign(enrollments()[0]!, { next_step_position: 2, next_due_at: "2026-11-12T00:00:00.000Z" });
+    await tick({ now: new Date(NOW.getTime() + 4 * 24 * 60 * 60 * 1000) });
+    expect(h.getOpeningLine).not.toHaveBeenCalled();
+    expect(sendMail).toHaveBeenCalledTimes(2);
   });
 });
 

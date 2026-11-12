@@ -131,6 +131,13 @@ export function CampaignPreviewView({
                   <dt className="text-muted-foreground">Subject</dt>
                   <dd className="break-words font-medium">{line.email.subject}</dd>
                 </dl>
+                {line.email.opening ? (
+                  <p className="text-xs text-muted-foreground">
+                    {line.email.opening.written
+                      ? "The first sentence is AI-generated for this company."
+                      : `${line.email.opening.reason}. This email goes with your text alone.`}
+                  </p>
+                ) : null}
                 <p className="whitespace-pre-wrap break-words border-t pt-2 text-sm">{line.email.text}</p>
                 <TestSendButton action={testAction(line.segment, preview.step, preview.index)} />
               </>

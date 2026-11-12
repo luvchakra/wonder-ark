@@ -10,6 +10,7 @@ import { syncMailboxInbox } from "./inbox";
 import { loadMailboxForSending, type SendingMailbox } from "./mailbox";
 import { addressOf, composeStep, type StepRecipient } from "./compose";
 import { OUTCOME_UNKNOWN_REASON, sendViaSmtp, type SmtpDeps } from "./smtp";
+import { getOpeningLine, openingProspect, type OpeningDeps } from "./opening-line";
 import { STOP_REASON } from "./stops";
 import { resolveTaskStates, type TaskItem } from "./tasks";
 import { isTaskChannel, type Campaign, type CampaignStep, type Enrollment } from "./types";
@@ -94,6 +95,8 @@ export type TickOptions = {
   maxSends?: number;
   smtp?: SmtpDeps;
   imap?: ImapDeps;
+  /** DISC-CAMP-P0-03.2: tests replace the AI call; the rest of the path is the real one. */
+  openingDeps?: OpeningDeps;
 };
 
 /** Whether `now` falls on one of the campaign's days, inside its hours, in its timezone. */
@@ -122,6 +125,7 @@ type WorkspaceContext = {
   mailbox: SendingMailbox;
   now: Date;
   smtp?: SmtpDeps;
+  openingDeps?: OpeningDeps;
 };
 
 type EnrollmentOutcome =
@@ -193,7 +197,7 @@ async function processEnrollment(ctx: WorkspaceContext, detail: CampaignDetail, 
 
   const { data: prospect, error: prospectError } = await db
     .from("prospects")
-    .select("id, company_name, industry, location, outcome, company_email")
+    .select("id, company_name, industry, location, outcome, company_email, description, website")
     .eq("id", enrollment.prospect_id)
     .maybeSingle();
   if (prospectError) throw prospectError;
@@ -247,8 +251,27 @@ async function processEnrollment(ctx: WorkspaceContext, detail: CampaignDetail, 
     }
   }
 
+  // DISC-CAMP-P0-03.2: the personal opening, for the first email only, when the campaign
+  // has it on. Without a valid one the reviewed text goes alone.
+  const opening =
+    campaign.personal_opening && step.position === 1 && toEmail && compliance && !compliance.suppressed
+      ? await getOpeningLine(
+          db,
+          {
+            workspaceId: enrollment.workspace_id,
+            campaignId: campaign.id,
+            prospectId: prospect.id,
+            offeringName: ctx.offeringName,
+            businessName: ctx.businessName,
+            prospect: openingProspect(prospect),
+          },
+          ctx.openingDeps,
+        )
+      : null;
+
   // The same function the preview uses: what this step's email is, or why there is none.
   const composed = composeStep({
+    opening: opening?.ok ? opening.line : null,
     campaign,
     step,
     templates,
@@ -584,6 +607,7 @@ export async function runCampaignTick(options: TickOptions = {}): Promise<TickSu
         mailbox,
         now,
         smtp: options.smtp,
+        openingDeps: options.openingDeps,
       };
 
       // The first batch straight after Activate only sends: no step for a person is due yet.
