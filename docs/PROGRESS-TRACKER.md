@@ -1316,7 +1316,7 @@ Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUT
 | `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ✅ Done | `packages/module-discovery/src/lib/messages/send.test.ts` +3 |
 | `DISC-CAMP-P0-02.4` | Sender mailbox | ✅ Done | `packages/module-discovery/src/lib/campaigns/host-guard.test.ts` +10 |
 | `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ✅ Done | `packages/core/src/ai/operation-registry.ts` +5 |
-| `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ✅ Done | `packages/core/src/ai/operation-registry.ts` +7 |
+| `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ✅ Done | `packages/core/src/ai/operation-registry.ts` +12 |
 | `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ✅ Done | `packages/module-discovery/src/exports/customer-acquisition/queries.ts` +13 |
 | `DISC-CAMP-P0-04.2` | Reply matched to the right workspace; redelivery safe; draft answer for interested replies | ✅ Done | `apps/web/app/api/webhooks/email-inbound/route.ts` +3 |
 | `DISC-CAMP-P0-04.3` | Automatic pause on bounce or complaint rate | ✅ Done | `packages/module-discovery/src/lib/campaigns/tick.ts` |
