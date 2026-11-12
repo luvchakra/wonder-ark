@@ -580,7 +580,7 @@ Source: [`docs/plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md`](./plan/10-DISCOVE
 | ID | Story | Status | Evidence / note |
 |---|---|---|---|
 | `DISC-OFFER-P1-04.1` | Cross-Offering Account View | ✅ Done | `packages/module-discovery/src/components/opportunities/opportunity-detail.tsx` +4 |
-| `DISC-OFFER-P1-04.2` | Offering Portfolio Dashboard | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/page.tsx` +3 |
+| `DISC-OFFER-P1-04.2` | Offering Portfolio Dashboard | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/performance/page.tsx` +3 |
 | `DISC-OFFER-P1-04.3` | Offering-Specific Contact Relevance | ✅ Done | `packages/module-discovery/src/lib/buyer-intelligence/types.ts` |
 
 ### DISC-OFFER-P1-05 — Search & Interaction UX
@@ -590,7 +590,7 @@ Source: [`docs/plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md`](./plan/10-DISCOVE
 | `DISC-OFFER-P1-05.1` | Offering-Scoped Search | ✅ Done | `packages/module-discovery/src/components/pipeline/run-ai-discovery-panel.tsx` |
 | `DISC-OFFER-P1-05.2` | Editable Opportunity Rows | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/opportunities/[opportunityId]/page.tsx` +5 |
 | `DISC-OFFER-P1-05.3` | Responsive Opportunity Workspace | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/opportunities/actions.ts` +2 |
-| `DISC-OFFER-P1-05.4` | Offering Overview UX Polish | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/page.tsx` +2 |
+| `DISC-OFFER-P1-05.4` | Offering Overview UX Polish | ✅ Done | `apps/web/app/(dashboard)/dashboard/businesses/[businessId]/[[...rest]]/page.tsx` |
 
 ### Product Decision
 
@@ -1292,7 +1292,7 @@ Source: [`docs/plan/17-DISCOVERY-DATA-AND-CONSUMER.md`](./plan/17-DISCOVERY-DATA
 | `DISC-CONS-P0-03.3` | Confirmation email, referral links, unsubscribe | ✅ Done | `packages/module-discovery/src/lib/audience/send.ts` +3 |
 | `DISC-CONS-P0-03.4` | Import a people list with confirmed consent | ✅ Done | `apps/web/app/p/w/[token]/page.tsx` +2 |
 | `DISC-CONS-P0-04.1` | Feedback | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/people/[leadId]/actions.ts` +11 |
-| `DISC-CONS-P0-04.2` | What people say | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/people-say/actions.ts` +11 |
+| `DISC-CONS-P0-04.2` | What people say | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/people-say/actions.ts` +10 |
 | `DISC-CONS-P0-04.3` | Suggested Ideal-user edit, accepted or rejected | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/icp/actions.ts` +4 |
 | `DISC-CONS-P0-05.2` | People list on Prospects, messaging with consent | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +14 |
 
@@ -1334,7 +1334,7 @@ Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUT
 | `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ✅ Done | `packages/module-discovery/src/exports/customer-acquisition/queries.ts` +13 |
 | `DISC-CAMP-P0-04.2` | Reply matched to the right workspace; redelivery safe; draft answer for interested replies | ✅ Done | `apps/web/app/api/webhooks/email-inbound/route.ts` +3 |
 | `DISC-CAMP-P0-04.3` | Automatic pause on bounce or complaint rate | ✅ Done | `packages/module-discovery/src/lib/campaigns/tick.ts` |
-| `DISC-CAMP-P0-05.1` | Campaigns page, new campaign, Launch dialog, pause and resume | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/campaigns/[campaignId]/page.tsx` +8 |
+| `DISC-CAMP-P0-05.1` | Campaigns page, new campaign, Launch dialog, pause and resume | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/campaigns/[campaignId]/page.tsx` +7 |
 | `DISC-CAMP-P0-05.2` | Campaign results | ✅ Done | `packages/module-discovery/src/components/campaigns/campaign-parts.tsx` |
 | `DISC-CAMP-P0-05.3` | Preview with real emails, Send me a test, This looks right, then Activate | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/campaigns/actions.ts` +8 |
 | `DISC-CAMP-P0-05.4` | Schedule | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/campaigns/actions.ts` +8 |

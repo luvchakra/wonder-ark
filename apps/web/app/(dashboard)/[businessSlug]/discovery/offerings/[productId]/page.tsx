@@ -8,10 +8,14 @@ import { listProductKnowledge } from "@cofounderai/module-discovery/lib/knowledg
 import { getIcpProfile } from "@cofounderai/module-discovery/lib/icp/queries";
 import { listBuyerPersonas } from "@cofounderai/module-discovery/lib/personas/queries";
 import { getProspectCounts } from "@cofounderai/module-discovery/lib/prospects/queries";
-import { getOpportunityOutcomeFunnel } from "@cofounderai/module-discovery/lib/opportunities/queries";
 import { ProductOverviewShell } from "@cofounderai/module-discovery/components/tenancy/product-overview-shell";
-import { CollapsibleCard } from "@cofounderai/module-discovery/components/ui/collapsible-card";
-import { OfferingOverviewSummary } from "@cofounderai/module-discovery/components/offerings/offering-overview-summary";
+import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
+import {
+  icpHint,
+  NextStepLine,
+  offeringHint,
+  OfferingQuality,
+} from "@cofounderai/module-discovery/components/offerings/offering-overview-summary";
 import { RunAiDiscoveryPanel } from "@cofounderai/module-discovery/components/pipeline/run-ai-discovery-panel";
 import { RediscoverySchedule } from "@cofounderai/module-discovery/components/pipeline/rediscovery-schedule";
 import { SavedDiscoveryCriteria } from "@cofounderai/module-discovery/components/pipeline/saved-discovery-criteria";
@@ -39,17 +43,25 @@ import {
   regenerateIcpFromOverviewAction,
   setAudienceTypeAction,
 } from "./actions";
+import IcpPage from "./icp/page";
+import DiscoveryDefinitionsPage from "./discovery/page";
 
 function icpPath(businessSlug: string, productId: string) {
   return `/${businessSlug}/discovery/offerings/${productId}/icp`;
 }
 
+/** DISC-NAV-P0-01.4: the Setup tab's sections, in order; `?open=<id>` opens one. */
+const SETUP_SECTIONS = ["offering", "icp", "discovery"] as const;
+
 export default async function ProductPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ businessSlug: string; productId: string }>;
+  searchParams: Promise<{ open?: string; suggest?: string }>;
 }) {
   const { businessSlug, productId } = await params;
+  const query = await searchParams;
   const businessId = await resolveBusinessIdBySlug(businessSlug);
   if (!businessId) notFound();
   const product = await getProduct(productId);
@@ -67,17 +79,9 @@ export default async function ProductPage({
   // help. Once a profile exists, this becomes the "primary offering workspace" surface
   // the setup shell (still useful for revisiting sources/regenerating the profile) sits
   // below.
-  const [icp, personas, prospectCounts, outcomeFunnel] = product.product_profile
-    ? await Promise.all([
-        getIcpProfile(workspace.id),
-        listBuyerPersonas(workspace.id),
-        getProspectCounts(workspace.id),
-        // DISC-OFFER-P1-04.2: "Learn From Outcomes" -- same profile-gated condition as
-        // the rest of this summary; a fresh offering with no opportunities yet has
-        // nothing to measure (the card itself additionally hides on a zero count).
-        getOpportunityOutcomeFunnel(workspace.id),
-      ])
-    : [null, [], null, null];
+  const [icp, personas, prospectCounts] = product.product_profile
+    ? await Promise.all([getIcpProfile(workspace.id), listBuyerPersonas(workspace.id), getProspectCounts(workspace.id)])
+    : [null, [], null];
   const pipelineStages = await listPipelineStages(workspace.id);
   const lastRun = await getLastCompletedPipelineRun(workspace.id);
   // DISC-AI-APPROVAL-01: shown where the AI flows start; each flow re-reads it itself.
@@ -121,21 +125,23 @@ export default async function ProductPage({
     />
   );
 
+  const basePath = `/${businessSlug}/discovery/offerings/${productId}`;
+  const opened = SETUP_SECTIONS.find((id) => id === query.open) ?? (product.product_profile ? null : "offering");
+  const lastRunAt = lastRun?.completed_at ? new Date(lastRun.completed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null;
+  const discoveryHint = `${lastRunAt ? `Last run ${lastRunAt}` : "Never run"} · ${workspace.rediscovery_interval === "off" ? "not scheduled" : `repeats ${workspace.rediscovery_interval}`}`;
+
   return (
-    // DISC-OFFER-P1-05.4 "Offering Overview UX Polish" -- hierarchy planned per
-    // docs/design/claude-ui-design-rules.md before touching markup: the most urgent,
-    // decision-shaped content (the one opportunity a founder should act on right now,
-    // then this offering's own overall health) leads the page; the discovery pipeline's
-    // own mechanics (schedule/criteria/run panel -- how it works, not what to decide)
-    // come next, grouped under one heading instead of three unlabeled boxes in a row;
-    // the original setup wizard (website/description/knowledge sources) moves last,
-    // collapsed by default once a profile already exists -- that content doesn't stop
-    // being real or editable, it just stops being the first thing an established
-    // offering's own founder has to scroll past every visit. Nothing here changes what
-    // renders for a brand-new offering (no profile yet): the gated Top Opportunity/
-    // Overview cards are still both null then, and the setup card still defaults open.
-    <div className="flex flex-col gap-8">
+    // DISC-NAV-P0-01.4: the Setup tab is one short page. The next step and any decision
+    // waiting on a person (who buys this, the top opportunity) lead; everything else is
+    // a section folded behind a chevron: the offering itself, its ideal customer (the
+    // Ideal customer page, buyer personas included) and how discovery runs (schedule,
+    // criteria, the AI run and the definitions). The Ideal customer and Definitions pages
+    // keep their own addresses and render the same content.
+    <div className="flex flex-col gap-4">
       {audienceConfirmed ? null : audienceForm}
+      {product.product_profile && prospectCounts ? (
+        <NextStepLine basePath={basePath} icp={icp} personas={personas} prospectCounts={prospectCounts} />
+      ) : null}
       {topGateRow && topGateContext ? (
         <TopOpportunityGate
           businessId={businessId}
@@ -157,38 +163,18 @@ export default async function ProductPage({
           )}
         />
       ) : null}
-      {product.product_profile && prospectCounts ? (
-        <OfferingOverviewSummary
-          businessSlug={businessSlug}
-          offering={product}
-          icp={icp}
-          personas={personas}
-          prospectCounts={prospectCounts}
-          outcomeFunnel={outcomeFunnel}
-          researchFurtherAction={regenerateIcpFromOverviewAction.bind(null, businessId, productId)}
-        />
-      ) : null}
 
-      <section className="flex flex-col gap-3">
-        <h2 className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Discovery pipeline</h2>
-        <RediscoverySchedule
-          interval={workspace.rediscovery_interval}
-          nextDiscoveryAt={workspace.next_discovery_at}
-          lastDiscoveryAt={lastRun?.completed_at ?? null}
-          updateIntervalAction={updateRediscoveryIntervalAction.bind(null, businessId, productId, workspace.id)}
-        />
-        <SavedDiscoveryCriteria workspace={workspace} updateCriteriaAction={updateDiscoveryCriteriaAction.bind(null, businessId, productId, workspace.id)} />
-        <RunAiDiscoveryPanel
-          businessSlug={businessSlug}
-          productId={productId}
-          initialStages={pipelineStages}
-          aiApprovalMode={aiApprovalMode}
-          aiApprovalSettingsHref={aiApprovalSettingsHref}
-        />
-      </section>
-
-      <CollapsibleCard label="Offering setup & sources" defaultOpen={!product.product_profile}>
-        {audienceConfirmed ? <div className="mb-4">{audienceForm}</div> : null}
+      <SectionFold id="offering" title="Offering" hint={offeringHint(product, icp, personas)} open={opened === "offering"}>
+        {product.product_profile ? (
+          <OfferingQuality
+            basePath={basePath}
+            offering={product}
+            icp={icp}
+            personas={personas}
+            researchFurtherAction={regenerateIcpFromOverviewAction.bind(null, businessId, productId)}
+          />
+        ) : null}
+        {audienceConfirmed ? audienceForm : null}
         <ProductOverviewShell
           product={product}
           sources={sources}
@@ -203,7 +189,29 @@ export default async function ProductPage({
           aiApprovalMode={aiApprovalMode}
           aiApprovalSettingsHref={aiApprovalSettingsHref}
         />
-      </CollapsibleCard>
+      </SectionFold>
+
+      <SectionFold id="icp" title="Ideal customer" hint={icpHint(icp)} open={opened === "icp"}>
+        <IcpPage params={params} searchParams={Promise.resolve({ suggest: query.suggest })} />
+      </SectionFold>
+
+      <SectionFold id="discovery" title="Discovery" hint={discoveryHint} open={opened === "discovery"}>
+        <RunAiDiscoveryPanel
+          businessSlug={businessSlug}
+          productId={productId}
+          initialStages={pipelineStages}
+          aiApprovalMode={aiApprovalMode}
+          aiApprovalSettingsHref={aiApprovalSettingsHref}
+        />
+        <RediscoverySchedule
+          interval={workspace.rediscovery_interval}
+          nextDiscoveryAt={workspace.next_discovery_at}
+          lastDiscoveryAt={lastRun?.completed_at ?? null}
+          updateIntervalAction={updateRediscoveryIntervalAction.bind(null, businessId, productId, workspace.id)}
+        />
+        <SavedDiscoveryCriteria workspace={workspace} updateCriteriaAction={updateDiscoveryCriteriaAction.bind(null, businessId, productId, workspace.id)} />
+        <DiscoveryDefinitionsPage params={params} />
+      </SectionFold>
     </div>
   );
 }

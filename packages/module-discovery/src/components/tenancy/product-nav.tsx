@@ -55,7 +55,8 @@ export function ProductNav({
   /* DISC-NAV-P0-01.1: once an offering has a profile this is an ongoing workspace a
    * founder revisits out of order, not a checklist, so the numbered stepper below gives
    * way to a tab bar. It used to carry nine equal tabs; it now carries four -- Setup,
-   * Find, Prospects, Results -- and a second row with the pages of the tab in view.
+   * Find, Prospects, Results. DISC-NAV-P0-01.4: there is no second row; each tab's
+   * page shows the tab's other pages as folded sections.
    * Every page keeps its path and stays reachable from its tab; the list itself lives in
    * core's lib/offering-nav.ts, which the sidebar and the route check read too. */
   if (completed?.overview) {
@@ -63,55 +64,29 @@ export function ProductNav({
     const active = activeOfferingNav(ongoingTabs, pathname);
 
     return (
-      <div className="flex flex-col gap-2">
-        <nav
-          aria-label="Offering sections"
-          className="grid w-full grid-cols-4 gap-1 rounded-lg border border-border bg-muted p-1"
-        >
-          {ongoingTabs.map((tab) => {
-            const isActive = tab.id === active?.tab.id;
-            return (
-              <Link
-                key={tab.id}
-                href={tab.href}
-                // "page" only on the very page the tab lands on; elsewhere inside it, the
-                // second row marks the page and this marks the section.
-                aria-current={isActive ? (pathname === tab.href ? "page" : "true") : undefined}
-                className={cn(
-                  "rounded-md px-2 py-1.5 text-center text-sm font-medium transition-colors",
-                  isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {tab.label}
-              </Link>
-            );
-          })}
-        </nav>
-        {active ? (
-          <nav aria-label={`${active.tab.label} pages`} className="flex flex-wrap items-center gap-x-1 gap-y-1 px-1">
-            {active.tab.pages.map((page) => {
-              const isCurrent = page.href === active.page.href;
-              return (
-                <Link
-                  key={page.href}
-                  href={page.href}
-                  // On a single prospect, run or opportunity its list is marked as the
-                  // section in view, not as the page itself.
-                  aria-current={isCurrent ? (pathname === page.href ? "page" : "true") : undefined}
-                  className={cn(
-                    "rounded-full px-3 py-1 text-sm transition-colors",
-                    isCurrent
-                      ? "bg-primary/10 font-medium text-primary"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                  )}
-                >
-                  {page.label}
-                </Link>
-              );
-            })}
-          </nav>
-        ) : null}
-      </div>
+      <nav
+        aria-label="Offering sections"
+        className="grid w-full grid-cols-4 gap-1 rounded-lg border border-border bg-muted p-1"
+      >
+        {ongoingTabs.map((tab) => {
+          const isActive = tab.id === active?.tab.id;
+          return (
+            <Link
+              key={tab.id}
+              href={tab.href}
+              // "page" only on the very page the tab lands on; on the tab's other pages
+              // (opened at their own address) it marks the section.
+              aria-current={isActive ? (pathname === tab.href ? "page" : "true") : undefined}
+              className={cn(
+                "rounded-md px-2 py-1.5 text-center text-sm font-medium transition-colors",
+                isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {tab.label}
+            </Link>
+          );
+        })}
+      </nav>
     );
   }
 

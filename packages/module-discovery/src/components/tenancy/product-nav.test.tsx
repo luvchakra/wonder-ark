@@ -36,51 +36,29 @@ beforeEach(() => {
 });
 
 describe("ProductNav, once the offering has a profile", () => {
-  it("shows four tabs and the pages of the tab in view", () => {
-    expect(nav("/prospects").map((link) => link.text)).toEqual([
-      "Setup",
-      "Find",
-      "Prospects",
-      "Results",
-      "All",
-      "Opportunities",
-      "Watchlist",
-      // DISC-CAMP-P0-05.1
-      "Campaigns",
-    ]);
-  });
-
-  it("shows fewer links than the nine tabs on every page", () => {
+  // DISC-NAV-P0-01.4: four tabs and no second row; each tab's page folds its other pages.
+  it("shows the four tabs only, on every page", () => {
     for (const path of ["", "/icp", "/prospects/discover", "/prospects/import", "/history", "/discovery", "/prospects", "/opportunities", "/watchlist", "/campaigns", "/campaigns/abc", "/performance", "/conversions", "/usage", "/people-say", "/prospects/abc"]) {
-      expect(nav(path).length, path).toBeLessThan(NINE_TABS);
+      expect(nav(path).map((link) => link.text), path).toEqual(["Setup", "Find", "Prospects", "Results"]);
     }
-    expect(nav("").length).toBe(6);
-    expect(nav("/prospects/discover").length).toBe(8);
-    expect(nav("/prospects").length).toBe(8);
-    // DISC-CONS-P0-04.2 added "What people say" to Results: 8, still under nine.
-    expect(nav("/performance").length).toBe(8);
   });
 
-  it("marks the page in view, and its tab", () => {
+  it("lands each tab on its page", () => {
+    expect(nav("").map((link) => link.href)).toEqual([BASE, `${BASE}/prospects/discover`, `${BASE}/prospects`, `${BASE}/performance`]);
+  });
+
+  it("marks the tab of the page in view: as the page on the tab's own page, as the section elsewhere", () => {
+    expect(nav("/prospects").find((link) => link.text === "Prospects")!.current).toBe("page");
     const found = nav("/prospects/import");
-    expect(found.filter((link) => link.current === "page").map((link) => link.text)).toEqual(["Import"]);
     expect(found.find((link) => link.text === "Find")!.current).toBe("true");
     expect(found.find((link) => link.text === "Prospects")!.current).toBeNull();
+    expect(nav("/discovery").find((link) => link.text === "Setup")!.current).toBe("true");
+    expect(nav("/campaigns/abc").find((link) => link.text === "Prospects")!.current).toBe("true");
+    expect(nav("/prospects/8d0c").find((link) => link.text === "Prospects")!.current).toBe("true");
   });
 
-  it("keeps a single prospect under Prospects, with the list one click away", () => {
-    const found = nav("/prospects/8d0c");
-    expect(found.find((link) => link.text === "Prospects")!.current).toBe("true");
-    expect(found.find((link) => link.text === "All")).toMatchObject({ href: `${BASE}/prospects`, current: "true" });
-    expect(found.some((link) => link.current === "page")).toBe(false);
-  });
-
-  it("says Ideal customer and Find, never ICP or Discovery", () => {
-    const labels = [...nav(""), ...nav("/prospects/discover")].map((link) => link.text);
-    expect(labels).toContain("Ideal customer");
-    expect(labels).toContain("Find");
-    expect(labels).not.toContain("ICP");
-    expect(labels).not.toContain("Discovery");
+  it("shows fewer links than the nine tabs did", () => {
+    expect(nav("/prospects").length).toBeLessThan(NINE_TABS);
   });
 });
 
