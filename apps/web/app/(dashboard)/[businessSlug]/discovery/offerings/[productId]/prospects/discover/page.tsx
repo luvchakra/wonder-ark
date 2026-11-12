@@ -28,6 +28,9 @@ import {
   saveWeeklySearchAction,
   setWeeklySearchEnabledAction,
 } from "./actions";
+import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
+import ImportProspectsPage from "../import/page";
+import RunHistoryPage from "../../history/page";
 
 /** The one line under the form: what is left of this business's lookups, or why the
  * gateway can't be searched. Only what the gateway reported; nothing is estimated. */
@@ -147,6 +150,16 @@ export default async function DiscoverProspectsPage({
         approveAction={approveSuggestionsAction.bind(null, businessId, productId, workspace.id)}
         discardAction={discardSuggestionsAction.bind(null, businessId, productId, workspace.id)}
       />
+
+      {/* DISC-NAV-P0-01.4: the Find tab's other pages, folded below the search. */}
+      <div className="flex flex-col gap-3">
+        <SectionFold id="import" title="Import" hint="Add prospects from a file">
+          <ImportProspectsPage params={params} />
+        </SectionFold>
+        <SectionFold id="history" title="History" hint="Every search and AI discovery run, with what each found">
+          <RunHistoryPage params={params} />
+        </SectionFold>
+      </div>
     </div>
   );
 }

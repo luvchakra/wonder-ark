@@ -36,10 +36,22 @@ import { PeopleList } from "@cofounderai/module-discovery/components/audience/pe
 import { SignupPageSettings } from "@cofounderai/module-discovery/components/audience/signup-page-settings";
 import { SITE_URL } from "@cofounderai/core/site";
 import { getBusiness } from "@cofounderai/module-discovery/lib/tenancy/queries";
+import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
+import { listCampaignsWithCounts } from "@cofounderai/module-discovery/lib/campaigns/campaigns";
+import CampaignsPage from "../campaigns/page";
+import OpportunitiesPage from "../opportunities/page";
+import WatchlistPage from "../watchlist/page";
 
 /** DISC-CONS-P0-05.1/05.2: the lists the Prospects tab offers, by who buys the offering. */
 const LIST_LABEL = { companies: "Companies", channels: "Channels", people: "People" } as const;
 type ProspectList = keyof typeof LIST_LABEL;
+
+/** The campaigns in one line, for their section's summary. */
+function campaignsHint(campaigns: { status: string }[]): string {
+  if (campaigns.length === 0) return "No campaigns yet";
+  const running = campaigns.filter((campaign) => campaign.status === "active").length;
+  return `${campaigns.length} campaign${campaigns.length === 1 ? "" : "s"}${running ? ` · ${running} running` : ""}`;
+}
 
 export default async function ProspectsPage({
   params,
@@ -115,7 +127,7 @@ export default async function ProspectsPage({
   // DISC-NAV-P0-01.2: `due=1` is the Today list's "follow-ups due" link.
   const followUpDue = due === "1";
   const hasListFilters = Boolean(status || industry || stage || followUpDue);
-  const [prospects, industries, suggestionCount, campaignTasks] = await Promise.all([
+  const [prospects, industries, suggestionCount, campaignTasks, campaigns] = await Promise.all([
     listProspects(
       workspace.id,
       {
@@ -131,6 +143,7 @@ export default async function ProspectsPage({
     countProspectSuggestions(workspace.id),
     // DISC-CAMP-P0-06.1: the running campaigns' call, WhatsApp and LinkedIn steps that are due.
     listCampaignTasks(workspace.id),
+    listCampaignsWithCounts(workspace.id),
   ]);
 
   const basePath = `/${businessSlug}/discovery/offerings/${productId}/prospects`;
@@ -179,6 +192,19 @@ export default async function ProspectsPage({
       ) : null}
 
       <TodayList rows={today} tasks={campaignTasks} taskAction={(enrollmentId) => markTaskDoneAction.bind(null, businessId, productId, enrollmentId)} />
+
+      {/* DISC-NAV-P0-01.4: the Prospects tab's other pages, folded above the list. */}
+      <div className="flex flex-col gap-3">
+        <SectionFold id="campaigns" title="Campaigns" hint={campaignsHint(campaigns)}>
+          <CampaignsPage params={params} />
+        </SectionFold>
+        <SectionFold id="opportunities" title="Opportunities" hint="Prospects showing a reason to buy now">
+          <OpportunitiesPage params={params} />
+        </SectionFold>
+        <SectionFold id="watchlist" title="Watchlist" hint="Accounts you are keeping an eye on">
+          <WatchlistPage params={params} />
+        </SectionFold>
+      </div>
 
       {followUpDue ? (
         <p className="rounded-md border bg-muted p-3 text-sm">

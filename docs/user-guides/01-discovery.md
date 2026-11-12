@@ -80,7 +80,7 @@ it says "This AI feature is temporarily unavailable. Please try again later."
 
 On the **Business** page, **AI approvals** sets how Discovery's AI flows (Let AI
 Auto-Populate Info and Run AI Discovery) treat their own results, for the whole business:
-**Review each step** (the default) or **Approve automatically**. The Overview shows the
+**Review each step** (the default) or **Approve automatically**. The **Setup** tab shows the
 current choice ("AI suggestions wait for your review" or "AI approves steps automatically")
 with a **Change in settings** link. Changing it needs `business.settings.manage` (owners and
 admins by default); every change is recorded in the audit log.
@@ -96,38 +96,43 @@ offerings" panel when the same company turns up under more than one of them.
 
 ## Working an offering
 
-Once an offering has a profile, its pages sit under four tabs along the top. The row
-under the tabs lists the pages of the tab you are in:
+Once an offering has a profile, it has four tabs along the top: **Setup**, **Find**,
+**Prospects** and **Results**. Each tab is one page. Its main content is open, and
+everything else is a section with a title, a one-line summary and a chevron. Click a
+section to open it.
 
-| Tab | Pages |
-|---|---|
-| **Setup** | **Overview**, **Ideal customer** (your ICP and buyer personas) |
-| **Find** | **Search** (with what it found, under **To review**), **Import**, **History**, **Definitions** |
-| **Prospects** | **All**, **Opportunities**, **Watchlist**, **Campaigns** |
-| **Results** | **Performance**, **Conversions**, **Usage** |
+| Tab | Open on the page | Sections |
+|---|---|---|
+| **Setup** | The next step | **Offering** (definition quality, who buys it, website, description, sources), **Ideal customer** (your ICP and buyer personas), **Discovery** (the AI discovery run, its schedule, saved criteria and definitions) |
+| **Find** | Search, and what it found under **To review** | **Import**, **History** |
+| **Prospects** | Your prospects (Companies, Channels and People) | **Campaigns**, **Opportunities**, **Watchlist** |
+| **Results** | Performance, and discovery effectiveness once there are opportunities | **Conversions**, **What people say**, **Usage** |
 
 They aren't a checklist: use them in any order. Every page keeps the address it had, so
-old links and bookmarks still open. (Before a profile exists you instead get a short
-step-by-step bar for setting the offering up: Overview, Ideal customer, Prospects,
+old links and bookmarks still open it on its own. (Before a profile exists you instead get a
+short step-by-step bar for setting the offering up: Overview, Ideal customer, Prospects,
 Conversions.)
 
-### Overview
+A prospect's own page works the same way: its steps (**Research**, **Score**, **Outreach
+strategy**, **Messages**) and its **Research brief**, **Buyer intelligence** and
+**Conversations** are sections, and the first step not done yet is open.
+
+### Setup
 
 The offering's hub page:
 
-- **What should I do today?** — the single next step WonderArk suggests
-  (define your ICP, approve it, add buyer personas, discover prospects, or
+- **Next step** — the single next step WonderArk suggests
+  (define your ideal customer, approve it, add buyer personas, find prospects, or
   review them).
 - **Top Opportunity Gate** — one AI-recommended opportunity to act on now, with **Edit
   Recommendation**, **Send to CRM**, **Watch** and **Dismiss**.
-- **Offering definition quality** — a score out of 100 for how completely the
-  offering, its ICP and its buyer personas are defined, and a "We are less
-  certain about" callout with a **Research Further** button that regenerates
-  the ICP.
-- Cards for the offering's profile, ICP health, prospects and buyer personas,
-  and **Discovery effectiveness** — opportunities, how many led to a
-  conversation, how many were sent to CRM, how many were won, and the win rate.
-- **Discovery pipeline** — saved discovery criteria (minimum score, geography, industries,
+- **Offering** section — **Definition quality**, a score out of 100 for how completely the
+  offering, its ICP and its buyer personas are defined, and a "Less certain about" line
+  with a **Research further** button that regenerates the ICP. Below it, who buys the
+  offering and its website, description and sources.
+- **Discovery effectiveness** — opportunities, how many led to a conversation, how many
+  were sent to CRM, how many were won, and the win rate — is on **Results**.
+- **Discovery** section — saved discovery criteria (minimum score, geography, industries,
   buyer roles, exclusions), a rediscovery schedule (Off, Daily or Weekly; WonderArk records
   the next date but doesn't start runs on its own yet) and a **Run AI Discovery** panel with
   live progress. What it may approve depends on your [AI approvals](#ai-approvals) setting,
@@ -155,7 +160,7 @@ a draft until you send it.
 
 ### Discovery (definitions)
 
-**Find → Definitions** holds your *discovery definitions*: what to look for, for this
+**Setup → Discovery** holds your *discovery definitions*: what to look for, for this
 offering. A definition has a name, a monitoring frequency (**Daily, Weekly, Monthly** or
 **Manual only** — recorded for now; definitions don't run on a schedule yet), a minimum score, target
 geographies and industries, buyer roles, **desired signals**, **excluded
@@ -168,7 +173,7 @@ Reviews, Expansion and Multiple Buying Signals — which you can then edit.
 ### Who buys this: companies, consumers or both
 
 **Who buys this?** asks whether an offering is sold to **Companies**, **Consumers** or
-**Both**. Until you answer, it sits at the top of the offering's **Overview**, with the
+**Both**. Until you answer, it sits at the top of the offering's **Setup** tab, with the
 answer your offering profile suggests already chosen; press **Confirm** to keep it or pick
 another. Afterwards you can change it under **Offering setup & sources**. The answer
 decides what the rest of the offering offers: an **Ideal user** on the ideal customer page,
@@ -336,7 +341,7 @@ everyone here signed up on your page or was on a list you imported and confirmed
   link. Someone who signs up through a referral link is credited to the person who shared
   it; the People list shows each person's referrals. The page shows the same thank-you
   whether or not the address was already on the list, and limits how often it can be used.
-- **Import people.** Under **Find**, **Import**, an offering sold to consumers imports a
+- **Import people.** On **Find**, in the **Import** section, an offering sold to consumers imports a
   CSV or Excel list with an `email` column (and optionally `name` and `tags`). You must
   tick **These people agreed to hear from me**; that sentence is saved as each person's
   consent. An address already on the list is skipped. Nobody is emailed.
@@ -358,7 +363,7 @@ everyone here signed up on your page or was on a list you imported and confirmed
 
 ### Campaigns
 
-**Prospects → Campaigns** sends a short sequence of emails to your prospects from your own
+The **Campaigns** section of **Prospects** sends a short sequence of emails to your prospects from your own
 mailbox. Nothing is written or sent until you ask for it.
 
 - **New campaign** makes a draft with a starting structure of three emails (an introduction,
@@ -463,7 +468,7 @@ messages them first.
 
 ### Opportunities (Today's Opportunities)
 
-**Prospects → Opportunities** sorts the offering's active opportunities into bins,
+The **Opportunities** section of **Prospects** sorts the offering's active opportunities into bins,
 and shows a bin only when it has something in it: **Hot**, **Needs Review**,
 **New**, **Watching** and **Insufficient Evidence**. Each row shows the
 company, score, priority, why the offering fits, why now, the primary contact,
@@ -510,7 +515,7 @@ person sends it. (A [campaign](#working-an-offering) is the one exception: once 
 emails go out without you approving each one.) With
 [AI approvals](#ai-approvals) set to **Approve automatically**, **Let AI Auto-Populate Info**
 approves the outreach strategy for the one prospect it adds so it can draft a message; with
-**Review each step** it approves no strategy — see Overview.
+**Review each step** it approves no strategy — see Setup.
 
 On a prospect's page you generate an **Outreach strategy** (why, channel, key message, call
 to action), edit it and **Approve strategy**; only then can you **Generate message**. An email
@@ -552,7 +557,7 @@ all of the business's outreach, including Funding.
 ## Watchlist
 
 Watching an *opportunity* (the **Watch** action on the Opportunities page) just
-changes that opportunity's status. **Prospects → Watchlist** is a separate,
+changes that opportunity's status. The **Watchlist** section of **Prospects** is a separate,
 deliberate list of *accounts* you want to keep an eye on.
 
 1. Open an account from **Prospects**.
@@ -568,13 +573,13 @@ offering you set it in.
 
 ## Performance analysis and run history
 
-**Results → Performance** answers "what's actually working for this offering?"
+**Results** answers "what's actually working for this offering?"
 from everything discovered so far: which signals produce conversations, which
 ICP attributes produce conversions, which buyer roles respond, and whether a
 higher score really correlates with better outcomes, and which Discovery Plays perform
 best. It can be exported as a report.
 
-**Find → History** is the audit list of every AI Discovery run for the
+The **History** section of **Find** is the audit list of every AI Discovery run for the
 offering — what started it (Run AI Discovery, Retry failed stage, or Save &
 Run Downstream), its status (Running, Completed, Failed, or Waiting for review when it
 stopped for your approval) and how long it

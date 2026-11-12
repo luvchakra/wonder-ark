@@ -5,10 +5,15 @@
  * at the path it always had (docs/plan/12-DISCOVERY-EXPANSION-SPEC.md §0.1: no renamed
  * route, no dead deep link); what changes is only which tab it is reached from:
  *
- *   Setup      Overview, Ideal customer (the ICP page, which also holds buyer personas)
- *   Find       Find (with "To review" on the same page), Import, History, Definitions
- *   Prospects  All prospects, Opportunities, Watchlist, Campaigns
- *   Results    Performance, Conversions, Usage
+ *   Setup      Overview, Ideal customer (the ICP page, which also holds buyer personas),
+ *              Definitions
+ *   Find       Find (with "To review" on the same page), Import, History
+ *   Prospects  All prospects, Campaigns, Opportunities, Watchlist
+ *   Results    Performance, Conversions, Usage, What people say
+ *
+ * DISC-NAV-P0-01.4: the tab bar shows the four tabs only, with no second row. Each tab
+ * opens one page, its first, which shows the tab's other pages as sections folded behind
+ * a chevron. The other pages keep their own addresses, and a tab stays marked on each.
  *
  * Pure and framework-free, so the offering's tab bar, the Discovery sidebar
  * (lib/discovery-nav.ts), their tests and the route check
@@ -41,6 +46,7 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; pages: 
     pages: [
       { slug: "", label: "Overview" },
       { slug: "icp", label: "Ideal customer" },
+      { slug: "discovery", label: "Definitions" },
     ],
   },
   {
@@ -50,7 +56,6 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; pages: 
       { slug: "prospects/discover", label: "Search" },
       { slug: "prospects/import", label: "Import" },
       { slug: "history", label: "History" },
-      { slug: "discovery", label: "Definitions" },
     ],
   },
   {
@@ -58,10 +63,10 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; pages: 
     label: "Prospects",
     pages: [
       { slug: "prospects", label: "All" },
-      { slug: "opportunities", label: "Opportunities" },
-      { slug: "watchlist", label: "Watchlist" },
       // DISC-CAMP-P0-05.1: outreach campaigns to the offering's prospects.
       { slug: "campaigns", label: "Campaigns" },
+      { slug: "opportunities", label: "Opportunities" },
+      { slug: "watchlist", label: "Watchlist" },
     ],
   },
   {

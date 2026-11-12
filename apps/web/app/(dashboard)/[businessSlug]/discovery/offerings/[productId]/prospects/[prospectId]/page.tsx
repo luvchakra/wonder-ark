@@ -58,7 +58,7 @@ import { ChannelDrafts } from "@cofounderai/module-discovery/components/channels
 import { listChannelPosts } from "@cofounderai/module-discovery/lib/channels/drafts";
 import { prospectOutcomeLabel } from "@cofounderai/module-discovery/lib/prospects/outcome";
 import { prospectNoun } from "@cofounderai/module-discovery/lib/icp/audience";
-import { Briefcase, ChevronDown, Mail, MessageCircle, Send } from "lucide-react";
+import { Briefcase, Mail, MessageCircle, Send } from "lucide-react";
 import { cn } from "@cofounderai/core/lib/utils";
 import type { ConversationChannel } from "@cofounderai/module-discovery/lib/conversations/types";
 import {
@@ -95,6 +95,7 @@ import {
   writeChannelDraftAction,
   markChannelPostPostedAction,
 } from "./actions";
+import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
 
 /** DISC-OFFER-P0-06.1: replaced by `EVIDENCE_TYPE_LABEL` (module-discovery's own
  * lib/research/types.ts) -- one source of truth for the doc's own "Verified fact /
@@ -135,17 +136,6 @@ const CLASSIFICATION_LABEL: Record<string, string> = {
   unsubscribe: "Unsubscribe",
   other: "Other",
 };
-
-/** Between two pipeline sections whose action gates the next (Research -> Score ->
- * Strategy -> Messages, per lib/prospects/pipeline.ts's stage order) -- a visual cue that
- * the section below can't start until the one above is done, not just decoration. */
-function DependencyArrow() {
-  return (
-    <div className="-my-4 flex justify-center">
-      <ChevronDown className="size-5 text-muted-foreground/40" aria-hidden="true" />
-    </div>
-  );
-}
 
 function OutboundMessageCard({
   message,
@@ -398,6 +388,8 @@ export default async function ProspectDetailPage({
       ? await listResendTemplates().catch(() => [])
       : [];
   const score = scores[0] ?? null;
+  // DISC-NAV-P0-01.4: each step is a folded section; the first one not done yet opens.
+  const openStep = !research ? "research" : !score ? "score" : strategy?.status !== "approved" ? "strategy" : "messages";
   const previousScore = scores[1] ?? null;
   const drafts = messages.filter((m) => !m.conversation_id);
   const threadForConversation = (conversationId: string) =>
@@ -729,7 +721,7 @@ export default async function ProspectDetailPage({
           raw signals), so this decision-support summary sits above the raw Research
           section below it rather than buried inside it. Requires research to exist
           first (same guard generateResearchBrief() itself enforces server-side). */}
-      <section id="research-brief" className="flex scroll-mt-4 flex-col gap-3 rounded-md border p-4">
+      <SectionFold id="research-brief" title="Research brief" hint={researchBrief ? "Ready" : research ? "Not generated yet" : "Needs research first"}>
         <div className="flex items-center justify-between">
           <h2 className="font-medium">Research brief</h2>
           {research ? (
@@ -782,7 +774,7 @@ export default async function ProspectDetailPage({
             </div>
           </div>
         )}
-      </section>
+      </SectionFold>
 
       {/* DISC-OFFER-P0-06.3: "Buyer/Person Intelligence" -- one row per real
           discovery.contacts row (never invented), each enriched with seniority,
@@ -790,7 +782,7 @@ export default async function ProspectDetailPage({
           any research evidence that actually mentions them. Shown independently of
           whether a research brief has been generated yet -- it only needs contacts,
           which can exist before research does. */}
-      <section id="buyer-intelligence" className="flex scroll-mt-4 flex-col gap-3 rounded-md border p-4">
+      <SectionFold id="buyer-intelligence" title="Buyer intelligence" hint={buyerIntelligence.length ? `${buyerIntelligence.length} ${buyerIntelligence.length === 1 ? "person" : "people"}` : "No contacts yet"}>
         <h2 className="font-medium">Buyer intelligence</h2>
         {/* DISC-OFFER-P1-05.2: "Desktop Stage Tables" -- extracted into its own component
          * (`BuyerIntelligenceTable`) since it now renders a real desktop table alongside
@@ -798,11 +790,9 @@ export default async function ProspectDetailPage({
          * moved with it (see that component's own comment for exactly which columns the
          * doc's own "Person | Role | Fit | Evidence | Confidence" set maps onto). */}
         <BuyerIntelligenceTable buyerIntelligence={buyerIntelligence} />
-      </section>
+      </SectionFold>
 
-      <DependencyArrow />
-
-      <section id="research" className="flex scroll-mt-4 flex-col gap-3 rounded-md border p-4">
+      <SectionFold id="research" title="Research" hint={research ? "Done" : "Not researched yet"} open={openStep === "research"}>
         <div className="flex items-center justify-between">
           <h2 className="font-medium">Research</h2>
           <AiActionForm
@@ -884,11 +874,9 @@ export default async function ProspectDetailPage({
           </ExpandableBox>
           </>
         )}
-      </section>
+      </SectionFold>
 
-      <DependencyArrow />
-
-      <section id="score" className="flex scroll-mt-4 flex-col gap-3 rounded-md border p-4">
+      <SectionFold id="score" title="Score" hint={score ? `${score.overall_score}/100` : "Not scored yet"} open={openStep === "score"}>
         <div className="flex items-center justify-between">
           <h2 className="font-medium">Score</h2>
           <form action={scoreProspectAction.bind(null, businessId, productId, prospect.id)}>
@@ -937,11 +925,9 @@ export default async function ProspectDetailPage({
             </div>
           </ExpandableBox>
         )}
-      </section>
+      </SectionFold>
 
-      <DependencyArrow />
-
-      <section id="strategy" className="flex scroll-mt-4 flex-col gap-3 rounded-md border p-4">
+      <SectionFold id="strategy" title="Outreach strategy" hint={strategy ? (strategy.status === "approved" ? "Approved" : "Draft, not approved yet") : "Not generated yet"} open={openStep === "strategy"}>
         <div className="flex items-center justify-between">
           <h2 className="font-medium">Outreach strategy</h2>
           {strategy?.status === "approved" ? (
@@ -1021,11 +1007,9 @@ export default async function ProspectDetailPage({
             ) : null}
           </div>
         )}
-      </section>
+      </SectionFold>
 
-      <DependencyArrow />
-
-      <section id="messages" className="flex scroll-mt-4 flex-col gap-3 rounded-md border p-4">
+      <SectionFold id="messages" title="Messages" hint={messages.length ? `${messages.length} ${messages.length === 1 ? "message" : "messages"}` : "None yet"} open={openStep === "messages"}>
         <div className="flex items-center justify-between">
           <h2 className="font-medium">Messages</h2>
           {strategy?.status === "approved" ? (
@@ -1077,9 +1061,9 @@ export default async function ProspectDetailPage({
             </ul>
           </ExpandableBox>
         )}
-      </section>
+      </SectionFold>
 
-      <section id="conversations" className="flex scroll-mt-4 flex-col gap-4 rounded-md border p-4">
+      <SectionFold id="conversations" title="Conversations" hint={conversations.length ? `${conversations.length} ${conversations.length === 1 ? "conversation" : "conversations"}` : "None yet"}>
         <h2 className="font-medium">Conversations</h2>
         {conversations.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -1222,7 +1206,7 @@ export default async function ProspectDetailPage({
             })}
           </div>
         )}
-      </section>
+      </SectionFold>
 
       <ProspectFeedbackSection
         feedback={prospectFeedback}
