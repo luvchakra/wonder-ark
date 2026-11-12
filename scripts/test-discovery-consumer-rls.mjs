@@ -186,6 +186,8 @@ async function main() {
       psqlAs(ALICE, `update discovery.audience_leads set status = 'unsubscribed' where id = '${aliceLead}'`);
       assertThrows(() => psqlAs(ALICE, `update discovery.audience_leads set status = 'active' where id = '${aliceLead}'`), "a member cannot move a person out of unsubscribed");
       assertThrows(() => psqlAs(ALICE, `update discovery.audience_leads set consent_at = now() where id = '${aliceLead}'`), "nor give them consent again");
+      assertThrows(() => psqlAs(ALICE, `update discovery.audience_leads set lead_token = '${"c".repeat(48)}' where id = '${aliceLead}'`), "a member cannot change a person's private link");
+      assertThrows(() => psqlAs(ALICE, `update discovery.audience_leads set referral_code = '${"c".repeat(16)}' where id = '${aliceLead}'`), "nor their referral code");
       psql(`update discovery.audience_leads set status = 'new', consent_at = now() where id = '${aliceLead}'`);
       assertEqual(psql(`select status from discovery.audience_leads where id = '${aliceLead}'`), "new", "the person signing up again (service role) can");
 

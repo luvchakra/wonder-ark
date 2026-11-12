@@ -19,13 +19,13 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 628 |
+| ✅ Done | 630 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
-| ⬜ Not started | 2 |
+| ⬜ Not started | 0 |
 | **Total** | **713** |
 
 | Backlog | Done | Set aside | Remaining | Total |
@@ -40,19 +40,17 @@ file is stale, so it cannot quietly drift out of date.
 | [Subscriptions & billing (Razorpay + Stripe)](./plan/14-SUBSCRIPTION-BILLING-BACKLOG.md) | 40 | 0 | 0 | 40 |
 | [Multi-user / multi-business RBAC](./plan/15-MULTI-USER-RBAC-BACKLOG.md) | 39 | 0 | 0 | 39 |
 | [WonderArk branding](./plan/16-BRANDING-BACKLOG.md) | 13 | 0 | 0 | 13 |
-| [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 29 | 0 | 2 | 31 |
+| [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 31 | 0 | 0 | 31 |
 | [Module menus](./plan/18-MODULE-MENUS.md) | 10 | 0 | 0 | 10 |
 | [Discovery — outreach campaigns](./plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md) | 18 | 0 | 0 | 18 |
 
 ## What is left
 
-3 stories are neither built nor deliberately set aside:
+1 stories are neither built nor deliberately set aside:
 
 | ID | Story | Status | Note |
 |---|---|---|---|
 | `DISC-OFFER-P0-03.3` | Offering Navigation | ❔ Unverified | Discussed in `docs/design/discovery-offering-backlog-audit.md`, but no code cites it — confirm before relying on this |
-| `DISC-CONS-P0-03.3` | Confirmation email, referral links, unsubscribe | ⬜ Not started | — |
-| `DISC-CONS-P0-03.4` | Import a people list with confirmed consent | ⬜ Not started | — |
 
 ## Platform build-out
 
@@ -1289,14 +1287,14 @@ Source: [`docs/plan/17-DISCOVERY-DATA-AND-CONSUMER.md`](./plan/17-DISCOVERY-DATA
 | `DISC-CONS-P0-02.1` | Find channels and places they gather | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +13 |
 | `DISC-CONS-P0-02.2` | Channel drafts, Mark as posted, Live | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +11 |
 | `DISC-CONS-P0-05.1` | Channels list on Prospects | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +4 |
-| `DISC-CONS-P0-03.1` | People who opted in | ✅ Done | `scripts/test-discovery-consumer-rls.mjs` |
-| `DISC-CONS-P0-03.2` | Public sign-up page and its abuse controls | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/actions.ts` +1 |
-| `DISC-CONS-P0-03.3` | Confirmation email, referral links, unsubscribe | ⬜ Not started | — |
-| `DISC-CONS-P0-03.4` | Import a people list with confirmed consent | ⬜ Not started | — |
-| `DISC-CONS-P0-04.1` | Feedback | ✅ Done | `scripts/test-discovery-consumer-rls.mjs` |
-| `DISC-CONS-P0-04.2` | What people say | ✅ Done | `apps/web/tests/offering-nav-routes.test.ts` +5 |
-| `DISC-CONS-P0-04.3` | Suggested Ideal-user edit, accepted or rejected | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/icp/actions.ts` +1 |
-| `DISC-CONS-P0-05.2` | People list on Prospects, messaging with consent | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +5 |
+| `DISC-CONS-P0-03.1` | People who opted in | ✅ Done | `packages/module-discovery/src/lib/audience/leads.ts` +3 |
+| `DISC-CONS-P0-03.2` | Public sign-up page and its abuse controls | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/actions.ts` +9 |
+| `DISC-CONS-P0-03.3` | Confirmation email, referral links, unsubscribe | ✅ Done | `packages/module-discovery/src/lib/audience/send.ts` +3 |
+| `DISC-CONS-P0-03.4` | Import a people list with confirmed consent | ✅ Done | `apps/web/app/p/w/[token]/page.tsx` +2 |
+| `DISC-CONS-P0-04.1` | Feedback | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/people/[leadId]/actions.ts` +11 |
+| `DISC-CONS-P0-04.2` | What people say | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/people-say/actions.ts` +11 |
+| `DISC-CONS-P0-04.3` | Suggested Ideal-user edit, accepted or rejected | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/icp/actions.ts` +4 |
+| `DISC-CONS-P0-05.2` | People list on Prospects, messaging with consent | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +14 |
 
 ## Module menus
 

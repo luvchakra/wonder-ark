@@ -123,7 +123,10 @@ grant select (
   id, workspace_id, email, name, answers, consent_text, consent_at, source, referrer_lead_id,
   utm, status, party_id, tags, referral_code, confirmation_sent_at, survey, created_at
 ) on discovery.audience_leads to authenticated;
-grant insert, update, delete on discovery.audience_leads to authenticated;
+grant insert, delete on discovery.audience_leads to authenticated;
+-- A member changes only these; the private lead_token, the referral code, consent and the
+-- confirmation record are written by the service role alone.
+grant update (name, status, tags, party_id, survey) on discovery.audience_leads to authenticated;
 grant all on discovery.audience_leads to service_role;
 
 -- Unsubscribing is final for the business: a member cannot move a person out of
