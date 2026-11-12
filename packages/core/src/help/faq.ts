@@ -284,6 +284,22 @@ export const FAQ: FaqEntry[] = [
   },
   {
     category: "Day to day",
+    question: "Does WonderArk post to communities or channels for me?",
+    answer:
+      "No. For an offering sold to consumers, a channel's page can write a Community post with AI, marked AI-generated, but WonderArk never posts it anywhere. Copy it, publish it yourself, then use Mark as posted with the link to your post so it is recorded. The partnership pitch and sponsorship enquiry are saved as draft emails under Messages; nothing is sent until you send it.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
+    question: "How do I find channels for an offering sold to consumers?",
+    answer:
+      "Answer Who buys this? on the offering's Overview with Consumers (or Both). The ideal customer page then has an Ideal user, and Find looks for Channels or Places they gather, filled in from your approved Ideal user. What it finds waits under To review; approving a channel adds it to the Channels list on Prospects.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
     question: "Why can't I send an email to one of my contacts?",
     answer:
       "If Find contacts added the contact and its address is marked Invalid, WonderArk won't send to it: choose another contact or correct the address. An address marked Risky or Not verified can be sent to after you confirm once. A contact you typed yourself has no mark and sends as usual. Separately, an address that unsubscribed from your business's emails is never sent to.",

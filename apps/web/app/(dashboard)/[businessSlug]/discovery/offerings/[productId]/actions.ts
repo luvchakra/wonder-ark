@@ -13,6 +13,7 @@ import { updateProduct, setRediscoveryInterval, setDiscoveryCriteria } from "@co
 import type { RediscoveryInterval } from "@cofounderai/module-discovery/lib/tenancy/rediscovery";
 import { understandProduct } from "@cofounderai/module-discovery/lib/ai/understand-product";
 import { generateIcp } from "@cofounderai/module-discovery/lib/ai/generate-icp";
+import { setAudienceType } from "@cofounderai/module-discovery/lib/offerings/audience-type";
 import { setOpportunityStatus, recordOpportunityHandoffFailure } from "@cofounderai/module-discovery/lib/opportunities/mutations";
 import type { OpportunityStatus } from "@cofounderai/module-discovery/lib/opportunities/types";
 import { promoteProspectToCrm } from "@cofounderai/module-crm/contract/index";
@@ -273,4 +274,13 @@ export async function regenerateIcpFromOverviewAction(businessId: string, produc
     await generateIcp(productId, { force: true });
     revalidatePath(await productPath(businessId, productId));
   });
+}
+
+/** DISC-CONS-P0-01.1: the answer to "Who buys this?". `setAudienceType` checks the value,
+ * the licence and (through RLS) that the offering is the caller's. The ICP and Find pages
+ * read it too, so they are refreshed with the overview. */
+export async function setAudienceTypeAction(businessId: string, productId: string, formData: FormData) {
+  await setAudienceType(productId, String(formData.get("audienceType") ?? ""));
+  const path = await productPath(businessId, productId);
+  revalidatePath(path, "layout");
 }

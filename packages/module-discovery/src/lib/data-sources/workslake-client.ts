@@ -50,6 +50,9 @@ export const CHANNEL_TYPES = [
   "organisation",
 ] as const;
 
+/** DISC-CONS-P0-02.1: the category groups a business search may ask for. */
+export const CATEGORY_GROUPS = ["gathering_places"] as const;
+
 export const EMAIL_STATUSES = ["verified", "risky", "invalid", "unverified"] as const;
 
 /** `usage` on every route that can spend units. */
@@ -99,6 +102,10 @@ export const SearchRequestSchema = z.object({
     channelTypes: z.array(z.enum(CHANNEL_TYPES)),
     minAudience: nullableNumber,
     languages: z.array(text),
+    /** DISC-CONS-P0-02.1 (spec A6.3): "gathering_places" asks a business search for
+     * schools, colleges, coaching centres, gyms, clubs, community centres and coworking
+     * spaces. Sent only for "Places they gather"; left out, it is no filter. */
+    categoryGroup: z.enum(CATEGORY_GROUPS).optional(),
   }),
   locations: z.array(GatewayLocationInputSchema),
   providers: z.array(text).min(1),

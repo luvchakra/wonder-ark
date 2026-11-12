@@ -4,7 +4,7 @@ import { businessPath } from "@/lib/business-path";
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { runFind } from "@cofounderai/module-discovery/lib/data-sources/find";
-import type { FindState, SaveWeeklySearchState } from "@cofounderai/module-discovery/lib/data-sources/types";
+import { findTargetOf, type FindState, type SaveWeeklySearchState } from "@cofounderai/module-discovery/lib/data-sources/types";
 import { saveWeeklySearch, setSavedSearchEnabled } from "@cofounderai/module-discovery/lib/data-sources/saved-searches";
 import { after } from "next/server";
 import { approveSuggestionsAndQueueEnrichment } from "@cofounderai/module-discovery/lib/data-sources/approval";
@@ -39,6 +39,8 @@ export async function findAction(
   try {
     const outcome = await runFind(workspaceId, {
       sourceId: field("sourceId"),
+      // DISC-CONS-P0-02.1: companies, channels or places they gather.
+      target: findTargetOf(field("target")),
       what: field("what"),
       where: field("where"),
       companySize: field("companySize") || undefined,

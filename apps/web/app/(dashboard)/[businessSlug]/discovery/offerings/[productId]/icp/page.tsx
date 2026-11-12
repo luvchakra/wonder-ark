@@ -19,6 +19,14 @@ import { listBuyerPersonas } from "@cofounderai/module-discovery/lib/personas/qu
 import { SaveAndRunDownstreamButton } from "@cofounderai/module-discovery/components/pipeline/save-and-run-downstream-button";
 import { downstreamGroupLabels } from "@cofounderai/module-discovery/lib/pipeline/display-groups";
 import {
+  audienceTypeOf,
+  audienceWords,
+  hasIdealUser,
+  IDEAL_USER_FIELD_LABEL,
+  IDEAL_USER_LIST_FIELDS,
+  readIdealUser,
+} from "@cofounderai/module-discovery/lib/icp/audience";
+import {
   generateIcpAction,
   updateIcpAction,
   updateIcpAndRunDownstreamAction,
@@ -49,6 +57,11 @@ export default async function IcpPage({
   if (!workspace) notFound();
 
   const prospectsPath = `/${businessSlug}/discovery/offerings/${productId}/prospects`;
+  // DISC-CONS-P0-01.2/01.3: an offering sold to consumers has an Ideal user, and the
+  // page's words follow who buys it.
+  const audienceType = audienceTypeOf(product);
+  const words = audienceWords(audienceType);
+  const withIdealUser = hasIdealUser(audienceType);
   const autoPopulateBanner = (
     <AutoPopulateStepBanner
       step="icp"
@@ -96,12 +109,12 @@ export default async function IcpPage({
         <div className="flex flex-col gap-3">
           {autoPopulateBanner}
           <p className="text-sm text-muted-foreground">
-            No ideal customer yet. Generate one from the approved offering profile{cloneSources.length > 0 ? ", or clone one from another offering." : "."}
+            No {words.ideal.toLowerCase()} yet. Generate one from the approved offering profile{cloneSources.length > 0 ? ", or clone one from another offering." : "."}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <AiActionForm
               action={generateIcpAction.bind(null, businessId, productId)}
-              buttonLabel="Generate ideal customer"
+              buttonLabel={`Generate ${words.ideal.toLowerCase()}`}
               pendingText="Generating..."
             />
             <CloneIcpButton sources={cloneSources} hasExistingIcp={false} cloneAction={cloneIcpAction.bind(null, businessId, productId)} />
@@ -116,6 +129,26 @@ export default async function IcpPage({
   // ICP itself exists (there's nothing to version before then), keyed by `icp.id` rather
   // than workspace so a founder can still see the trail even across a future clone.
   const versions = await listIcpProfileVersions(icp.id);
+  const idealUser = readIdealUser(icp.audience);
+
+  // The company fields. For an offering sold only to consumers they are folded: they
+  // describe companies, and the form still carries them so a save keeps them.
+  const companyFields = (
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <IcpField label="Industries" name="industries" defaultValue={toLines(icp.industries)} />
+      <IcpField label="Company sizes" name="companySizes" defaultValue={toLines(icp.company_sizes)} />
+      <IcpField label="Geographies" name="geographies" defaultValue={toLines(icp.geographies)} />
+      <IcpField label="Roles" name="roles" defaultValue={toLines(icp.roles)} />
+      <IcpField label="Pain points" name="painPoints" defaultValue={toLines(icp.pain_points)} />
+      <IcpField label="Buying signals" name="buyingSignals" defaultValue={toLines(icp.buying_signals)} />
+      <IcpField label="Exclusions" name="exclusions" defaultValue={toLines(icp.exclusions)} />
+      <IcpField label="Revenue" name="revenue" defaultValue={toLines(icp.revenue)} />
+      <IcpField label="Business model" name="businessModel" defaultValue={toLines(icp.business_model)} />
+      <IcpField label="Technology" name="technology" defaultValue={toLines(icp.technology)} />
+      <IcpField label="Growth stage" name="growthStage" defaultValue={toLines(icp.growth_stage)} />
+      <IcpField label="Existing tools" name="existingTools" defaultValue={toLines(icp.existing_tools)} />
+    </div>
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -187,52 +220,42 @@ export default async function IcpPage({
           <Input id="name" name="name" defaultValue={icp.name} required />
         </div>
         <IcpField label="Description" name="description" defaultValue={icp.description ?? ""} />
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <IcpField label="Industries" name="industries" defaultValue={toLines(icp.industries)} />
-          <IcpField
-            label="Company sizes"
-            name="companySizes"
-            defaultValue={toLines(icp.company_sizes)}
-          />
-          <IcpField
-            label="Geographies"
-            name="geographies"
-            defaultValue={toLines(icp.geographies)}
-          />
-          <IcpField label="Roles" name="roles" defaultValue={toLines(icp.roles)} />
-          <IcpField
-            label="Pain points"
-            name="painPoints"
-            defaultValue={toLines(icp.pain_points)}
-          />
-          <IcpField
-            label="Buying signals"
-            name="buyingSignals"
-            defaultValue={toLines(icp.buying_signals)}
-          />
-          <IcpField
-            label="Exclusions"
-            name="exclusions"
-            defaultValue={toLines(icp.exclusions)}
-          />
-          <IcpField label="Revenue" name="revenue" defaultValue={toLines(icp.revenue)} />
-          <IcpField
-            label="Business model"
-            name="businessModel"
-            defaultValue={toLines(icp.business_model)}
-          />
-          <IcpField label="Technology" name="technology" defaultValue={toLines(icp.technology)} />
-          <IcpField
-            label="Growth stage"
-            name="growthStage"
-            defaultValue={toLines(icp.growth_stage)}
-          />
-          <IcpField
-            label="Existing tools"
-            name="existingTools"
-            defaultValue={toLines(icp.existing_tools)}
-          />
-        </div>
+        {withIdealUser ? (
+          <section className="flex flex-col gap-4" aria-labelledby="ideal-user-heading">
+            <input type="hidden" name="audience_present" value="1" />
+            <div className="flex items-center gap-2">
+              <h3 id="ideal-user-heading" className="font-medium">
+                Ideal user
+              </h3>
+              {/* AI rule 9: what the AI wrote is labelled until a person edits it. */}
+              <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                {idealUser?.generated_from ? "AI-generated" : idealUser ? "Edited by a person" : "Empty"}
+              </span>
+            </div>
+            {idealUser === null ? (
+              <p className="text-sm text-muted-foreground">No ideal user yet. Regenerate to write one, or fill it in below.</p>
+            ) : null}
+            <IcpField label={IDEAL_USER_FIELD_LABEL.who} name="audience_who" defaultValue={idealUser?.who ?? ""} rows={3} />
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              {IDEAL_USER_LIST_FIELDS.map((field) => (
+                <IcpField
+                  key={field}
+                  label={IDEAL_USER_FIELD_LABEL[field]}
+                  name={`audience_${field}`}
+                  defaultValue={toLines(idealUser?.[field] ?? [])}
+                />
+              ))}
+            </div>
+          </section>
+        ) : null}
+        {audienceType === "consumer" ? (
+          <details className="rounded-md border p-3">
+            <summary className="cursor-pointer text-sm font-medium">Company fields</summary>
+            <div className="mt-3">{companyFields}</div>
+          </details>
+        ) : (
+          companyFields
+        )}
         <p className="text-xs text-muted-foreground">One item per line.</p>
         <div className="flex flex-wrap gap-2">
           <SubmitButton size="sm" pendingText="Saving...">

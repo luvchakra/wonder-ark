@@ -16,6 +16,16 @@ import { getWorkspaceForProduct } from "@cofounderai/module-discovery/lib/tenanc
 import { runAiAction, type AiActionState } from "@cofounderai/core/actions/ai-action-state";
 import { createBuyerPersona, updateBuyerPersona, deleteBuyerPersona } from "@cofounderai/module-discovery/lib/personas/mutations";
 import type { PersonaPriority, PersonaRole } from "@cofounderai/module-discovery/lib/personas/types";
+import { IDEAL_USER_LIST_FIELDS } from "@cofounderai/module-discovery/lib/icp/audience";
+
+/** DISC-CONS-P0-01.2: the Ideal user's fields, when the form carries them (it marks
+ * that with `audience_present`). A form without them leaves the stored one alone. */
+function idealUserFromFormData(formData: FormData): Record<string, unknown> | undefined {
+  if (formData.get("audience_present") === null) return undefined;
+  const user: Record<string, unknown> = { who: String(formData.get("audience_who") ?? "") };
+  for (const field of IDEAL_USER_LIST_FIELDS) user[field] = parseListField(String(formData.get(`audience_${field}`) ?? ""));
+  return user;
+}
 
 async function icpPath(businessId: string, productId: string) {
   return `${await businessPath(businessId)}/discovery/offerings/${productId}/icp`;
@@ -50,6 +60,7 @@ function icpFieldsFromFormData(formData: FormData) {
     technology: parseListField(String(formData.get("technology") ?? "")),
     growthStage: parseListField(String(formData.get("growthStage") ?? "")),
     existingTools: parseListField(String(formData.get("existingTools") ?? "")),
+    audience: idealUserFromFormData(formData),
   };
 }
 

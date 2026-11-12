@@ -9,6 +9,7 @@ export type AiOperation =
   | "understand_product"
   | "discover_products"
   | "generate_icp"
+  | "generate_consumer_icp"
   | "research_prospect"
   | "discover_prospects"
   | "generate_outreach_strategy"
@@ -63,6 +64,9 @@ const OPERATION_REGISTRY: Record<AiOperation, AiOperationSpec> = {
   // static source already in hand.
   discover_products: { qualityTier: "reasoning", requiresWebSearch: true },
   generate_icp: { qualityTier: "balanced", requiresWebSearch: false },
+  // DISC-CONS-P0-01.2: the "Ideal user" of an offering sold to consumers, from the same
+  // offering profile and of the same size as generate_icp, so the same tier. No web search.
+  generate_consumer_icp: { qualityTier: "balanced", requiresWebSearch: false },
   research_prospect: { qualityTier: "reasoning", requiresWebSearch: true },
   discover_prospects: { qualityTier: "reasoning", requiresWebSearch: true },
   // Reasoning, not balanced: tying research evidence to a specific angle and CTA is

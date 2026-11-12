@@ -19,6 +19,9 @@ export type IcpProfile = {
   technology: string[];
   growth_stage: string[];
   existing_tools: string[];
+  /** DISC-CONS-P0-01.2: the Ideal user of a consumer offering (`lib/icp/audience.ts`),
+   * null for an offering sold to companies only. Read through `readIdealUser`. */
+  audience?: unknown;
   /** DISC-OFFER-P0-13.1: "Structured Stage Outputs" -- the doc's own worked ICP example
    * names `confidence`/`evidence` alongside the list fields above; both are nullable/
    * empty rather than defaulted, since a row created before this story (or since edited
@@ -69,6 +72,8 @@ export type IcpProfileVersion = {
   technology: string[];
   growth_stage: string[];
   existing_tools: string[];
+  /** DISC-CONS-P0-01.2: the Ideal user as it stood in this version. */
+  audience?: unknown;
   confidence: number | null;
   evidence: string[];
   status: IcpStatus;

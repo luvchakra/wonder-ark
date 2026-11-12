@@ -52,6 +52,11 @@ import { addToWatchlist, updateWatchlistEntry, removeFromWatchlist } from "@cofo
 import { addProspectFeedback } from "@cofounderai/module-discovery/lib/prospect-feedback/mutations";
 import type { ProspectFeedbackTag } from "@cofounderai/module-discovery/lib/prospect-feedback/types";
 import { runAiAction, type AiActionState } from "@cofounderai/core/actions/ai-action-state";
+import {
+  generateChannelDraft,
+  markChannelPostPosted,
+  type ChannelDraftVariant,
+} from "@cofounderai/module-discovery/lib/channels/drafts";
 import { promoteProspectToCrm, recordInteraction } from "@cofounderai/module-crm/contract/index";
 import type { RecordInteractionInput } from "@cofounderai/module-crm/lib/interactions/types";
 import type { MessageChannel, MessageClassification } from "@cofounderai/module-discovery/lib/messages/types";
@@ -600,4 +605,36 @@ export async function promoteProspectToCrmAction(businessId: string, productId: 
   const result = await promoteProspectToCrm(businessId, { partyId, prospectId });
   if (result.ok) revalidatePath(await prospectPath(businessId, productId, prospectId));
   return result;
+}
+
+/**
+ * DISC-CONS-P0-02.2: one of the three drafts for a channel prospect. A draft the code
+ * refused, or a channel that is not this offering's, is reported as an error; nothing is
+ * ever sent or posted.
+ */
+export async function writeChannelDraftAction(
+  businessId: string,
+  productId: string,
+  prospectId: string,
+  _prevState: AiActionState,
+  formData: FormData,
+): Promise<AiActionState> {
+  return runAiAction(async () => {
+    const outcome = await generateChannelDraft(prospectId, String(formData.get("variant") ?? "") as ChannelDraftVariant);
+    if (outcome.status === "failed") throw new Error(outcome.message);
+    revalidatePath(await prospectPath(businessId, productId, prospectId));
+  });
+}
+
+/** DISC-CONS-P0-02.2: "Mark as posted" with the link the person pasted back. */
+export async function markChannelPostPostedAction(
+  businessId: string,
+  productId: string,
+  prospectId: string,
+  contentId: string,
+  formData: FormData,
+) {
+  const outcome = await markChannelPostPosted(businessId, contentId, String(formData.get("link") ?? ""));
+  if (outcome.status === "failed") throw new Error(outcome.message);
+  revalidatePath(await prospectPath(businessId, productId, prospectId));
 }

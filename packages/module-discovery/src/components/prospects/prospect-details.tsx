@@ -1,4 +1,5 @@
 import { safeHttpUrl } from "../../lib/data-sources/suggestions";
+import { channelTypeLabel, formatAudience } from "../../lib/data-sources/channels";
 import type { Prospect, ProspectFieldSource } from "../../lib/prospects/types";
 
 /**
@@ -23,15 +24,35 @@ const FIELDS: { column: keyof Prospect & string; label: string; link?: boolean }
   { column: "description", label: "Description" },
 ];
 
+/** DISC-CONS-P0-02.1: a channel's own fields. Its topics are kept in `industry`. */
+const CHANNEL_FIELDS: { column: keyof Prospect & string; label: string; link?: boolean }[] = [
+  { column: "channel_type", label: "Type" },
+  { column: "audience_size", label: "Audience" },
+  { column: "industry", label: "Topics" },
+  { column: "location", label: "Location" },
+  { column: "description", label: "Description" },
+];
+
+function displayValue(prospect: Prospect, column: string): string | null {
+  if (column === "channel_type") return channelTypeLabel(prospect.channel_type);
+  if (column === "audience_size") {
+    // The date the source measured the audience, kept with its provenance.
+    return formatAudience(prospect.audience_size, null, prospect.field_sources?.audience_size?.observedAt ?? null);
+  }
+  const value = prospect[column as keyof Prospect];
+  return typeof value === "string" && value ? value : null;
+}
+
 function sourceOf(sources: Prospect["field_sources"], column: string): ProspectFieldSource | null {
   const entry = sources?.[column];
   return entry && typeof entry.name === "string" && entry.name ? entry : null;
 }
 
 export function ProspectDetails({ prospect }: { prospect: Prospect }) {
-  const rows = FIELDS.flatMap((field) => {
-    const value = prospect[field.column];
-    return typeof value === "string" && value ? [{ ...field, value }] : [];
+  const fields = prospect.kind === "channel" ? CHANNEL_FIELDS : FIELDS;
+  const rows = fields.flatMap((field) => {
+    const value = displayValue(prospect, field.column);
+    return value ? [{ ...field, value }] : [];
   });
   const sourceRef = safeHttpUrl(prospect.source_ref);
 

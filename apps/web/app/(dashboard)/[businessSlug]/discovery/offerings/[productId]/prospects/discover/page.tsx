@@ -17,6 +17,8 @@ import {
   type DataSourceList,
 } from "@cofounderai/module-discovery/lib/data-sources/types";
 import { FindForm } from "@cofounderai/module-discovery/components/prospects/find-form";
+import { audienceTypeOf, audienceWords, readIdealUser } from "@cofounderai/module-discovery/lib/icp/audience";
+import { sourcesForTarget, type FindTarget } from "@cofounderai/module-discovery/lib/data-sources/types";
 import { SuggestionReviewList } from "@cofounderai/module-discovery/components/prospects/suggestion-review-list";
 import { WeeklySearchLine } from "@cofounderai/module-discovery/components/prospects/weekly-search";
 import {
@@ -82,11 +84,16 @@ export default async function DiscoverProspectsPage({
   ]);
   const weekly = summariseSavedSearch(savedSearch);
 
-  // Find looks for companies; a source that only holds channels is not offered here.
-  const sources = list.sources.filter(
-    (source) => source.action === "signals" || (source.action === "search" && source.kinds.includes("business")),
-  );
-  const usable = sources.filter((source) => source.status === "active");
+  // DISC-CONS-P0-02.1: what this offering looks for follows who buys it. Companies only:
+  // companies, as before. Consumers: channels by default, or the places they gather.
+  // Both: a toggle between companies and channels (and places).
+  const audienceType = audienceTypeOf(product);
+  const words = audienceWords(audienceType);
+  const targets: FindTarget[] =
+    audienceType === "consumer" ? ["channels", "places"] : audienceType === "both" ? ["companies", "channels", "places"] : [];
+  const sources = list.sources.filter((source) => source.action !== "import");
+  const companySources = sourcesForTarget(sources, "companies");
+  const usable = companySources.filter((source) => source.status === "active");
   const defaultSource =
     usable.find((source) => source.id === STORED_SOURCE_ID) ??
     usable.find((source) => source.origin === "gateway" && source.action === "search" && !source.paid) ??
@@ -96,11 +103,13 @@ export default async function DiscoverProspectsPage({
   // Prefilled from the approved ICP only: a draft ICP is not yet what the business
   // decided to target.
   const approvedIcp = icp?.status === "approved" ? icp : null;
+  // The channel topics and places come from the approved Ideal user, the same way.
+  const idealUser = approvedIcp ? readIdealUser(approvedIcp.audience) : null;
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-lg font-medium">Find prospects</h1>
+        <h1 className="text-lg font-medium">{words.findHeading}</h1>
         <p className="text-sm text-muted-foreground">
           Nothing is added to your prospects until you approve it below.
         </p>
@@ -109,6 +118,7 @@ export default async function DiscoverProspectsPage({
       <FindForm
         action={findAction.bind(null, businessId, productId, workspace.id)}
         sources={sources}
+        targets={targets}
         defaultSourceId={defaultSource?.id ?? ""}
         quota={list.quota}
         note={gatewayNote(list)}
@@ -116,6 +126,8 @@ export default async function DiscoverProspectsPage({
           what: approvedIcp?.industries.join(", ") ?? "",
           where: approvedIcp?.geographies.join("; ") ?? "",
           hiringKeywords: approvedIcp ? [...approvedIcp.buying_signals, ...approvedIcp.existing_tools].join(", ") : "",
+          channelTopics: idealUser ? [...idealUser.interests, ...idealUser.online_places].join(", ") : "",
+          places: idealUser ? idealUser.offline_places.join(", ") : "",
         }}
         primary={suggestions.length === 0}
         saveWeeklyAction={saveWeeklySearchAction.bind(null, businessId, productId, workspace.id)}

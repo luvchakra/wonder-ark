@@ -54,6 +54,10 @@ import { getAiRun } from "@cofounderai/module-discovery/lib/ai/queries";
 import { getHandoffStatusForProspect } from "@cofounderai/module-fsm/contract/index";
 import { getDiscoveryHandoffLead } from "@cofounderai/module-crm/contract/index";
 import { PromoteToCrmButton } from "./promote-to-crm-button";
+import { ChannelDrafts } from "@cofounderai/module-discovery/components/channels/channel-drafts";
+import { listChannelPosts } from "@cofounderai/module-discovery/lib/channels/drafts";
+import { prospectOutcomeLabel } from "@cofounderai/module-discovery/lib/prospects/outcome";
+import { prospectNoun } from "@cofounderai/module-discovery/lib/icp/audience";
 import { Briefcase, ChevronDown, Mail, MessageCircle, Send } from "lucide-react";
 import { cn } from "@cofounderai/core/lib/utils";
 import type { ConversationChannel } from "@cofounderai/module-discovery/lib/conversations/types";
@@ -88,6 +92,8 @@ import {
   fillMissingDetailsAction,
   findContactsAction,
   lookupQuotaAction,
+  writeChannelDraftAction,
+  markChannelPostPostedAction,
 } from "./actions";
 
 /** DISC-OFFER-P0-06.1: replaced by `EVIDENCE_TYPE_LABEL` (module-discovery's own
@@ -355,6 +361,8 @@ export default async function ProspectDetailPage({
   // Whether it is set up is read from this server's settings; no request is made to it
   // until the person presses one of them.
   const isCompany = (prospect.kind ?? "company") === "company";
+  // DISC-CONS-P0-02.2: a channel's drafts, and its posts kept in marketing content.
+  const channelPosts = isCompany ? [] : await listChannelPosts(businessId, prospect.id);
   const gatewayReady = isGatewayConfigured();
   const hasMissingDetails = isCompany && missingEnrichFields(prospect).length > 0;
 
@@ -457,7 +465,7 @@ export default async function ProspectDetailPage({
 
       {duplicate ? (
         <p className="rounded-md border bg-muted/40 p-3 text-sm text-muted-foreground">
-          This company was already in your pipeline -- nothing new was created.
+          This {prospectNoun(prospect.kind)} was already in your pipeline -- nothing new was created.
         </p>
       ) : null}
 
@@ -474,7 +482,7 @@ export default async function ProspectDetailPage({
             <p className="font-medium">No action needed right now</p>
           )}
         </div>
-        <DiscoveryOutcomeBadge stage={discoveryOutcomeStage} />
+        <DiscoveryOutcomeBadge stage={discoveryOutcomeStage} kind={prospect.kind} />
       </div>
 
       {showHandoffPanel ? <FsmHandoffPanel status={handoffStatus} /> : null}
@@ -631,6 +639,14 @@ export default async function ProspectDetailPage({
         </form>
         </details>
       </section>
+
+      {isCompany ? null : (
+        <ChannelDrafts
+          writeAction={writeChannelDraftAction.bind(null, businessId, productId, prospect.id)}
+          posts={channelPosts}
+          markPostedAction={(contentId) => markChannelPostPostedAction.bind(null, businessId, productId, prospect.id, contentId)}
+        />
+      )}
 
       {/* DISC-DATA-P0-04.2. Visible controls in this block, apart from each contact's own
           two: seven before (the six fields of the add form and its button), two now
@@ -1039,8 +1055,10 @@ export default async function ProspectDetailPage({
           ) : null}
         </div>
 
-        {strategy?.status !== "approved" ? (
-          <p className="text-sm text-muted-foreground">Approve an outreach strategy first.</p>
+        {strategy?.status !== "approved" && (isCompany || drafts.length === 0) ? (
+          <p className="text-sm text-muted-foreground">
+            {isCompany ? "Approve an outreach strategy first." : "Emails you write under Drafts for this channel appear here."}
+          </p>
         ) : drafts.length === 0 ? (
           <p className="text-sm text-muted-foreground">No draft messages yet.</p>
         ) : (
@@ -1092,7 +1110,7 @@ export default async function ProspectDetailPage({
                         )}
                       >
                         {c.status === "closed" && OUTCOME_LABEL[prospect.outcome]
-                          ? `Closed · ${OUTCOME_LABEL[prospect.outcome]}`
+                          ? `Closed · ${prospectOutcomeLabel(prospect.outcome as "won" | "lost", prospect.kind)}`
                           : (CONVERSATION_STATUS_LABEL[c.status] ?? c.status)}
                       </span>
                       {c.status !== "closed" ? (
@@ -1113,7 +1131,7 @@ export default async function ProspectDetailPage({
                             variant="outline"
                             pendingText="Closing..."
                           >
-                            Won
+                            {prospectOutcomeLabel("won", prospect.kind)}
                           </SubmitButton>
                           <SubmitButton
                             name="outcome"

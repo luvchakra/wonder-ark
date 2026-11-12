@@ -602,3 +602,101 @@ describe("Web search (AI)", () => {
     await expect(runFind(WORKSPACE, { sourceId: "web_search", what: "", where: "" })).rejects.toThrow("Approve an ICP");
   });
 });
+
+// DISC-CONS-P0-02.1: Find for a consumer offering looks for channels, or the places its
+// ideal users gather. Suggestions are still the only door.
+describe("channels and places they gather", () => {
+  it("asks the gateway for channels and stages each as a channel suggestion with its source", async () => {
+    const supabase = mockDb();
+    searchReturns([ProspectItemSchema.parse(channelItem)]);
+
+    const outcome = await runFind(WORKSPACE, { sourceId: "stored", target: "channels", what: "home organisation", where: "" });
+
+    expect(h.searchProspects.mock.calls[0]![1]).toMatchObject({ kind: "channel", query: "home organisation" });
+    expect(stagedRows(supabase)).toEqual([
+      expect.objectContaining({
+        kind: "channel",
+        company_name: "Example Home Organising",
+        website: null,
+        industry: "home organisation, family routines",
+        source: "youtube",
+        source_name: "YouTube Data API",
+        external_id: "channels_81bc...",
+        match_reason: 'Matches your search for "home organisation".',
+      }),
+    ]);
+    expect(outcome).toMatchObject({ status: "completed", found: 1, added: 1 });
+    // A weekly search is for companies in this version.
+    expect(outcome).not.toHaveProperty("weekly");
+  });
+
+  it("does not apply the company ICP pre-filter to channels", async () => {
+    h.getIcpProfile.mockResolvedValue({ ...approvedIcp, industries: ["Electrical"] });
+    const supabase = mockDb();
+    searchReturns([ProspectItemSchema.parse(channelItem)]);
+
+    await runFind(WORKSPACE, { sourceId: "stored", target: "channels", what: "home", where: "" });
+
+    expect(stagedRows(supabase)).toHaveLength(1);
+  });
+
+  it("skips a channel already a prospect, by name", async () => {
+    h.findDuplicateProspect.mockResolvedValue({ id: "p1" });
+    const supabase = mockDb();
+    searchReturns([ProspectItemSchema.parse(channelItem)]);
+
+    const outcome = await runFind(WORKSPACE, { sourceId: "stored", target: "channels", what: "home", where: "" });
+
+    expect(h.findDuplicateProspect).toHaveBeenCalledWith(WORKSPACE, { companyName: "Example Home Organising", website: null }, undefined);
+    expect(stagedRows(supabase)).toEqual([]);
+    expect(outcome).toMatchObject({ skipped: expect.objectContaining({ alreadyProspect: 1 }) });
+  });
+
+  it("counts a business returned to a search for channels as unreadable", async () => {
+    mockDb();
+    searchReturns([ProspectItemSchema.parse(channelItem), business("a")]);
+
+    const outcome = await runFind(WORKSPACE, { sourceId: "stored", target: "channels", what: "home", where: "" });
+
+    expect(outcome).toMatchObject({ found: 2, added: 1, skipped: expect.objectContaining({ unreadable: 1 }) });
+  });
+
+  it("asks for the gathering-places group as a business search for 'Places they gather'", async () => {
+    h.getIcpProfile.mockResolvedValue(approvedIcp);
+    const supabase = mockDb();
+    searchReturns([business("school", { industry: "Education" })]);
+
+    await runFind(WORKSPACE, { sourceId: "stored", target: "places", what: "schools", where: "Pune", companySize: "11-50" });
+
+    const request = h.searchProspects.mock.calls[0]![1];
+    expect(request).toMatchObject({ kind: "business", filters: { categoryGroup: "gathering_places", employeeRanges: [] } });
+    // A school is not a company the ICP describes; it is not turned away by its industries.
+    expect(stagedRows(supabase)).toHaveLength(1);
+  });
+
+  it("refuses a channel search on a source that lists no channels, before asking the gateway", async () => {
+    mockDb();
+    sources({ sources: [{ ...stored, kinds: ["business"] }, webSearch, fileImport] });
+
+    const outcome = await runFind(WORKSPACE, { sourceId: "stored", target: "channels", what: "home", where: "" });
+
+    expect(outcome).toEqual({ status: "failed", reason: "invalid", message: "Choose a source that lists channels." });
+    expect(h.searchProspects).not.toHaveBeenCalled();
+  });
+
+  it("refuses channels or places through the AI web search", async () => {
+    const outcome = await runFind(WORKSPACE, { sourceId: "web_search", target: "channels", what: "home", where: "" });
+
+    expect(outcome).toMatchObject({ status: "failed", reason: "invalid" });
+    expect(h.discoverProspects).not.toHaveBeenCalled();
+  });
+
+  it("still checks the licence and the usage allowance first", async () => {
+    mockDb();
+    searchReturns([ProspectItemSchema.parse(channelItem)]);
+
+    await runFind(WORKSPACE, { sourceId: "stored", target: "channels", what: "home", where: "" });
+
+    expect(h.order).toEqual(["licence", "usage"]);
+  });
+});

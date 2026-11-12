@@ -190,3 +190,33 @@ export type SaveWeeklySearchOutcome =
   | { status: "refused"; message: string };
 
 export type SaveWeeklySearchState = SaveWeeklySearchOutcome | { status: "failed"; message: string } | null;
+
+/**
+ * DISC-CONS-P0-02.1: what a Find run looks for. "companies" is every search there was
+ * before consumer discovery. "channels" asks the gateway for audience channels
+ * (`kind: "channel"`). "places" asks for businesses in the gathering-places category
+ * group (schools, gyms, clubs...), where an offering's ideal users meet.
+ */
+export const FIND_TARGETS = ["companies", "channels", "places"] as const;
+export type FindTarget = (typeof FIND_TARGETS)[number];
+
+export const FIND_TARGET_LABEL: Record<FindTarget, string> = {
+  companies: "Companies",
+  channels: "Channels",
+  places: "Places they gather",
+};
+
+export function findTargetOf(value: string | null | undefined): FindTarget {
+  return value === "channels" || value === "places" ? value : "companies";
+}
+
+/** Which sources can answer a search for `target`. Companies: every company search,
+ * hiring signal and the AI web search, as before. Channels: a gateway search that lists
+ * channels. Places: a gateway search that lists businesses. */
+export function sourcesForTarget(sources: DataSource[], target: FindTarget): DataSource[] {
+  if (target === "channels") return sources.filter((s) => s.action === "search" && s.kinds.includes("channel"));
+  if (target === "places") {
+    return sources.filter((s) => s.origin === "gateway" && s.action === "search" && s.kinds.includes("business"));
+  }
+  return sources.filter((s) => s.action === "signals" || (s.action === "search" && s.kinds.includes("business")));
+}

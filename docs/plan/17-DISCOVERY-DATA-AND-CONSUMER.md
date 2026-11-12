@@ -619,6 +619,12 @@ adds its stories here when it is built.
 ### DISC-NAV-P0-01.1 — Four-tab offering navigation (B6)
 ### DISC-NAV-P0-01.2 — Today list at the top of Prospects (B6)
 ### DISC-NAV-P0-01.3 — Plain labels: Ideal customer, Find, To review (B6)
+### DISC-CONS-P0-01.1 — Who buys this: the audience type question (B5.1)
+### DISC-CONS-P0-01.2 — Ideal user beside the company ICP (B5.1)
+### DISC-CONS-P0-01.3 — Wording from the audience type (B5.1)
+### DISC-CONS-P0-02.1 — Find channels and places they gather (B5.2)
+### DISC-CONS-P0-02.2 — Channel drafts, Mark as posted, Live (B5.2)
+### DISC-CONS-P0-05.1 — Channels list on Prospects (B5.5)
 
 ## Part B implementation notes (wonder-ark)
 
@@ -666,4 +672,17 @@ B7, as built:
 - **Known limit:** if the gateway answered but staging then failed on a database error, the drain's retry finds the ledger row and skips, so that week's results wait for the next run.
 - **Find gains two conditional controls**, so its count cannot go down: "Run this weekly" in the result of a search that just ran on a free source (hidden when that search is already the weekly one), and Pause or Resume on the weekly search's line. A page with neither state has the same five controls as before.
 - **Saved searches are for companies in this version** (`kind = 'company'`). Channel searches arrive with B5.2.
+
+B5, part 1 (the channel side), as built:
+
+- **One migration, no new table** (`20261112160000_discovery_consumer_channels.sql`). The Ideal user is `icp_profiles.audience` (and `icp_profile_versions.audience`), the community post is `discovery.marketing_content` with a new nullable `prospect_id`, and `products.audience_confirmed_at` records that a person answered "Who buys this?" (the column's default, 'business', cannot tell an answer from the default). A trigger refuses a post tied to a prospect of another business, whoever writes it. `scripts/test-discovery-consumer-rls.mjs` covers isolation, licence gating and that trigger.
+- **The preselected answer is a word match**, not a model call (`suggestAudienceType`): "B2C", "consumers", "parents", "households" and the like in the offering's category, target market or profile suggest Consumers; "B2B", "businesses", "companies" suggest Companies; both suggest Both. It only preselects; nothing is saved until a person presses Confirm.
+- **Ideal user fields**: who, goals, triggers, current solutions, interests, online places, offline places, words. `interests` is added to the spec's six because B5.2 prefills channel topics from "the Ideal user's interests and places". Feedback field names are `audience_` plus the field; `ICP_CONTENT_FIELDS` and the check list the same twenty-two, and a unit test reads the migration to keep them equal.
+- **Generation follows the audience type.** Companies: the company ICP, unchanged. Consumers: only `generate_consumer_icp_v1`, which also names the ICP. Both: the two calls, written as one version. "Cached by input" is the stored Ideal user's `generated_from` (input hash and prompt version): an unchanged input is answered from it without a model call; a person's edit drops the mark. Each call is a `discovery.ai_runs` row (this repo's AI ledger), operation `generate_consumer_icp`.
+- **Wording**: `audienceWords()` drives the ideal-customer page ("Ideal user"), Find's heading ("Find channels") and the prospect page's nouns; for an offering sold only to consumers the company fields fold under "Company fields". Pages are not forked.
+- **Find**: a channel search sends `kind: "channel"`; "Places they gather" sends `kind: "business"` with `filters.categoryGroup: "gathering_places"` (added to the client's request schema as an optional enum). Channels and places skip the ICP pre-filter, which judges companies; the duplicate check runs by name. A channel's link is kept as its source link, never as `website`: channels share hosts (youtube.com) and the duplicate check matches on domain. A channel's topics are kept in the `industry` column and shown as "Topics". A weekly search stays for companies.
+- **Drafts**: the pitch and the sponsorship enquiry use the existing `generate_outreach_message` operation with a new prompt (`write_channel_draft_v1`, one variant each) and are saved as draft `discovery.messages`; the Messages section lists them for a channel without an outreach strategy. The post is `createContent(..., "ai_generated", ..., { prospectId })`. Code refuses a draft with a link, an address or a placeholder. "Mark as posted" walks the content lifecycle (review, approved, published with the pasted link), so it needs the `marketing.approve` permission and is audited.
+- **"Live"**: `outcomeStageLabel` and `prospectOutcomeLabel` show `won` as "Live" for a channel; the stored value stays `won`.
+- **Prospects**: a consumer offering lists channels; an offering sold to both switches between Companies and Channels (`?list=`). People arrive with part 2.
+- **Channels are synced to `core.parties` on approval like any prospect** (unchanged `linkPartiesForProspects`), as a `company` party with the prospect role. Left as is: a channel that goes Live is an outlet the business works with.
 

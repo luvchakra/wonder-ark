@@ -4,6 +4,7 @@ import { getOperationSpec, type AiOperation } from "./operation-registry";
 const OPERATIONS: AiOperation[] = [
   "understand_product",
   "generate_icp",
+  "generate_consumer_icp",
   "research_prospect",
   "discover_prospects",
   "generate_outreach_strategy",

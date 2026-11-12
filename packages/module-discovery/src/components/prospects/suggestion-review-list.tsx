@@ -1,6 +1,7 @@
 import { Badge } from "@cofounderai/core/ui/badge";
 import { SubmitButton } from "@cofounderai/core/ui/submit-button";
 import { categoryOf, matchedTitlesOf, safeHttpUrl } from "../../lib/data-sources/suggestions";
+import { channelOf, channelTypeLabel, formatAudience } from "../../lib/data-sources/channels";
 import { WEB_SEARCH_SOURCE_ID, WEB_SEARCH_SOURCE_LABEL } from "../../lib/data-sources/types";
 import type { ProspectSuggestion } from "../../lib/prospects/types";
 
@@ -81,8 +82,15 @@ export function SuggestionReviewList({
           </div>
           <ul className="flex flex-col gap-3 md:gap-0 md:divide-y md:rounded-lg md:border md:bg-card">
             {suggestions.map((s) => {
-              const category = categoryOf(s.payload) ?? s.industry;
-              const titles = matchedTitlesOf(s.payload);
+              // DISC-CONS-P0-02.1: a channel shows its type and audience (with the date the
+              // source measured it) where a company shows its category, and its topics.
+              const channel = s.kind === "channel" ? channelOf(s.payload) : null;
+              const category = channel
+                ? [channelTypeLabel(channel.channelType), formatAudience(channel.audience?.value, channel.audience?.unit, channel.audience?.asOf)]
+                    .filter(Boolean)
+                    .join(" · ") || null
+                : (categoryOf(s.payload) ?? s.industry);
+              const titles = channel ? [] : matchedTitlesOf(s.payload);
               const website = safeHttpUrl(s.website);
               return (
                 <li
@@ -108,13 +116,16 @@ export function SuggestionReviewList({
                     {s.location ?? "—"}
                   </p>
                   <p className="text-muted-foreground md:text-foreground">
-                    <span className="md:hidden">Category: </span>
+                    <span className="md:hidden">{channel ? "Channel: " : "Category: "}</span>
                     {category ?? "—"}
                   </p>
                   <div className="flex min-w-0 flex-col gap-1">
                     <p className="line-clamp-2">{s.match_reason ?? "—"}</p>
                     {titles.length > 0 ? (
                       <p className="line-clamp-1 text-xs text-muted-foreground">Roles: {titles.join(", ")}</p>
+                    ) : null}
+                    {channel && channel.topics.length > 0 ? (
+                      <p className="line-clamp-1 text-xs text-muted-foreground">Topics: {channel.topics.join(", ")}</p>
                     ) : null}
                   </div>
                   <div className="min-w-0">

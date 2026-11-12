@@ -1,5 +1,5 @@
 import { cn } from "@cofounderai/core/lib/utils";
-import { DISCOVERY_OUTCOME_STAGE_LABEL, type DiscoveryOutcomeStage } from "../../lib/prospects/outcome";
+import { outcomeStageLabel, type DiscoveryOutcomeStage } from "../../lib/prospects/outcome";
 
 const TERMINAL_STYLE: Partial<Record<DiscoveryOutcomeStage, string>> = {
   won: "bg-emerald-100 text-emerald-800",
@@ -15,10 +15,10 @@ const TERMINAL_STYLE: Partial<Record<DiscoveryOutcomeStage, string>> = {
  * stages (research/score/strategy/messages), this one is the wider reference spanning
  * into CRM's own downstream lifecycle; conflating them would lose the "not own CRM
  * lifecycle" distinction the doc itself draws. */
-export function DiscoveryOutcomeBadge({ stage }: { stage: DiscoveryOutcomeStage }) {
+export function DiscoveryOutcomeBadge({ stage, kind }: { stage: DiscoveryOutcomeStage; kind?: string | null }) {
   return (
     <span className={cn("rounded-full px-2 py-0.5 text-xs font-medium", TERMINAL_STYLE[stage] ?? "bg-muted text-muted-foreground")}>
-      {DISCOVERY_OUTCOME_STAGE_LABEL[stage]}
+      {outcomeStageLabel(stage, kind)}
     </span>
   );
 }

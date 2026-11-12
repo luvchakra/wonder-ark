@@ -71,6 +71,11 @@ export type Product = {
   primary_problem: string | null;
   target_market: string | null;
   detailed_description: string | null;
+  /** DISC-DATA-P0-01.1 / DISC-CONS-P0-01.1: who buys it ('business' | 'consumer' |
+   * 'both'), and when a person last confirmed that answer (null: never). Optional for a
+   * row read before the columns existed; read through `audienceTypeOf`. */
+  audience_type?: string;
+  audience_confirmed_at?: string | null;
   created_at: string;
   updated_at: string;
 };

@@ -284,13 +284,21 @@ export async function createContent(
   input: ContentInput,
   origin: ContentVersion["origin"] = "user",
   sourceRefs: Record<string, unknown> = {},
+  /** DISC-CONS-P0-02.2: the channel prospect a community post was written for. The
+   * database refuses a prospect of another business (marketing_content_prospect_same_business). */
+  links: { prospectId?: string } = {},
 ): Promise<string> {
   await authorise(businessId, "marketing.manage");
   const supabase = await createClient();
   const status: ContentStatus = input.body ? "draft" : "idea";
   const { data, error } = await supabase
     .from("marketing_content")
-    .insert({ business_id: businessId, ...contentFields(input), status })
+    .insert({
+      business_id: businessId,
+      ...contentFields(input),
+      status,
+      ...(links.prospectId ? { prospect_id: links.prospectId } : {}),
+    })
     .select("id")
     .single();
   if (error) throw error;

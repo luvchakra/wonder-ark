@@ -1,3 +1,4 @@
+import { IDEAL_USER_FIELDS, idealUserContent, readIdealUser, type IdealUserField } from "../icp/audience";
 import type { IcpProfile } from "../icp/types";
 
 /**
@@ -25,7 +26,7 @@ import type { IcpProfile } from "../icp/types";
  * constraint (same "two things must stay in sync by hand" precedent already accepted for
  * `icp_profiles`/`icp_profile_versions`' own identical column shape).
  */
-export const ICP_CONTENT_FIELDS = [
+export const COMPANY_ICP_FIELDS = [
   "name",
   "description",
   "industries",
@@ -42,11 +43,20 @@ export const ICP_CONTENT_FIELDS = [
   "existing_tools",
 ] as const;
 
-export type OfferingFeedbackFieldName = (typeof ICP_CONTENT_FIELDS)[number];
+/** DISC-CONS-P0-01.2: the Ideal user's fields (`icp_profiles.audience`), as feedback
+ * names them: `audience_` and the field. Same order as `IDEAL_USER_FIELDS`. */
+export const AUDIENCE_FEEDBACK_FIELDS = IDEAL_USER_FIELDS.map((field) => `audience_${field}` as const);
+
+/** Every value `offering_feedback.field_name` may hold. The migration's check
+ * (20261112160000_discovery_consumer_channels.sql) lists the same twenty-two. */
+export const ICP_CONTENT_FIELDS = [...COMPANY_ICP_FIELDS, ...AUDIENCE_FEEDBACK_FIELDS] as const;
+
+export type OfferingFeedbackFieldName = (typeof COMPANY_ICP_FIELDS)[number] | `audience_${IdealUserField}`;
 
 /** The subset of `IcpProfile` this diagnostic actually compares -- both the pre-edit and
- * post-edit side of an ICP save share this exact shape. */
-export type IcpContentFields = Pick<IcpProfile, (typeof ICP_CONTENT_FIELDS)[number]>;
+ * post-edit side of an ICP save share this exact shape. `audience` is optional: an
+ * offering sold to companies has none. */
+export type IcpContentFields = Pick<IcpProfile, (typeof COMPANY_ICP_FIELDS)[number]> & { audience?: unknown };
 
 export type DetectedIcpCorrection = {
   field: OfferingFeedbackFieldName;
@@ -83,11 +93,24 @@ function valuesEqual(a: string | string[] | null, b: string | string[] | null): 
  */
 export function detectIcpFieldCorrections(aiFields: IcpContentFields, userFields: IcpContentFields): DetectedIcpCorrection[] {
   const corrections: DetectedIcpCorrection[] = [];
-  for (const field of ICP_CONTENT_FIELDS) {
+  for (const field of COMPANY_ICP_FIELDS) {
     const aiValue = aiFields[field];
     const userValue = userFields[field];
     if (!valuesEqual(aiValue, userValue)) {
       corrections.push({ field, aiValue, userValue });
+    }
+  }
+  // DISC-CONS-P0-01.2: the Ideal user's fields, compared the same way. A side with no
+  // Ideal user reads as empty, so writing one for the first time records each field.
+  const aiUser = idealUserContent(readIdealUser(aiFields.audience));
+  const userUser = idealUserContent(readIdealUser(userFields.audience));
+  if (aiUser || userUser) {
+    for (const field of IDEAL_USER_FIELDS) {
+      const aiValue = aiUser ? aiUser[field] : field === "who" ? "" : [];
+      const userValue = userUser ? userUser[field] : field === "who" ? "" : [];
+      if (!valuesEqual(aiValue, userValue)) {
+        corrections.push({ field: `audience_${field}`, aiValue, userValue });
+      }
     }
   }
   return corrections;
