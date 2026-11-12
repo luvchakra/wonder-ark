@@ -431,7 +431,7 @@ mailbox. Nothing is written or sent until you ask for it.
   read, nothing is sent until it can, and the page says why. Without an incoming mail
   server, replies are not detected automatically: log the reply on the prospect's page and
   its follow-ups stop.
-- **Pause** stops all sending at once; **Resume** starts it again. To change a running
+- **Pause** stops all sending at once; **Resume** starts it again and, like **Activate**, sends up to 5 emails that are already due within your sending days and hours straight away. To change a running
   campaign's messages, schedule or audience, pause it first. A campaign pauses itself
   and says why if more than 8% of at least 20 sent emails bounce, or if your mailbox can't
   be signed in to. **Finish campaign** ends it for good.
