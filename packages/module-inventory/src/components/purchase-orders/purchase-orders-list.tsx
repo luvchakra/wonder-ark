@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { ClipboardList, Pencil, Plus } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 import { Button } from "@cofounderai/core/ui/button";
 import { Badge } from "@cofounderai/core/ui/badge";
 import { EmptyState } from "@cofounderai/core/ui/empty-state";
@@ -72,7 +72,7 @@ export function PurchaseOrdersList({
   const [detailTarget, setDetailTarget] = useState<PurchaseOrder | null>(null);
   const [detailItems, setDetailItems] = useState<PurchaseOrderItem[]>([]);
   const [formItems, setFormItems] = useState<PurchaseOrderItem[]>([]);
-  const [pending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const canPrimaryAction = (status: string) => {
     if (status === "draft" || status === "approved") return canApprove;
@@ -143,22 +143,9 @@ export function PurchaseOrdersList({
 
                 <div className="flex items-center justify-between">
                   <span className="text-base font-semibold">{inr.format(po.total_amount)}</span>
-                  <div className="flex justify-end gap-2">
-                    {po.status === "draft" && canEdit ? (
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(po)}>
-                        <Pencil className="size-4" aria-hidden="true" />
-                        Edit
-                      </Button>
-                    ) : null}
-                    <Button variant="outline" size="sm" onClick={() => openDetail(po)}>
-                      View
-                    </Button>
-                    {primaryAction(po.status) && canPrimaryAction(po.status) ? (
-                      <Button size="sm" disabled={pending} onClick={() => runPrimaryAction(po)}>
-                        {primaryAction(po.status)!.label}
-                      </Button>
-                    ) : null}
-                  </div>
+                  <Button variant="outline" size="sm" onClick={() => openDetail(po)}>
+                    View
+                  </Button>
                 </div>
               </li>
             ))}
@@ -188,22 +175,11 @@ export function PurchaseOrdersList({
                     <Badge variant={STATUS_VARIANT[po.status]}>{po.status.replace("_", " ")}</Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      {po.status === "draft" && canEdit ? (
-                        <Button variant="ghost" size="sm" onClick={() => openEdit(po)}>
-                          <Pencil className="size-4" aria-hidden="true" />
-                          Edit
-                        </Button>
-                      ) : null}
-                      <Button variant="outline" size="sm" onClick={() => openDetail(po)}>
-                        View
-                      </Button>
-                      {primaryAction(po.status) && canPrimaryAction(po.status) ? (
-                        <Button size="sm" disabled={pending} onClick={() => runPrimaryAction(po)}>
-                          {primaryAction(po.status)!.label}
-                        </Button>
-                      ) : null}
-                    </div>
+                    {/* PLATFORM-NAV-P0-02.2: one action per row. Edit (drafts) and the
+                        order's next step are in the order View opens. */}
+                    <Button variant="outline" size="sm" onClick={() => openDetail(po)}>
+                      View
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
@@ -246,6 +222,14 @@ export function PurchaseOrdersList({
                   })
                 }
                 onPrimaryAction={() => runPrimaryAction(current)}
+                onEdit={
+                  current.status === "draft" && canEdit
+                    ? () => {
+                        setDetailTarget(null);
+                        void openEdit(current);
+                      }
+                    : undefined
+                }
                 onClose={() => setDetailTarget(null)}
               />
             );

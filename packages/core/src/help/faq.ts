@@ -206,7 +206,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "How do I import my products or my prospect list?",
     answer:
-      "Both have a bulk import. Inventory takes pasted CSV text with at least `sku` and `name` (Products → Import); Discovery accepts CSV, Excel or PDF and uses AI to map whatever columns your file has onto its own fields.",
+      "Both have a bulk import. Inventory takes pasted CSV text with at least `sku` and `name` (Products → More → Import); Discovery accepts CSV, Excel or PDF and uses AI to map whatever columns your file has onto its own fields.",
     guideSlug: "inventory",
     sectionId: "setup-order",
   },
