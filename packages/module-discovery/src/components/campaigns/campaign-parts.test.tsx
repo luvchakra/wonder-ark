@@ -75,12 +75,23 @@ describe("the campaign list", () => {
 });
 
 describe("Sending from", () => {
+  it("needs only the address and the password, with one action and the servers folded away", () => {
+    const html = renderToStaticMarkup(<MailboxForm mailbox={null} action={noop} defaultLimit={30} />);
+    // Two fields, the fold and Connect.
+    expect(controls(html)).toBe(4);
+    expect(html.match(/<input\b/g)).toHaveLength(2);
+    expect(html).toContain('name="fromEmail"');
+    expect(html).not.toContain('name="smtpHost"');
+    expect(text(html)).toContain("Server settings");
+    expect(text(html)).toMatch(/Connect$/);
+    expect(text(html)).toContain("Connect saves these and sends one test email to your own address.");
+  });
+
   it("has one action, shows the mailbox's state, and never puts a password in the form", () => {
     const html = renderToStaticMarkup(<MailboxForm mailbox={mailbox} action={noop} defaultLimit={30} />);
     expect(text(html)).toContain("Verified on 12 Nov 2026. Emails go out from asha@acme.example.");
     expect(text(html)).toContain("Your mail provider's own terms apply");
-    expect(html.match(/<button\b/g)).toHaveLength(1);
-    expect(text(html)).toContain("Send a test to me");
+    expect(html.match(/type="submit"/g)).toHaveLength(1);
     const password = html.match(/<input[^>]*name="password"[^>]*>/)![0];
     expect(password).toContain('type="password"');
     expect(password).not.toContain("value=");
@@ -91,6 +102,8 @@ describe("Sending from", () => {
     const failed = renderToStaticMarkup(<MailboxForm mailbox={{ ...mailbox, status: "failed", lastError: "The mail server refused the sign-in." }} action={noop} defaultLimit={30} />);
     expect(text(failed)).toContain("The last test failed: The mail server refused the sign-in.");
     expect(text(renderToStaticMarkup(<MailboxForm mailbox={{ ...mailbox, status: "unverified" }} action={noop} defaultLimit={30} />))).toContain("Not verified yet.");
+    const unreadable = renderToStaticMarkup(<MailboxForm mailbox={{ ...mailbox, lastError: "Replies couldn't be read, so nothing was sent. The mailbox couldn't be read." }} action={noop} defaultLimit={30} />);
+    expect(text(unreadable)).toContain("Replies couldn't be read, so nothing was sent.");
   });
 });
 

@@ -290,11 +290,15 @@ mailbox. Nothing is written or sent until you ask for it.
   `{{first_name}}`, `{{offering}}`, `{{sender_name}}` and `{{business_name}}`. A prospect
   with no value for a field a message uses is skipped for that step, with the reason shown;
   it is never sent a message with a gap in it.
-- **Sending from** is where you connect the mailbox: the name and address emails come
-  from, your mail server (SMTP) and its port (587 or 465), your username and password or
-  app password, and how many emails a day may go out (30 unless you change it, 200 at
-  most). **Send a test to me** saves these and sends one message to your own account
-  address; the mailbox is verified only when your mail server accepts that message. The
+- **Sending from** is where you connect the mailbox. Enter its email address and its
+  password (or app password) and click **Connect**: that saves them and sends one test
+  message to your own account address, and the mailbox is verified only when your mail
+  server accepts that message. For a GoDaddy, Google, Microsoft 365 or Zoho mailbox the
+  mail servers are filled in from the address, including the incoming server used to read
+  replies; a Google mailbox needs an app password. For any other provider, or to change
+  what was filled in, open **Server settings**: the outgoing server (SMTP) and its port
+  (587 or 465), the incoming server for replies (IMAP), the username, the name emails come
+  from, and how many emails a day may go out (30 unless you change it, 200 at most). The
   password is stored encrypted and is never shown again. Your mail provider's own terms
   apply to what you send from the mailbox.
 - **Launch** is shown once every step has text and the mailbox is verified; until then its

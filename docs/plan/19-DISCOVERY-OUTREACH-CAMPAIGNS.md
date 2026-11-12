@@ -292,4 +292,15 @@ Where the build differs from the text above. The live repo wins (`CLAUDE.md`).
   UIDVALIDITY starts again from that date; replies are stored once by Message-ID either way.
 - **A reply read from the mailbox with no Message-ID** is keyed by the mailbox's own id for it.
 - **`imapflow` is the IMAP client**; its log output is switched off, since its debug lines carry mailbox content.
+- **Connecting a mailbox needs only its address and password** when its provider is GoDaddy, Google, Microsoft 365
+  or Zoho. With the outgoing server left blank, `saveSenderMailbox` looks up the address's domain MX records and
+  takes the servers from a fixed table (`lib/campaigns/mail-provider.ts`); nothing DNS returns is stored, shown or
+  connected to, and the table's host still passes `resolveSafeHost`. The lookup runs when Connect is pressed, not
+  as the address is typed, so the form needs no script of its own. No match, or a failed lookup, asks for the
+  servers under "Server settings".
+- **The "Sending from" action is "Connect"** (it was "Send a test to me"): it saves and sends the test. Visible
+  controls in the block: 4 (address, password, the Server settings fold, Connect), down from 9.
+- **A blank server field keeps what is saved** while the address is unchanged, because a closed fold posts
+  nothing. A changed address starts again from its own domain. An incoming server therefore cannot be removed by
+  blanking it; it can be replaced.
 
