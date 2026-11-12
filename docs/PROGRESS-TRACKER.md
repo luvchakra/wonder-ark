@@ -1296,4 +1296,4 @@ Source: [`docs/plan/18-MODULE-MENUS.md`](./plan/18-MODULE-MENUS.md)
 | `PLATFORM-NAV-P0-02.1` | Service pages | ✅ Done | `packages/module-fsm/src/components/dashboard/dispatcher-dashboard-view.tsx` +3 |
 | `PLATFORM-NAV-P0-02.2` | Inventory pages | ✅ Done | `packages/module-inventory/src/components/dashboard/dashboard-view.tsx` +6 |
 | `PLATFORM-NAV-P0-02.3` | CRM pages | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/crm/follow-ups/page.tsx` +5 |
-| `PLATFORM-NAV-P0-02.4` | Finance pages | ✅ Done | `packages/module-gst/src/components/dashboard/compliance-dashboard-view.tsx` +1 |
+| `PLATFORM-NAV-P0-02.4` | Finance pages | ✅ Done | `packages/module-gst/src/components/dashboard/compliance-dashboard-view.tsx` +2 |
