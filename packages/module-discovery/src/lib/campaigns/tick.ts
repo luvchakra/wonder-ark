@@ -10,8 +10,9 @@ import { syncMailboxInbox } from "./inbox";
 import { loadMailboxForSending, type SendingMailbox } from "./mailbox";
 import { addressOf, composeStep, type StepRecipient } from "./compose";
 import { OUTCOME_UNKNOWN_REASON, sendViaSmtp, type SmtpDeps } from "./smtp";
-import { STOP_REASON, stopEnrollmentsForProspect } from "./stops";
-import type { Campaign, CampaignStep, Enrollment } from "./types";
+import { STOP_REASON } from "./stops";
+import { resolveTaskStates, type TaskItem } from "./tasks";
+import { isTaskChannel, type Campaign, type CampaignStep, type Enrollment } from "./types";
 
 /**
  * DISC-CAMP-P0-02.2 / 04.1 / 04.3 / 07.2: the tick, the only code that sends a campaign
@@ -43,6 +44,12 @@ import type { Campaign, CampaignStep, Enrollment } from "./types";
  *    pass 8% is paused with the reason.
  *  - A mailbox that cannot be reached or signed in to pauses the workspace's running
  *    campaigns, with the reason, instead of failing every prospect in turn.
+ *  - **A step for a person is never sent** (DISC-CAMP-P0-06.1). A call, WhatsApp or
+ *    LinkedIn step waits on the Today list until someone marks it done. Enrollments
+ *    waiting there are not in the batch of emails to send, so however many are waiting
+ *    they cannot hold back an email that is due. The tick only tidies them: it stops
+ *    the ones whose follow-ups have stopped and passes over a step a prospect has
+ *    nothing to do it with, recording the reason.
  *
  * It works inside a time budget and leaves the rest due for the next tick.
  */
@@ -54,6 +61,10 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** A claim this old with no outcome is no longer "another tick still sending". */
 export const STALE_CLAIM_MS = 15 * 60 * 1000;
 const DUE_BATCH = 200;
+/** How many enrollments waiting on a person are read at a time. */
+const TASK_PAGE = 100;
+/** `next_step_position` runs from 1 to one past the last of at most five steps. */
+const POSITIONS = [1, 2, 3, 4, 5, 6];
 
 export type TickSummary = {
   campaigns: number;
@@ -68,6 +79,8 @@ export type TickSummary = {
   stopped: number;
   completed: number;
   enrolled: number;
+  /** DISC-CAMP-P0-06.1: call, WhatsApp and LinkedIn steps waiting for a person. */
+  tasksWaiting: number;
   paused: string[];
   outOfTime: boolean;
 };
@@ -346,6 +359,67 @@ async function processEnrollment(ctx: WorkspaceContext, detail: CampaignDetail, 
   return { kind: "failed" };
 }
 
+/**
+ * DISC-CAMP-P0-06.1: the enrollments of one campaign whose next step is a person's and is
+ * due. Nothing is sent for them. Each is read through `resolveTaskStates`, the function
+ * the Today list uses, and:
+ *  - one whose follow-ups have stopped (a reply, a won or lost outcome, an opt-out, a
+ *    deleted contact) is stopped with the reason;
+ *  - one with nothing to do the step with (no phone number for a call), or no text, has
+ *    the step recorded as passed over with the reason and moves to its next step;
+ *  - the rest wait for the person.
+ * It reads them all, a page at a time by id, so none is left unchecked behind the others.
+ */
+async function settleTasks(ctx: WorkspaceContext, detail: CampaignDetail, summary: TickSummary, outOfTime: () => boolean): Promise<void> {
+  const { db, now } = ctx;
+  const taskSteps = detail.steps.filter((step) => isTaskChannel(step.channel));
+  if (taskSteps.length === 0) return;
+  let after: string | null = null;
+  for (;;) {
+    if (outOfTime()) return;
+    let query = db
+      .from("outreach_enrollments")
+      .select("*")
+      .eq("campaign_id", detail.campaign.id)
+      .eq("status", "active")
+      .in("next_step_position", taskSteps.map((step) => step.position))
+      .lte("next_due_at", now.toISOString());
+    if (after) query = query.gt("id", after);
+    const { data, error } = await query.order("id").limit(TASK_PAGE);
+    if (error) throw error;
+    const page = (data ?? []) as Enrollment[];
+    if (page.length === 0) return;
+    after = page[page.length - 1]!.id;
+
+    const items: TaskItem[] = page.map((enrollment) => {
+      const step = taskSteps.find((entry) => entry.position === enrollment.next_step_position)!;
+      return { enrollment, step, templates: detail.templates.filter((template) => template.step_id === step.id) };
+    });
+    const states = await resolveTaskStates(
+      { discovery: db, core: ctx.core, businessId: ctx.businessId },
+      items,
+      { fromName: ctx.mailbox.fromName, offeringName: ctx.offeringName, businessName: ctx.businessName },
+    );
+    for (const item of items) {
+      const state = states.get(item.enrollment.id);
+      if (!state || state.kind === "ready") {
+        summary.tasksWaiting += 1;
+      } else if (state.kind === "stop") {
+        await stopEnrollment(db, item.enrollment.id, state.status, state.reason);
+        summary.stopped += 1;
+      } else {
+        // Passed over, with the reason on the record. If the record cannot be written
+        // the step is left as it is for the next tick.
+        const row = await claim(db, item.enrollment.id, item.step.id, state.code);
+        if (!row || row.status === "deferred") continue;
+        await advance(db, item.enrollment, item.step, detail.steps, now);
+        summary.skipped += 1;
+      }
+    }
+    if (page.length < TASK_PAGE) return;
+  }
+}
+
 /** The prospect's open email conversation, or a new one, marked as awaiting a reply. */
 async function openConversation(db: SupabaseClient, enrollment: Enrollment, contactId: string | null, now: Date): Promise<string> {
   const { data: existing, error } = await db
@@ -402,7 +476,7 @@ export async function runCampaignTick(options: TickOptions = {}): Promise<TickSu
   const startedAt = Date.now();
   const budgetMs = options.budgetMs ?? TICK_BUDGET_MS;
   const db = createAdminClient();
-  const summary: TickSummary = { campaigns: 0, sent: 0, failed: 0, skipped: 0, deferred: 0, repliesRead: 0, bouncesRead: 0, stopped: 0, completed: 0, enrolled: 0, paused: [], outOfTime: false };
+  const summary: TickSummary = { campaigns: 0, sent: 0, failed: 0, skipped: 0, deferred: 0, repliesRead: 0, bouncesRead: 0, stopped: 0, completed: 0, enrolled: 0, tasksWaiting: 0, paused: [], outOfTime: false };
   const outOfTime = () => Date.now() - startedAt > budgetMs;
   const sendsLeft = () => (options.maxSends === undefined ? Infinity : options.maxSends - summary.sent);
 
@@ -439,6 +513,8 @@ export async function runCampaignTick(options: TickOptions = {}): Promise<TickSu
       }
 
       const details: CampaignDetail[] = [];
+      /** Running campaigns with a step for a person, whatever the hour: nothing is sent for them. */
+      const withTasks: CampaignDetail[] = [];
       for (const campaignId of campaignIds) {
         const detail = await getCampaignDetail(campaignId, db);
         if (!detail || detail.campaign.status !== "active") continue;
@@ -457,17 +533,24 @@ export async function runCampaignTick(options: TickOptions = {}): Promise<TickSu
           summary.paused.push(detail.campaign.id);
           continue;
         }
+        if (detail.steps.some((step) => isTaskChannel(step.channel))) withTasks.push(detail);
         if (inSendWindow(detail.campaign, now)) details.push(detail);
       }
-      if (details.length === 0) continue;
+      if (details.length === 0 && withTasks.length === 0) continue;
 
       const due = new Map<string, Enrollment[]>();
       for (const detail of details) {
+        // DISC-CAMP-P0-06.1: only enrollments whose next step the tick can act on: an
+        // email, or a position past the last step (which completes it). One waiting on a
+        // call, WhatsApp or LinkedIn step keeps a past due date until a person marks it
+        // done; left in this batch, 200 of them would sit ahead of every due email.
+        const taskPositions = new Set(detail.steps.filter((step) => isTaskChannel(step.channel)).map((step) => step.position));
         const { data, error: dueError } = await db
           .from("outreach_enrollments")
           .select("*")
           .eq("campaign_id", detail.campaign.id)
           .eq("status", "active")
+          .in("next_step_position", POSITIONS.filter((position) => !taskPositions.has(position)))
           .lte("next_due_at", now.toISOString())
           .order("next_due_at")
           .limit(DUE_BATCH);
@@ -475,7 +558,7 @@ export async function runCampaignTick(options: TickOptions = {}): Promise<TickSu
         due.set(detail.campaign.id, (data ?? []) as Enrollment[]);
       }
       const dueCount = [...due.values()].reduce((total, list) => total + list.length, 0);
-      if (dueCount === 0) continue;
+      if (dueCount === 0 && withTasks.length === 0) continue;
 
       // No verified mailbox: the claim would refuse every send, so none is attempted.
       // Replies that could not be read: nobody is written to until they can be.
@@ -502,6 +585,11 @@ export async function runCampaignTick(options: TickOptions = {}): Promise<TickSu
         now,
         smtp: options.smtp,
       };
+
+      // The first batch straight after Activate only sends: no step for a person is due yet.
+      if (options.maxSends === undefined) {
+        for (const detail of withTasks) await settleTasks(ctx, detail, summary, outOfTime);
+      }
 
       for (const detail of details) {
         for (const enrollment of due.get(detail.campaign.id) ?? []) {

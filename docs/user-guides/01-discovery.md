@@ -223,6 +223,11 @@ from your own prospects and suggestions:
 - **Suggestions waiting for review** — what a search found and you haven't approved or
   discarded yet. **Review** opens **To review** under Find.
 
+- **Campaign tasks** — a running campaign's calls, WhatsApp messages and
+  LinkedIn messages that are due, one line per prospect, oldest first and five at a time.
+  Each shows who, the number or page to use, and the draft with that prospect's details
+  filled in. **Mark done** records how it went.
+
 A line appears only when it has something in it. When nothing is waiting, the list says
 so.
 
@@ -278,10 +283,12 @@ mailbox. Nothing is written or sent until you ask for it.
   a follow-up 3 days later and a last note 5 days after that). It holds no text yet.
 - **Schedule** sets how often the campaign sends: how many emails a day this campaign may
   send (blank uses the mailbox's limit), the days and hours emails go out, and how many
-  emails the sequence has (one to five) with the days between each (1 to 30). A follow-up
-  you add needs its message written before the preview; one that has already been sent to
-  someone can't be removed. **Audience** renames the campaign and sets who is enrolled.
-  Both can be changed only while the campaign is a draft or paused.
+  steps the sequence has (one to five) with the days between each (1 to 30). Each step
+  after the first is an email unless you choose **Call**, **WhatsApp** or **LinkedIn** for
+  it (see **Steps you do yourself** below). A step you add needs its text written before
+  the preview; one that has already been sent or done for someone can't be removed.
+  **Audience** renames the campaign and sets who is enrolled. Both can be changed only
+  while the campaign is a draft or paused.
 - **Audience** shows how many prospects would be enrolled now and why the rest are left
   out, with a count for each reason: no email address, an address marked invalid, already
   in a campaign, asked not to be emailed, and so on. A contact that **Find contacts** found
@@ -343,8 +350,22 @@ mailbox. Nothing is written or sent until you ask for it.
   isn't known is shown as failed with "Outcome unknown" and is never sent again
   automatically.
 - A prospect in a running campaign is not also listed under **Follow-ups due** on Today.
+- **Steps you do yourself.** A **Call**, **WhatsApp** or **LinkedIn** step is never sent or
+  dialled by WonderArk. **Write messages** drafts it with the emails: talking points for a
+  call, a short message for WhatsApp or LinkedIn, labelled and editable like any other
+  text. When the step is due for a prospect it appears on **Today** with the draft
+  and the phone number or LinkedIn page. A WhatsApp number opens a chat with the draft
+  filled in only when it is stored with its country code (starting with "+"); if no
+  LinkedIn page is stored, the line says so. Do the step yourself, then press **Mark done**
+  and choose **Done** or **Couldn't reach**: either is recorded and the prospect moves to
+  its next step. The steps after it wait until you do. A call or WhatsApp step for a
+  prospect with no phone number is passed over, with the reason shown in **Results**, and
+  the prospect moves on to its next step. A reply, an unsubscribe, or marking the prospect
+  won or lost stops these steps too. The preview shows each such step as a task for you,
+  with the draft for a real prospect. **Results** counts the steps you marked apart from
+  emails sent.
 
-Campaigns send email only. Calls and WhatsApp or LinkedIn messages are yours to make.
+Campaigns send only email. Calls and WhatsApp or LinkedIn messages are yours to make.
 Sales calls to people who haven't asked for them are regulated in India, including calls to
 business numbers, and WhatsApp's policy requires a person's opt-in before a business
 messages them first.

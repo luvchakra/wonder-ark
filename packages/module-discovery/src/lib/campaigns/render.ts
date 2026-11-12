@@ -76,8 +76,14 @@ export type Rendered =
  * Fills a template for one prospect, or says why it cannot be filled. Nothing partial is
  * ever returned.
  */
-export function renderTemplate(template: { subject: string | null; body: string }, values: MergeValues): Rendered {
-  const subject = template.subject ?? "";
+export function renderTemplate(
+  template: { subject: string | null; body: string },
+  values: MergeValues,
+  /** DISC-CAMP-P0-06.1: a call, WhatsApp or LinkedIn draft has no subject line. */
+  options: { subject?: boolean } = {},
+): Rendered {
+  const needsSubject = options.subject !== false;
+  const subject = needsSubject ? (template.subject ?? "") : "";
   const used = fieldsUsed(`${subject}\n${template.body}`);
   if (used.unknown.length > 0) return { ok: false, reason: "invalid_template", unknown: used.unknown };
 
@@ -94,7 +100,7 @@ export function renderTemplate(template: { subject: string | null; body: string 
   const fill = (text: string) => text.replace(PLACEHOLDER, (_match, name: string) => filled.get(name.toLowerCase() as MergeField) ?? "");
   const renderedSubject = fill(subject).replace(/\s+/g, " ").trim();
   const body = fill(template.body).trim();
-  if (!renderedSubject || !body) return { ok: false, reason: "invalid_template", unknown: [] };
+  if ((needsSubject && !renderedSubject) || !body) return { ok: false, reason: "invalid_template", unknown: [] };
   return { ok: true, subject: renderedSubject, body };
 }
 

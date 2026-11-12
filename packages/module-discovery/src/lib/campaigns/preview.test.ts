@@ -106,6 +106,7 @@ describe("the preview", () => {
     expect(preview.lines.map((line) => [line.segment, line.prospects])).toEqual([["general", 1], ["plumber", 2]]);
     expect(preview.lines[1]!.email).toEqual({
       ok: true,
+      kind: "email",
       prospectId: "p1",
       company: "Company p1",
       from: "Asha <asha@acme.example>",
@@ -149,6 +150,59 @@ describe("the preview", () => {
       prospectId: "p2",
       company: "Company p2",
       reason: "Not sent: this prospect has no value for the first part of the prospect's location",
+    });
+  });
+
+  describe("DISC-CAMP-P0-06.1: a step a person does", () => {
+    const withCall = () =>
+      setup({
+        outreach_campaign_steps: [...steps, { id: "s3", campaign_id: "c1", workspace_id: W, position: 3, channel: "call", delay_days: 2, purpose: "call" }],
+        outreach_templates: [
+          template("s1", "general", "Hello {{company}}."),
+          template("s2", "general", "Still interested, {{company}}?"),
+          { ...template("s3", "general", "Say you emailed {{company}} about {{offering}}. Ask how they book jobs in {{city}}."), subject: null, origin: "user_modified" },
+        ],
+        prospects: [prospect("p1", { phone: "+91 98765 43210" }), prospect("p2", { phone: null })],
+        contacts: [contact("k1", "p1"), contact("k2", "p2")],
+      });
+
+    it("shows who would get the task and the draft for a real prospect, as a task and not as an email", async () => {
+      withCall();
+      const preview = await ready({ step: 3 });
+      expect(preview.steps.map((step) => [step.position, step.channel])).toEqual([[1, "email"], [2, "email"], [3, "call"]]);
+      expect(preview.lines[0]!.email).toEqual({
+        ok: true,
+        kind: "task",
+        channel: "call",
+        prospectId: "p1",
+        company: "Company p1",
+        detail: { text: "+91 98765 43210", href: "tel:+919876543210" },
+        text: "Say you emailed Company p1 about FieldDesk. Ask how they book jobs in Pune.",
+        origin: "user_modified",
+      });
+      expect(preview.schedule[2]).toBe(
+        "3 steps for each prospect: step 2 (an email) 3 days after step 1, step 3 (a call for you to make) 2 days after step 2. WonderArk sends the emails. A step for you appears on the Today list when it is due; nothing is sent or dialled for it, and the steps after it wait until you mark it done.",
+      );
+    });
+
+    it("shows a prospect with no phone number as passed over, with the reason, never with a blank", async () => {
+      withCall();
+      expect((await ready({ step: 3, index: 1 })).lines[0]!.email).toEqual({ ok: false, prospectId: "p2", company: "Company p2", reason: "No phone number" });
+    });
+
+    it("has nothing to send as a test, and sends nothing", async () => {
+      withCall();
+      expect(await sendCampaignTest("c1", { segment: "general", step: 3 }, smtp(), NOW)).toEqual({
+        status: "refused",
+        message: "That step is for a person to do, so there is nothing to send as a test.",
+      });
+      expect(sendMail).not.toHaveBeenCalled();
+    });
+
+    it("cannot be previewed until the step has its draft", async () => {
+      withCall();
+      db.rows("outreach_templates").pop();
+      expect(await buildCampaignPreview("c1")).toEqual({ status: "refused", message: "Write the messages first: step 3 has no text yet." });
     });
   });
 

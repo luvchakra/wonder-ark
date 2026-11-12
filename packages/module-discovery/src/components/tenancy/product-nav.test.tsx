@@ -115,6 +115,63 @@ describe("TodayList", () => {
     expect(html.match(/<button\b/g)).toBeNull();
   });
 
+  describe("DISC-CAMP-P0-06.1: a campaign's call, WhatsApp and LinkedIn steps", () => {
+    const task = (id: string, overrides: Record<string, unknown> = {}) => ({
+      enrollmentId: id,
+      prospectId: `p-${id}`,
+      company: `Company <b>${id}</b>`,
+      channel: "call" as const,
+      draft: "Say you emailed them.\nAsk how they book jobs.",
+      origin: "ai_generated" as const,
+      detail: { text: "+91 98765 43210", href: "tel:+919876543210" },
+      ...overrides,
+    });
+    const action = () => async () => null;
+
+    it("shows who, the number as a link, the draft labelled with where it came from, and one action", () => {
+      const html = renderToStaticMarkup(<TodayList rows={[]} tasks={{ tasks: [task("e1")], more: 0, atLeast: false }} taskAction={action} />);
+      const shown = html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
+      expect(shown).toContain("Call Company &lt;b&gt;e1&lt;/b&gt; : +91 98765 43210");
+      expect(shown).toContain("Talking points · AI-generated");
+      expect(shown).toContain("Say you emailed them. Ask how they book jobs.");
+      expect(html).not.toContain("<b>e1</b>");
+      expect(links(html)).toEqual([{ href: "tel:+919876543210", text: "+91 98765 43210", current: null }]);
+      // One action on the row.
+      expect(html.match(/<button\b[^>]*>([^<]*)</g)).toEqual([expect.stringContaining("Mark done")]);
+      expect(html).not.toContain("Nothing is waiting");
+      // Nothing was sent for it, and nothing here says so.
+      expect(shown).not.toMatch(/\bsent\b/i);
+    });
+
+    it("shows a number or page with nowhere to open as text, not as a link", () => {
+      const html = renderToStaticMarkup(
+        <TodayList
+          rows={[]}
+          tasks={{
+            tasks: [
+              task("e1", { channel: "whatsapp", detail: { text: "98765 43210", href: null } }),
+              task("e2", { channel: "linkedin", detail: { text: "no LinkedIn page is stored; find it by name", href: null } }),
+            ],
+            more: 0,
+            atLeast: false,
+          }}
+          taskAction={action}
+        />,
+      );
+      expect(links(html)).toEqual([]);
+      expect(html).toContain("98765 43210");
+      expect(html).toContain("no LinkedIn page is stored; find it by name");
+      expect(html.match(/<button\b/g)).toHaveLength(2);
+    });
+
+    it("says how many more are due after the ones shown", () => {
+      const html = renderToStaticMarkup(<TodayList rows={rows} tasks={{ tasks: [task("e1")], more: 3, atLeast: false }} taskAction={action} />);
+      expect(html).toContain("3 more campaign tasks are due. They appear here as these are marked done.");
+      expect(links(html)).toHaveLength(4);
+      expect(html.match(/<button\b/g)).toHaveLength(1);
+    });
+  });
+
   it("says so in one line when nothing is waiting, with no control", () => {
     const html = renderToStaticMarkup(<TodayList rows={[]} />);
     expect(html).toContain("Nothing is waiting for you today.");

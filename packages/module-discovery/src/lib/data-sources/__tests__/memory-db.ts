@@ -8,7 +8,7 @@ import { createFakeSupabase, type RecordedQuery } from "@cofounderai/core/test-s
  * make two calls and ask what the tables hold afterwards.
  *
  * It understands exactly what the code under test uses: select, insert, update, delete,
- * `eq`, `is(column, null)`, `in`, `order`, `limit`, `single`, `maybeSingle`, and a
+ * `eq`, `is(column, null)`, `in`, `gt`, `order`, `limit`, `single`, `maybeSingle`, and a
  * unique key per table. Tests only.
  */
 type Row = Record<string, unknown>;
@@ -28,6 +28,7 @@ export function createMemoryDb(seed: Record<string, Row[]> = {}, unique: Record<
         if (method === "in") return (value as unknown[]).includes(row[column]);
         if (method === "lte") return row[column] != null && String(row[column]) <= String(value);
         if (method === "gte") return row[column] != null && String(row[column]) >= String(value);
+        if (method === "gt") return row[column] != null && String(row[column]) > String(value);
         if (method === "neq") return row[column] !== value;
         if (method === "ilike") return String(row[column] ?? "").toLowerCase() === String(value).toLowerCase();
         return true;

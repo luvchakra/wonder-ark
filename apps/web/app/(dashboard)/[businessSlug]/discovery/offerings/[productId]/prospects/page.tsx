@@ -10,6 +10,7 @@ import {
   listProspects,
   listProspectIndustries,
 } from "@cofounderai/module-discovery/lib/prospects/queries";
+import { listCampaignTasks } from "@cofounderai/module-discovery/lib/campaigns/tasks";
 import { buildTodayList } from "@cofounderai/module-discovery/lib/prospects/today";
 import { TodayList } from "@cofounderai/module-discovery/components/prospects/today-list";
 import type { ProspectStatus } from "@cofounderai/module-discovery/lib/prospects/types";
@@ -24,6 +25,7 @@ import {
   bulkScoreAction,
   autoDiscoverOneProspectAction,
 } from "./actions";
+import { markTaskDoneAction } from "../campaigns/actions";
 
 export default async function ProspectsPage({
   params,
@@ -84,7 +86,7 @@ export default async function ProspectsPage({
   // DISC-NAV-P0-01.2: `due=1` is the Today list's "follow-ups due" link.
   const followUpDue = due === "1";
   const hasListFilters = Boolean(status || industry || stage || followUpDue);
-  const [prospects, industries, suggestionCount] = await Promise.all([
+  const [prospects, industries, suggestionCount, campaignTasks] = await Promise.all([
     listProspects(
       workspace.id,
       {
@@ -97,6 +99,8 @@ export default async function ProspectsPage({
     ),
     listProspectIndustries(workspace.id),
     countProspectSuggestions(workspace.id),
+    // DISC-CAMP-P0-06.1: the running campaigns' call, WhatsApp and LinkedIn steps that are due.
+    listCampaignTasks(workspace.id),
   ]);
 
   const basePath = `/${businessSlug}/discovery/offerings/${productId}/prospects`;
@@ -124,7 +128,7 @@ export default async function ProspectsPage({
         </div>
       </div>
 
-      <TodayList rows={today} />
+      <TodayList rows={today} tasks={campaignTasks} taskAction={(enrollmentId) => markTaskDoneAction.bind(null, businessId, productId, enrollmentId)} />
 
       {followUpDue ? (
         <p className="rounded-md border bg-muted p-3 text-sm">

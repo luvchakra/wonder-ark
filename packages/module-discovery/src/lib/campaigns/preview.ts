@@ -4,10 +4,10 @@ import { prepareOutreachEmail } from "@cofounderai/core/privacy/suppression";
 import { createClient } from "../../db/server";
 import { getBusiness, getProduct, getWorkspace } from "../tenancy/queries";
 import { authoriseCampaigns, getCampaignDetail, previewAudience, previewBlocker, writtenSegments } from "./campaigns";
-import { addressOf, composeStep, scheduleLines, type StepRecipient } from "./compose";
+import { addressOf, composeStep, composeTask, scheduleLines, type StepRecipient, type TaskDetail } from "./compose";
 import { getSenderMailbox, loadMailboxForSending } from "./mailbox";
 import { sendViaSmtp, type SmtpDeps } from "./smtp";
-import { GENERAL_SEGMENT, type CampaignStep, type LeftOutReason } from "./types";
+import { GENERAL_SEGMENT, isTaskChannel, type CampaignStep, type LeftOutReason, type TaskChannel, type TemplateOrigin } from "./types";
 
 /**
  * DISC-CAMP-P0-05.3: the preview a person confirms before a campaign can be activated,
@@ -20,7 +20,12 @@ import { GENERAL_SEGMENT, type CampaignStep, type LeftOutReason } from "./types"
  *    own values, the function the tick calls before it sends, with the From line from
  *    the connected mailbox and the unsubscribe footer `prepareOutreachEmail` produces;
  *  - a prospect whose email would be skipped is shown as skipped with the reason. A
- *    placeholder is never filled in to make an example look complete.
+ *    placeholder is never filled in to make an example look complete;
+ *  - a call, WhatsApp or LinkedIn step (DISC-CAMP-P0-06.1) is shown as what it is, a
+ *    task for a person: the draft `composeTask` produces for a real prospect and the
+ *    number or page it is done with, or that the prospect would be passed over and why.
+ *    It is the function the Today list and the tick use. Nothing is sent for such a
+ *    step, so it has no "Send me a test".
  *
  * "Send me a test" sends one previewed email to the mailbox's own From address and
  * nowhere else: there is no field for an address, and it never goes to the prospect. It
@@ -33,7 +38,9 @@ export const PREVIEW_PROSPECTS = 5;
 export const TEST_SENDS_PER_HOUR = 5;
 
 export type PreviewEmail =
-  | { ok: true; prospectId: string; company: string; from: string; to: string; subject: string; text: string }
+  | { ok: true; kind: "email"; prospectId: string; company: string; from: string; to: string; subject: string; text: string }
+  /** A step a person does: the draft and what it is done with. Nothing is sent. */
+  | { ok: true; kind: "task"; channel: TaskChannel; prospectId: string; company: string; detail: TaskDetail; text: string; origin: TemplateOrigin }
   | { ok: false; prospectId: string; company: string; reason: string };
 
 export type PreviewLine = {
@@ -51,7 +58,7 @@ export type CampaignPreview = {
   alreadyEnrolled: boolean;
   leftOut: Partial<Record<LeftOutReason, number>>;
   schedule: string[];
-  steps: Pick<CampaignStep, "position" | "purpose">[];
+  steps: Pick<CampaignStep, "position" | "purpose" | "channel">[];
   step: number;
   /** 0-based position of the prospect shown in each line of work. */
   index: number;
@@ -104,8 +111,7 @@ async function load(campaignId: string, choice: { step?: number; index?: number 
     }));
   }
 
-  const emailSteps = steps.filter((entry) => entry.channel === "email");
-  const step = emailSteps.find((entry) => entry.position === choice.step) ?? emailSteps[0]!;
+  const step = steps.find((entry) => entry.position === choice.step) ?? steps[0]!;
   const bySegment = new Map<string, Member[]>();
   for (const member of members) bySegment.set(member.segment, [...(bySegment.get(member.segment) ?? []), member]);
   const segments = [...bySegment.keys()].sort((a, b) =>
@@ -123,10 +129,10 @@ async function load(campaignId: string, choice: { step?: number; index?: number 
   const chosen = segments.map((segment) => bySegment.get(segment)![index]).filter((member): member is Member => Boolean(member));
   const [prospects, contacts] = await Promise.all([
     chosen.length
-      ? supabase.from("prospects").select("id, company_name, industry, location, company_email").in("id", chosen.map((member) => member.prospectId))
+      ? supabase.from("prospects").select("id, company_name, industry, location, company_email, phone, linkedin_url").in("id", chosen.map((member) => member.prospectId))
       : { data: [], error: null },
     chosen.some((member) => member.contactId)
-      ? supabase.from("contacts").select("id, email, first_name, email_status").in("id", chosen.filter((member) => member.contactId).map((member) => member.contactId as string))
+      ? supabase.from("contacts").select("id, email, first_name, email_status, phone, linkedin_url").in("id", chosen.filter((member) => member.contactId).map((member) => member.contactId as string))
       : { data: [], error: null },
   ]);
   if (prospects.error) throw prospects.error;
@@ -150,6 +156,18 @@ async function load(campaignId: string, choice: { step?: number; index?: number 
     // The same check the tick makes: is this address on the opt-out list, and if not,
     // what unsubscribe link does its email carry.
     const compliance = to ? await prepareOutreachEmail(businessId, to) : null;
+    if (isTaskChannel(step.channel)) {
+      // A step for a person. Someone on the opt-out list gets none of the campaign's steps.
+      const task = compliance?.suppressed ? null : composeTask({ step, templates, recipient, sender });
+      lines.push({
+        segment,
+        prospects: bySegment.get(segment)!.length,
+        email: task?.ok
+          ? { ok: true, kind: "task", channel: task.channel, prospectId: prospect.id, company: prospect.company_name, detail: task.detail, text: task.body, origin: task.origin }
+          : { ok: false, prospectId: prospect.id, company: prospect.company_name, reason: task ? task.reason : "Asked not to be emailed" },
+      });
+      continue;
+    }
     const composed = composeStep({ campaign, step, templates, recipient, suppressed: compliance?.suppressed === true, sender });
     if (!composed.ok || !compliance || compliance.suppressed) {
       lines.push({
@@ -164,6 +182,7 @@ async function load(campaignId: string, choice: { step?: number; index?: number 
       prospects: bySegment.get(segment)!.length,
       email: {
         ok: true,
+        kind: "email",
         prospectId: prospect.id,
         company: prospect.company_name,
         from: `${mailbox.fromName} <${mailbox.fromEmail}>`,
@@ -185,8 +204,8 @@ async function load(campaignId: string, choice: { step?: number; index?: number 
       audience: members.length,
       alreadyEnrolled: campaign.status !== "draft",
       leftOut,
-      schedule: scheduleLines({ campaign, steps: emailSteps, mailboxDailyLimit: mailbox.dailyLimit }),
-      steps: emailSteps.map((entry) => ({ position: entry.position, purpose: entry.purpose })),
+      schedule: scheduleLines({ campaign, steps, mailboxDailyLimit: mailbox.dailyLimit }),
+      steps: steps.map((entry) => ({ position: entry.position, purpose: entry.purpose, channel: entry.channel })),
       step: step.position,
       index,
       lastIndex,
@@ -220,6 +239,7 @@ export async function sendCampaignTest(
   if ("blocked" in loaded) return { status: "refused", message: loaded.blocked!.message };
   const line = loaded.lines.find((entry) => entry.segment === choice.segment);
   if (!line?.email) return { status: "refused", message: "There is no prospect to preview there." };
+  if (line.email.ok && line.email.kind === "task") return { status: "refused", message: "That step is for a person to do, so there is nothing to send as a test." };
   if (!line.email.ok || !line.composed) return { status: "refused", message: `That email would not be sent: ${line.email.ok ? "" : line.email.reason}.` };
 
   const { campaign } = loaded.detail;

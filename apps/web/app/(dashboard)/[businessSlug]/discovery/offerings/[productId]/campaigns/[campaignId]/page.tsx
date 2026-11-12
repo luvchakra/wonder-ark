@@ -69,6 +69,10 @@ import {
  *   running             5+N+P -> 3+P  (Pause, 2 folds; nothing is editable while sending)
  *   paused              5+N+P -> 5+N+P
  *   finished            2+P -> 1+P
+ *
+ * DISC-CAMP-P0-06.1 (call, WhatsApp and LinkedIn steps) adds no visible control here: the
+ * choice of what a step is sits inside the Schedule fold, and a step's draft is one more
+ * of the N messages.
  */
 export default async function CampaignPage({
   params,
@@ -222,7 +226,7 @@ export default async function CampaignPage({
             <StepList steps={steps} />
             <p className="text-sm text-muted-foreground">
               No text yet. Write messages drafts each step from your offering&apos;s profile, once for each line of work in the audience; you can read and edit every one
-              before you preview and activate. You can change how many emails there are first, under Schedule.
+              before you preview and activate. You can change the steps first, under Schedule.
             </p>
           </>
         ) : (

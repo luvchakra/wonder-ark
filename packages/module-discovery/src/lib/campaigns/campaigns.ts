@@ -23,6 +23,9 @@ import {
   type LeftOutReason,
   type StepChannel,
   type StepPurpose,
+  type TaskOutcome,
+  isTaskChannel,
+  taskOutcomeOf,
 } from "./types";
 
 /**
@@ -250,10 +253,13 @@ export async function replaceCampaignSteps(campaignId: string, steps: StepInput[
   }
   if (steps.length < 1 || steps.length > MAX_STEPS) return { status: "refused", message: `A campaign has between 1 and ${MAX_STEPS} steps.` };
   if (steps[0]!.channel !== "email") return { status: "refused", message: "The first step is an email." };
-  // DISC-CAMP-P0-06.1 is not built: a call, WhatsApp or LinkedIn step would wait for a
-  // person with no screen to do it from, and hold every enrollment behind it.
+  // DISC-CAMP-P0-06.1: a later step may be a call, a WhatsApp message or a LinkedIn
+  // message, which a person does from the Today list.
   if (!TASK_STEPS_AVAILABLE && steps.some((step) => step.channel !== "email")) {
     return { status: "refused", message: "Only email steps are available for now." };
+  }
+  if (steps.some((step) => !["email", "call", "whatsapp", "linkedin"].includes(step.channel))) {
+    return { status: "refused", message: "A step is an email, a call, a WhatsApp message or a LinkedIn message." };
   }
   for (const [index, step] of steps.entries()) {
     if (index > 0 && (!Number.isInteger(step.delayDays) || step.delayDays < MIN_FOLLOW_UP_DAYS || step.delayDays > MAX_FOLLOW_UP_DAYS)) {
@@ -279,7 +285,9 @@ export async function replaceCampaignSteps(campaignId: string, steps: StepInput[
     if (sentError) throw sentError;
     if ((sent ?? []).length > 0) {
       const step = removed.find((entry) => entry.id === (sent![0] as { step_id: string }).step_id) ?? removed[0]!;
-      return { status: "refused", message: `Step ${step.position} has already been sent to someone, so it can't be removed.` };
+      // DISC-CAMP-P0-06.1: a step a person does was never sent; it has a record all the same.
+      const what = isTaskChannel(step.channel) ? "been recorded for" : "been sent to";
+      return { status: "refused", message: `Step ${step.position} has already ${what} someone, so it can't be removed.` };
     }
     const { error } = await supabase.from("outreach_campaign_steps").delete().in("id", removed.map((step) => step.id));
     if (error) throw error;
@@ -314,9 +322,13 @@ export async function saveCampaignTemplate(templateId: string, input: { subject:
     return { status: "refused", message: owner?.status === "active" ? "Pause the campaign to change its messages." : "A finished campaign can't be changed." };
   }
 
-  const subject = input.subject.replace(/\s+/g, " ").trim().slice(0, 200);
+  // DISC-CAMP-P0-06.1: a call, WhatsApp or LinkedIn draft has no subject line.
+  const { data: step, error: stepError } = await supabase.from("outreach_campaign_steps").select("channel").eq("id", (template as CampaignTemplate).step_id).maybeSingle();
+  if (stepError) throw stepError;
+  const task = isTaskChannel(((step?.channel as StepChannel | undefined) ?? "email"));
+  const subject = task ? null : input.subject.replace(/\s+/g, " ").trim().slice(0, 200);
   const body = input.body.trim().slice(0, 5000);
-  if (!subject || !body) return { status: "refused", message: "A message needs a subject and some text." };
+  if (task ? !body : !subject || !body) return { status: "refused", message: task ? "The draft needs some text." : "A message needs a subject and some text." };
   const problem = templateProblem(subject, body);
   if (problem) return { status: "refused", message: problem };
 
@@ -436,7 +448,8 @@ export function previewBlocker(detail: CampaignDetail, mailboxVerified: boolean)
   if (!mailboxVerified) return { status: "needs_setup", message: NEEDS_MAILBOX };
   const emailSteps = detail.steps.filter((step) => step.channel === "email");
   if (emailSteps.length === 0) return { status: "refused", message: "A campaign needs at least one email step." };
-  const unwritten = emailSteps.filter((step) => !detail.templates.some((template) => template.step_id === step.id && template.segment === GENERAL_SEGMENT));
+  // DISC-CAMP-P0-06.1: a step for a person needs its draft too, or it would be passed over for everyone.
+  const unwritten = detail.steps.filter((step) => !detail.templates.some((template) => template.step_id === step.id && template.segment === GENERAL_SEGMENT));
   if (unwritten.length > 0) {
     return { status: "refused", message: `Write the messages first: step ${unwritten.map((step) => step.position).join(", ")} has no text yet.` };
   }
@@ -553,7 +566,14 @@ export type CampaignResults = {
     stopReason: string | null;
     stepsSent: number;
     nextDueAt: string | null;
+    /** DISC-CAMP-P0-06.1: the steps a person did, in order, and how each went. */
+    tasks: { position: number; channel: StepChannel; outcome: TaskOutcome }[];
+    /** Steps passed over for this prospect while it moved on, with the reason's code. */
+    passedOver: { position: number; reason: string }[];
   }[];
+  /** DISC-CAMP-P0-06.1: steps a person marked done, and ones they could not reach. */
+  tasksDone: number;
+  tasksNotReached: number;
 };
 
 /** The funnel, counted from the campaign's own rows. "Delivered" is not among them: a
@@ -561,14 +581,21 @@ export type CampaignResults = {
  * shown. */
 export async function getCampaignResults(campaignId: string): Promise<CampaignResults> {
   const supabase = await createClient();
-  const [enrollments, sends] = await Promise.all([
+  const [enrollments, sends, stepRows] = await Promise.all([
     supabase.from("outreach_enrollments").select("id, prospect_id, status, stop_reason, next_due_at, created_at").eq("campaign_id", campaignId).order("created_at"),
-    supabase.from("outreach_sends").select("enrollment_id, status, bounced_at").eq("campaign_id", campaignId),
+    supabase.from("outreach_sends").select("enrollment_id, step_id, status, reason, bounced_at").eq("campaign_id", campaignId),
+    supabase.from("outreach_campaign_steps").select("id, position, channel").eq("campaign_id", campaignId),
   ]);
   if (enrollments.error) throw enrollments.error;
   if (sends.error) throw sends.error;
+  if (stepRows.error) throw stepRows.error;
   const enrolled = (enrollments.data ?? []) as { id: string; prospect_id: string; status: string; stop_reason: string | null; next_due_at: string | null; created_at: string }[];
-  const sent = (sends.data ?? []) as { enrollment_id: string; status: string; bounced_at: string | null }[];
+  const all = (sends.data ?? []) as { enrollment_id: string; step_id: string; status: string; reason: string | null; bounced_at: string | null }[];
+  // DISC-CAMP-P0-06.1: a step a person did is on the same record with its own reason. It
+  // is neither an email that was sent nor a step that was skipped, and is counted apart.
+  const stepOf = new Map(((stepRows.data ?? []) as { id: string; position: number; channel: StepChannel }[]).map((step) => [step.id, step]));
+  const taskRows = all.filter((send) => send.status === "skipped" && taskOutcomeOf(send.reason));
+  const sent = all.filter((send) => !taskRows.includes(send));
   const prospectIds = enrolled.map((row) => row.prospect_id);
 
   const prospects = new Map<string, { company_name: string; outcome: string }>();
@@ -609,7 +636,18 @@ export async function getCampaignResults(campaignId: string): Promise<CampaignRe
       stopReason: row.stop_reason,
       stepsSent: sentBy.get(row.id) ?? 0,
       nextDueAt: row.status === "active" ? row.next_due_at : null,
+      tasks: taskRows
+        .filter((send) => send.enrollment_id === row.id && stepOf.has(send.step_id))
+        .map((send) => ({ position: stepOf.get(send.step_id)!.position, channel: stepOf.get(send.step_id)!.channel, outcome: taskOutcomeOf(send.reason)! }))
+        .sort((a, b) => a.position - b.position),
+      // A skipped step whose enrollment went on is one that was passed over, not one that ended it.
+      passedOver: sent
+        .filter((send) => send.enrollment_id === row.id && send.status === "skipped" && stepOf.has(send.step_id) && isTaskChannel(stepOf.get(send.step_id)!.channel))
+        .map((send) => ({ position: stepOf.get(send.step_id)!.position, reason: send.reason ?? "" }))
+        .sort((a, b) => a.position - b.position),
     })),
+    tasksDone: taskRows.filter((send) => taskOutcomeOf(send.reason) === "done").length,
+    tasksNotReached: taskRows.filter((send) => taskOutcomeOf(send.reason) === "not_reached").length,
   };
 }
 

@@ -13,12 +13,14 @@ import { getBusiness, getProduct, getWorkspace } from "../tenancy/queries";
 import { assertWithinUsageLimit } from "../usage/limits";
 import { authoriseCampaigns, getCampaignDetail, previewAudience } from "./campaigns";
 import { fieldsUsed, templateProblem } from "./render";
-import { GENERAL_SEGMENT, type CampaignStep } from "./types";
+import { GENERAL_SEGMENT, isTaskChannel, type CampaignStep, type StepChannel } from "./types";
 
 /**
- * DISC-CAMP-P0-03.1: "Write messages". For a draft campaign, writes the text of every
- * email step, once for each line of work in the audience (the twelve most common) and
- * once for everyone else.
+ * DISC-CAMP-P0-03.1 / 06.1: "Write messages". For a draft campaign, writes the text of
+ * every step, once for each line of work in the audience (the twelve most common) and
+ * once for everyone else. An email step gets an email. A call step gets talking points
+ * and a WhatsApp or LinkedIn step a short message: drafts for a person, which WonderArk
+ * never sends.
  *
  * What this code decides, whatever the model returns:
  *  - it runs only on a person's click, for a licensed member with discovery.manage, and
@@ -41,8 +43,8 @@ const MessagesSchema = z.object({
     .array(
       z.object({
         step: z.number().int().describe("The step number this email is for"),
-        subject: z.string().describe("Subject line, at most 9 words"),
-        body: z.string().describe("The email body, 50 to 120 words, using only the allowed placeholders"),
+        subject: z.string().describe("Subject line, at most 9 words. Empty for a step that is not an email"),
+        body: z.string().describe("The step's text, using only the allowed placeholders"),
       }),
     )
     .describe("One entry per step asked for"),
@@ -52,10 +54,13 @@ const LINK = /(https?:\/\/|www\.|\b[a-z0-9-]+\.(com|in|org|net|io|co|app|ai|biz|
 const PHONE = /(\+?\d[\d\s().-]{8,}\d)/;
 const ADDRESS = /[^\s@]+@[^\s@]+\.[^\s@]+/;
 
-/** Why a written message cannot be stored, or null. Pure. */
-export function writtenMessageProblem(subject: string, body: string, generalOnly: boolean): string | null {
-  if (subject.trim().length < 3 || subject.length > 150) return "subject length";
-  if (body.trim().length < 40 || body.length > 1800) return "body length";
+/** Why a written message cannot be stored, or null. Pure. A call, WhatsApp or LinkedIn
+ * draft (DISC-CAMP-P0-06.1) has no subject: only its text is checked, by the same rules. */
+export function writtenMessageProblem(subject: string, body: string, generalOnly: boolean, channel: StepChannel = "email"): string | null {
+  const task = isTaskChannel(channel);
+  if (task) subject = "";
+  else if (subject.trim().length < 3 || subject.length > 150) return "subject length";
+  if (body.trim().length < (task ? 20 : 40) || body.length > (channel === "email" ? 1800 : channel === "call" ? 1500 : 700)) return "body length";
   if (templateProblem(subject, body)) return "placeholder outside the list";
   const used = fieldsUsed(`${subject}\n${body}`).fields;
   if (used.includes("first_name")) return "uses a first name";
@@ -91,8 +96,9 @@ export async function writeCampaignMessages(campaignId: string): Promise<WriteMe
     return { status: "refused", message: campaign.status === "active" ? "Pause the campaign to write or change its messages." : "A finished campaign can't be changed." };
   }
 
-  const emailSteps = steps.filter((step) => step.channel === "email");
-  if (emailSteps.length === 0) return { status: "refused", message: "This campaign has no email step to write." };
+  // DISC-CAMP-P0-06.1: every step has text, a step for a person included.
+  const sequence = [...steps].sort((a, b) => a.position - b.position);
+  if (sequence.length === 0) return { status: "refused", message: "This campaign has no step to write." };
 
   const workspace = await getWorkspace(campaign.workspace_id);
   const product = workspace ? await getProduct(workspace.product_id) : null;
@@ -118,7 +124,7 @@ export async function writeCampaignMessages(campaignId: string): Promise<WriteMe
   let modelCalls = 0;
 
   for (const segment of segments) {
-    const missing = emailSteps.filter((step) => !templates.some((template) => template.step_id === step.id && template.segment === segment));
+    const missing = sequence.filter((step) => !templates.some((template) => template.step_id === step.id && template.segment === segment));
     if (missing.length === 0) {
       kept.push(segment);
       continue;
@@ -130,7 +136,12 @@ export async function writeCampaignMessages(campaignId: string): Promise<WriteMe
       productProfile: product.product_profile,
       idealCustomer,
       lineOfWork: segment === GENERAL_SEGMENT ? null : segment,
-      steps: emailSteps.map((step) => ({ position: step.position, purpose: step.purpose, delayDays: step.delay_days })),
+      steps: sequence.map((step) => ({
+        position: step.position,
+        purpose: step.purpose,
+        delayDays: step.delay_days,
+        ...(isTaskChannel(step.channel) ? { channel: step.channel } : {}),
+      })),
     });
     const { accountId, provider, modelId, model } = await resolveAiModel(campaign.workspace_id, OPERATION);
     const inputHash = hashInput({ prompt, version: WRITE_CAMPAIGN_MESSAGES_PROMPT_VERSION, model: modelId });
@@ -164,9 +175,9 @@ export async function writeCampaignMessages(campaignId: string): Promise<WriteMe
         : { data: [], error: null };
       if (stepsError) throw stepsError;
       const positionOf = new Map(((cachedSteps ?? []) as { id: string; position: number }[]).map((step) => [step.id, step.position]));
-      const copied = emailSteps.map((step) => {
+      const copied = sequence.map((step) => {
         const hit = (cached ?? []).find((row) => positionOf.get(row.step_id) === step.position);
-        return hit?.subject ? { step: step.position, subject: hit.subject as string, body: hit.body as string } : null;
+        return hit && (hit.subject || isTaskChannel(step.channel)) ? { step: step.position, subject: (hit.subject as string | null) ?? "", body: hit.body as string } : null;
       });
       if (copied.every((entry) => entry !== null)) {
         messages = copied as { step: number; subject: string; body: string }[];
@@ -214,7 +225,7 @@ export async function writeCampaignMessages(campaignId: string): Promise<WriteMe
       }
     }
 
-    const problem = checkAnswer(messages, emailSteps, segment === GENERAL_SEGMENT);
+    const problem = checkAnswer(messages, sequence, segment === GENERAL_SEGMENT);
     if (problem) {
       failed.push({ segment, reason: `The text that came back couldn't be used (${problem}). Nothing was stored for it.` });
       continue;
@@ -227,7 +238,8 @@ export async function writeCampaignMessages(campaignId: string): Promise<WriteMe
         step_id: step.id,
         workspace_id: campaign.workspace_id,
         segment,
-        subject: message.subject.replace(/\s+/g, " ").trim(),
+        // A step for a person has no subject line.
+        subject: isTaskChannel(step.channel) ? null : message.subject.replace(/\s+/g, " ").trim(),
         body: message.body.trim(),
         origin: "ai_generated",
         ai_run_id: aiRunId,
@@ -249,8 +261,8 @@ function checkAnswer(messages: { step: number; subject: string; body: string }[]
     const matches = messages.filter((entry) => entry?.step === step.position);
     if (matches.length !== 1) return `step ${step.position} missing or repeated`;
     const { subject, body } = matches[0]!;
-    if (typeof subject !== "string" || typeof body !== "string") return `step ${step.position} has no text`;
-    const problem = writtenMessageProblem(subject, body, generalOnly);
+    if (typeof body !== "string" || (typeof subject !== "string" && !isTaskChannel(step.channel))) return `step ${step.position} has no text`;
+    const problem = writtenMessageProblem(typeof subject === "string" ? subject : "", body, generalOnly, step.channel);
     if (problem) return `step ${step.position}: ${problem}`;
   }
   return null;

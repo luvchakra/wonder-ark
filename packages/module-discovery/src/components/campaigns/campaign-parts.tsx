@@ -18,13 +18,18 @@ import {
   MAX_FOLLOW_UP_DAYS,
   MAX_STEPS,
   MIN_FOLLOW_UP_DAYS,
-  STEP_PURPOSE_LABEL,
+  STEP_CHANNEL_LABEL,
+  TASK_OUTCOME_LABEL,
+  TASK_SKIP_LABEL,
   TEMPLATE_ORIGIN_LABEL,
   WEEKDAY_LABEL,
+  isTaskChannel,
+  stepLabel,
   type Campaign,
   type CampaignStep,
   type CampaignTemplate,
   type LeftOutReason,
+  type StepChannel,
 } from "../../lib/campaigns/types";
 
 /**
@@ -99,10 +104,11 @@ export function StepList({ steps }: { steps: CampaignStep[] }) {
       {steps.map((step) => (
         <li key={step.id}>
           <span className="font-medium">
-            {step.position}. {STEP_PURPOSE_LABEL[step.purpose]} email
+            {step.position}. {stepLabel(step)}
           </span>
           <span className="text-muted-foreground">
             {step.position === 1 ? ", sent first" : `, ${step.delay_days} ${step.delay_days === 1 ? "day" : "days"} after step ${step.position - 1}`}
+            {isTaskChannel(step.channel) ? ", for you to do from the Today list" : ""}
           </span>
         </li>
       ))}
@@ -219,10 +225,15 @@ export function AudienceForm({ campaign, action }: { campaign: Campaign; action:
 
 /**
  * DISC-CAMP-P0-05.4: the folded "Schedule" form: how many emails a day this campaign
- * sends, on which days and hours, and how many emails the sequence has with the days
+ * sends, on which days and hours, and how many steps the sequence has with the days
  * between them. Every field arrives filled from the campaign as it stands, so nobody
  * has to open it. One form, one Save; saving asks for the preview again.
+ *
+ * DISC-CAMP-P0-06.1: each later step is an email unless the person chooses a call, a
+ * WhatsApp message or a LinkedIn message, which is theirs to do from the Today list.
  */
+const STEP_CHANNELS: StepChannel[] = ["email", "call", "whatsapp", "linkedin"];
+
 export function ScheduleForm({ campaign, steps, mailboxLimit, action }: { campaign: Campaign; steps: CampaignStep[]; mailboxLimit: number | null; action: FormAction }) {
   return (
     <AiActionForm action={action} buttonLabel="Save schedule" pendingText="Saving..." formClassName="flex flex-col gap-4" buttonProps={{ variant: "outline", className: "self-start" }}>
@@ -257,23 +268,35 @@ export function ScheduleForm({ campaign, steps, mailboxLimit, action }: { campai
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-medium">Follow-ups</legend>
         <p className="text-xs text-muted-foreground">
-          The first email is sent first. For each follow-up, enter how many days after the email before it is sent ({MIN_FOLLOW_UP_DAYS} to {MAX_FOLLOW_UP_DAYS}); leave it blank to
-          end the sequence there. A new follow-up needs its message written before the preview. One that has already been sent to someone can&apos;t be removed.
+          The first email is sent first. For each later step, enter how many days after the step before it comes ({MIN_FOLLOW_UP_DAYS} to {MAX_FOLLOW_UP_DAYS}); leave it blank to
+          end the sequence there. WonderArk sends an email step. A call, WhatsApp or LinkedIn step is yours to do: it appears on the Today list with a draft when it is due,
+          nothing is sent or dialled for it, and the steps after it wait until you mark it done. A new step needs its text written before the preview. One that has already
+          been sent or done for someone can&apos;t be removed.
         </p>
         <div className="grid max-w-md grid-cols-2 gap-3 sm:grid-cols-4">
-          {Array.from({ length: MAX_STEPS - 1 }, (_, index) => index + 2).map((position) => (
-            <div key={position} className="flex flex-col gap-1.5">
-              <Label htmlFor={`campaign-step-${position}`}>Email {position}: days</Label>
-              <Input
-                id={`campaign-step-${position}`}
-                name={`delayDays${position}`}
-                type="number"
-                min={MIN_FOLLOW_UP_DAYS}
-                max={MAX_FOLLOW_UP_DAYS}
-                defaultValue={steps.find((step) => step.position === position)?.delay_days ?? ""}
-              />
-            </div>
-          ))}
+          {Array.from({ length: MAX_STEPS - 1 }, (_, index) => index + 2).map((position) => {
+            const step = steps.find((entry) => entry.position === position);
+            return (
+              <div key={position} className="flex flex-col gap-1.5">
+                <Label htmlFor={`campaign-step-${position}`}>Step {position}: days</Label>
+                <Input
+                  id={`campaign-step-${position}`}
+                  name={`delayDays${position}`}
+                  type="number"
+                  min={MIN_FOLLOW_UP_DAYS}
+                  max={MAX_FOLLOW_UP_DAYS}
+                  defaultValue={step?.delay_days ?? ""}
+                />
+                <NativeSelect aria-label={`Step ${position}: how`} name={`channel${position}`} defaultValue={step?.channel ?? "email"}>
+                  {STEP_CHANNELS.map((channel) => (
+                    <option key={channel} value={channel}>
+                      {STEP_CHANNEL_LABEL[channel]}
+                    </option>
+                  ))}
+                </NativeSelect>
+              </div>
+            );
+          })}
         </div>
       </fieldset>
     </AiActionForm>
@@ -306,7 +329,8 @@ export function TemplateList({
         return (
           <section key={step.id} className="flex flex-col gap-2">
             <h3 className="text-sm font-medium">
-              Step {step.position}: {STEP_PURPOSE_LABEL[step.purpose]}
+              Step {step.position}: {stepLabel(step)}
+              {isTaskChannel(step.channel) ? <span className="font-normal text-muted-foreground"> · a draft for you; nothing is sent for this step</span> : null}
             </h3>
             {own.length === 0 ? <p className="text-sm text-muted-foreground">No text yet.</p> : null}
             {own.map((template) => (
@@ -317,10 +341,12 @@ export function TemplateList({
                     {TEMPLATE_ORIGIN_LABEL[template.origin]}
                   </Badge>
                 </div>
-                <p className="text-sm">
-                  <span className="text-muted-foreground">Subject: </span>
-                  {template.subject}
-                </p>
+                {isTaskChannel(step.channel) ? null : (
+                  <p className="text-sm">
+                    <span className="text-muted-foreground">Subject: </span>
+                    {template.subject}
+                  </p>
+                )}
                 <p className="whitespace-pre-wrap text-sm">{template.body}</p>
                 {editable ? (
                   <Fold label="Edit" variant="ghost">
@@ -331,9 +357,13 @@ export function TemplateList({
                       formClassName="flex flex-col gap-2 pt-2"
                       buttonProps={{ variant: "outline", className: "self-start" }}
                     >
-                      <Label htmlFor={`subject-${template.id}`}>Subject</Label>
-                      <Input id={`subject-${template.id}`} name="subject" defaultValue={template.subject ?? ""} maxLength={200} />
-                      <Label htmlFor={`body-${template.id}`}>Message</Label>
+                      {isTaskChannel(step.channel) ? null : (
+                        <>
+                          <Label htmlFor={`subject-${template.id}`}>Subject</Label>
+                          <Input id={`subject-${template.id}`} name="subject" defaultValue={template.subject ?? ""} maxLength={200} />
+                        </>
+                      )}
+                      <Label htmlFor={`body-${template.id}`}>{isTaskChannel(step.channel) ? "Draft" : "Message"}</Label>
                       <Textarea id={`body-${template.id}`} name="body" defaultValue={template.body} rows={9} maxLength={5000} />
                       <p className="text-xs text-muted-foreground">
                         Merge fields: {fields}. A prospect with no value for a field you use is skipped for that step, with the reason shown.
@@ -367,6 +397,13 @@ export function CampaignResultsView({ results, prospectsPath }: { results: Campa
     ["Won", results.won],
   ];
   const notSent = results.failed + results.skipped;
+  const tasks = results.tasksDone + results.tasksNotReached;
+  // DISC-CAMP-P0-06.1: what a person did, and what was passed over, beside the prospect.
+  const notes = (row: CampaignResults["rows"][number]) =>
+    [
+      ...row.tasks.map((task) => `Step ${task.position}, ${STEP_CHANNEL_LABEL[task.channel].toLowerCase()}: ${TASK_OUTCOME_LABEL[task.outcome].toLowerCase()}`),
+      ...row.passedOver.map((step) => `Step ${step.position} passed over: ${(TASK_SKIP_LABEL as Record<string, string>)[step.reason] ?? step.reason}`),
+    ].join(". ");
   return (
     <div className="flex flex-col gap-4">
       <dl className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -382,6 +419,12 @@ export function CampaignResultsView({ results, prospectsPath }: { results: Campa
           {results.skipped > 0 ? `${results.skipped} ${results.skipped === 1 ? "step was" : "steps were"} skipped. ` : ""}
           {results.failed > 0 ? `${results.failed} ${results.failed === 1 ? "email" : "emails"} could not be sent or ${results.failed === 1 ? "has" : "have"} an unknown outcome. ` : ""}
           The reason is beside each prospect below.
+        </p>
+      ) : null}
+      {tasks > 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {results.tasksDone} {results.tasksDone === 1 ? "step was" : "steps were"} marked done by a person
+          {results.tasksNotReached > 0 ? `, and ${results.tasksNotReached} ${results.tasksNotReached === 1 ? "was" : "were"} marked couldn't reach` : ""}. Nothing was sent for them.
         </p>
       ) : null}
 
@@ -412,7 +455,9 @@ export function CampaignResultsView({ results, prospectsPath }: { results: Campa
                   <span className="text-muted-foreground md:hidden">Emails sent: </span>
                   {row.stepsSent}
                 </span>
-                <span className="text-muted-foreground">{row.stopReason ?? (row.nextDueAt ? `Next step due ${day(row.nextDueAt)}` : "")}</span>
+                <span className="text-muted-foreground">
+                  {[row.stopReason ?? (row.nextDueAt ? `Next step due ${day(row.nextDueAt)}` : ""), notes(row)].filter(Boolean).join(". ")}
+                </span>
               </li>
             ))}
           </ul>
@@ -428,9 +473,10 @@ export function CampaignResultsView({ results, prospectsPath }: { results: Campa
  */
 export function activateLines(input: { campaign: Campaign; wouldEnrol: number; mailbox: SenderMailboxView; steps: CampaignStep[] }): string[] {
   const { campaign, wouldEnrol, mailbox, steps } = input;
+  const emails = steps.filter((step) => !isTaskChannel(step.channel)).length;
   return [
     `${wouldEnrol} ${wouldEnrol === 1 ? "prospect is" : "prospects are"} enrolled now${campaign.auto_enroll ? ", and new prospects that fit are added as they appear" : ""}.`,
-    `Each gets the ${steps.length === 1 ? "email" : `${steps.length} emails`} you previewed, from ${mailbox.fromEmail}. Nobody approves each email first.`,
+    `Each gets the ${emails === 1 ? "email" : `${emails} emails`} you previewed, from ${mailbox.fromEmail}. Nobody approves each email first.`,
     ...scheduleLines({ campaign, steps, mailboxDailyLimit: mailbox.dailyLimit }),
     "A few go straight away if it is within those hours now; the rest at the daily check.",
     "Follow-ups to a prospect stop when it replies, its email bounces, it unsubscribes, or you mark it won or lost.",
