@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { PageHeader } from "@cofounderai/core/ui/page-header";
 import { ExportMenu } from "@cofounderai/core/export-ui/export-menu";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@cofounderai/core/ui/card";
 import { Input } from "@cofounderai/core/ui/input";
 import { Textarea } from "@cofounderai/core/ui/textarea";
 import { NativeSelect } from "@cofounderai/core/ui/native-select";
@@ -28,6 +27,7 @@ import { UrlSelect } from "@cofounderai/module-discovery/components/marketing/ur
 import { TransitionButtons } from "@cofounderai/module-discovery/components/marketing/transition-buttons";
 import { createSeoItemAction, setSeoItemStatusAction } from "../actions";
 import { marketingContext } from "../context";
+import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
 
 const STATUS_LABEL: Record<SeoStatus, string> = {
   open: "Open",
@@ -76,6 +76,8 @@ export default async function WebsiteSeoPage({
 
   const opportunities = items.filter((i) => i.category !== "ai_search_visibility");
   const observations = items.filter((i) => i.category === "ai_search_visibility");
+  const openCount = opportunities.filter((i) => i.status === "open" || i.status === "in_progress").length;
+  const highCount = opportunities.filter((i) => i.severity === "high").length;
 
   return (
     <>
@@ -85,12 +87,10 @@ export default async function WebsiteSeoPage({
         actions={<ExportMenu exportId="marketing.website-seo" businessSlug={businessSlug} params={sp} kind="report" />}
       />
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Website</CardTitle>
-            <CardDescription>
-              {business?.website ? (
+      {/* DISC-NAV-P0-01.5: each part of the page is a section folded behind a chevron; the
+          website opens first. The count of open opportunities is in their section's summary. */}
+      <SectionFold title="Website" hint={business?.website ? `${business.website}${run ? ` · last crawl ${(run.completed_at ?? run.created_at).slice(0, 10)}` : " · not crawled yet"}` : "No website set"} open>
+        <p className="text-sm text-muted-foreground">{business?.website ? (
                 <a href={business.website} target="_blank" rel="noopener noreferrer" className="break-all text-primary hover:underline">
                   {business.website}
                 </a>
@@ -98,10 +98,8 @@ export default async function WebsiteSeoPage({
                 <>
                   No website set. <Link href={`/${businessSlug}/business`} className="text-primary hover:underline">Add one on the Business page</Link>.
                 </>
-              )}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-sm">
+              )}</p>
+        <div className="flex flex-col gap-4 text-sm">
             {!run ? (
               <p className="text-muted-foreground">The website has not been crawled yet. The crawl runs from the Business page.</p>
             ) : (
@@ -149,21 +147,8 @@ export default async function WebsiteSeoPage({
                 </details>
               </>
             )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Open opportunities</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tabular-nums">{opportunities.filter((i) => i.status === "open" || i.status === "in_progress").length}</p>
-            <p className="text-xs text-muted-foreground">
-              {opportunities.filter((i) => i.severity === "high").length} high severity in this view
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+      </SectionFold>
 
       <div className="max-w-xs">
         <UrlSelect
@@ -174,13 +159,8 @@ export default async function WebsiteSeoPage({
         />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>SEO opportunities</CardTitle>
-            <CardDescription>Each one records what was observed and where.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+      <div className="flex flex-col gap-3">
+        <SectionFold title="SEO opportunities" hint={`${openCount} open · ${highCount} high severity`}>
             <ItemList items={opportunities} businessId={businessId} canManage={canManage} />
             {canManage ? (
               <details className="rounded-lg border p-3">
@@ -223,18 +203,10 @@ export default async function WebsiteSeoPage({
                 </div>
               </details>
             ) : null}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>AI search visibility</CardTitle>
-            <CardDescription>
-              What an AI assistant answered when asked a buyer&apos;s question, and whether you appeared. An observation on one
-              day, not a ranking.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4">
+          </SectionFold>
+        <SectionFold title="AI search visibility" hint={`${observations.length} observation${observations.length === 1 ? "" : "s"}`}>
+          <p className="text-sm text-muted-foreground">What an AI assistant answered when asked a buyer&apos;s question, and whether you appeared. An observation on one
+              day, not a ranking.</p>
             <ItemList items={observations} businessId={businessId} canManage={canManage} />
             {canManage ? (
               <details className="rounded-lg border p-3">
@@ -270,8 +242,7 @@ export default async function WebsiteSeoPage({
                 </div>
               </details>
             ) : null}
-          </CardContent>
-        </Card>
+          </SectionFold>
       </div>
     </>
   );
