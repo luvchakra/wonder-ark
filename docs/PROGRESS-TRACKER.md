@@ -491,7 +491,7 @@ Source: [`docs/plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md`](./plan/10-DISCOVE
 |---|---|---|---|
 | `DISC-OFFER-P0-01.1` | Introduce Business Offering | ✅ Done | `packages/module-discovery/src/components/offerings/offering-form-dialog.tsx` +14 |
 | `DISC-OFFER-P0-01.2` | Existing Product Compatibility | ✅ Done | `packages/module-discovery/src/lib/offerings/types.ts` +2 |
-| `DISC-OFFER-P0-01.3` | Business Offering Create/Edit UI | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/actions.ts` +9 |
+| `DISC-OFFER-P0-01.3` | Business Offering Create/Edit UI | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/actions.ts` +11 |
 
 ### DISC-OFFER-P0-02 — Offering Setup & ICP
 
