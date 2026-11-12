@@ -279,9 +279,9 @@ Where the build differs from the text above. The live repo wins (`CLAUDE.md`).
 - **Drafting an answer to an interested reply stays a person's click** ("Generate reply" on the conversation): the
   reply appears on Today under "Replies waiting for your answer". Drafting it on arrival is not built
   (`generateReply` reads through the person's session).
-- **Email steps only, for now.** `DISC-CAMP-P0-06.1` (call, WhatsApp and LinkedIn steps as Today rows with drafts)
-  is not built, so a campaign's steps can only be emails (`TASK_STEPS_AVAILABLE`). A step nobody has a screen to do
-  would hold every enrollment behind it.
+- **A later step may be a call, a WhatsApp message or a LinkedIn message** (`DISC-CAMP-P0-06.1`,
+  `TASK_STEPS_AVAILABLE` is on). See "Call, WhatsApp and LinkedIn steps, as built" below. The first step is always
+  an email.
 - **"Send a test to me" saves and tests in one action**, so the "Sending from" block has one button.
 - **The Launch dialog's lines are built on the server** from the campaign's rows (`launchLines`), and a line on the
   campaign page warns when the daily check falls outside the campaign's sending hours, since nothing would send.
@@ -347,6 +347,57 @@ Preview, Activate and Schedule (`05.3`, `05.4`), as built:
   The preview is a new view: the link back, one link per step when there are several, Previous and Next
   prospect, one "Send me a test" per line of work, and "This looks right".
 
+Call, WhatsApp and LinkedIn steps (`06.1`), as built:
+
+- **Nothing is sent or dialled for these steps.** "Write messages" writes a draft for each, per line of work, in
+  the same request as the emails: talking points for a call, a short message for WhatsApp or LinkedIn. A draft has
+  no subject, uses the same closed merge fields, is refused if it contains a link, an address or a phone number,
+  is labelled with where it came from, and is edited like an email's text.
+- **One row per prospect on Today, not one "Calls to make" row.** When such a step is due in a running campaign it
+  is a row on the offering's Today list: who, the number or page it is done with, the draft with that prospect's
+  values filled in (`composeTask`, the same renderer as an email), and one action, **Mark done**. The five oldest
+  are shown; a line says how many more are due.
+- **Mark done asks how it went: "Done" or "Couldn't reach".** Either is recorded and moves the prospect to its
+  next step on that step's delay. A step for a person waits until it is marked; the steps after it wait with it.
+- **The link on a row is the number or page itself.** A call's number is a `tel:` link. A WhatsApp number opens
+  click-to-chat with the draft only when it is stored with its country code ("+..."); otherwise it is shown as
+  text, because a country is never guessed. A LinkedIn page is linked only when the stored address is on
+  linkedin.com; with none stored the row says so and the person finds the company by name. There is no Copy
+  button: the draft is text on the row.
+- **No phone number means the step is passed over, not shown.** A call or WhatsApp step for a prospect with no
+  phone number (the enrolled contact's, else the company's) is recorded as passed over with the reason and the
+  prospect moves on to its next step, so a missing number does not end its emails. The same for a step with no
+  draft, or whose draft uses a detail the prospect lacks. The reason is beside the prospect in the results.
+- **Stops still apply.** A reply, a won or lost outcome, an opt-out and a deleted contact stop an enrollment that
+  is waiting on a person, in the tick (whatever the hour, since nothing is sent by it), and again when Mark done
+  is pressed. Someone who asked not to be emailed is not then called or messaged by the campaign.
+- **No new table or column.** A task is recorded in `outreach_sends` through `claim_outreach_send`, as a step
+  WonderArk did not send (`skipped`) with the reason `task_done` or `task_not_reached`; a step passed over has
+  `no_phone`, `no_message`, `missing_merge_field` or `invalid_template`. The claim gives the same guarantees as
+  for an email: licence, running campaign, active enrollment, next step, once only. Such rows do not count toward
+  the daily limit, and the results count them apart: never as sent, never as skipped. Who marked a task is in
+  `core.audit_log` (`discovery.campaign.task_recorded`). No `discovery.messages` row is written: WonderArk does
+  not know what was said or sent.
+- **Waiting steps cannot hold back emails.** The tick's batch of due enrollments takes only those whose next step
+  it can act on (an email, or a position past the last step). Enrollments waiting on a person are read
+  separately, a page at a time by id, only to stop them or pass a step over.
+- **The preview shows these steps as tasks for a person**, with the draft for a real prospect and no "Send me a
+  test"; a prospect who would be passed over is shown as such with the reason. The schedule lines and the
+  Activate dialog say which steps are the person's and that later steps wait for them.
+- **Visible controls, before and after `06.1`.** The campaign page is unchanged in every state: what a step is
+  sits inside the Schedule fold (four selects, one per later step: 15 controls open before, 19 after), and a
+  draft is one more of the N messages. The preview of a step for a person has one control fewer per line of work
+  than an email step's (no "Send me a test").
+
+  | Screen | Before | After |
+  | --- | --- | --- |
+  | Campaign page, each state, folds closed | as in the table above | the same |
+  | Today list, no campaign task due | up to 3 (one per row) | up to 3 |
+  | Today list, T campaign tasks shown (T is at most 5) | up to 3 | up to 3 + 2T: one Mark done per task, and the number or page as a link where there is one to open |
+
+  A task row carries one action. The link beside it is the number or page the step is done with, not a second
+  action on the record.
+
 Replies, as refined after review:
 
 - **A reply is also recognised by the email it answers.** People often answer from another address than the one
@@ -359,4 +410,24 @@ Replies, as refined after review:
 - **A reply's text is its text/plain part, else its text/html part stripped to text** (`htmlToText`): tags,
   scripts and styles removed, line breaks kept, entities decoded, before the 20,000 character cap. A message
   with neither has no text and is ignored; an attachment or an arbitrary first part is never read as text.
+
+Personal opening line (`03.2`), as built:
+
+- **Off by default; one checkbox in the Audience fold.** It is inside a fold, so the closed page's control count
+  does not change. Turning it on or off clears the preview's confirmation (the existing trigger already covered
+  `personal_opening`).
+- **First email only.** For step 1 of an email campaign, `getOpeningLine` (`lib/campaigns/opening-line.ts`) asks
+  the model (`write_opening_line`, fast tier) for one sentence from the prospect's company name, line of work,
+  location, description and website, all fenced as untrusted (`prompts/outreach/write_opening_line_v1.ts`). The
+  answer is Zod-validated, then checked by code (`validateOpeningLine`: 20–220 characters, one line, one sentence,
+  no link, address, phone number, markup, merge field, greeting or instruction-like text).
+- **Kept once, shared by preview, test and tick.** Valid sentences are stored in
+  `discovery.outreach_opening_lines` (migration `20261112150000`), unique per (campaign, prospect, input hash).
+  The hash covers the prompt and its version, so a changed record or prompt writes a new line. Members read;
+  only the service role writes. Every call is metered by `assertWithinUsageLimit` and recorded in `ai_runs`,
+  and the line keeps its `ai_run_id`.
+- **A missing line never holds an email back.** If the usage limit is reached, the provider fails, or the answer
+  is malformed or refused, the reviewed text goes alone. The preview shows the reason and labels a written line
+  as AI-generated. The preview shows the actual
+  sentence for the prospects it lists; every other prospect's sentence passes the same checks.
 

@@ -77,7 +77,7 @@ async function main() {
       const [e1, e2, e3] = enrollmentsOf(aliceCampaign);
       const claim = (enrollment, step, skip = "null") =>
         psql(`select coalesce(id::text, '-') || '|' || status || '|' || coalesce(reason, '-') || '|' || created from discovery.claim_outreach_send('${enrollment}', '${step}', ${skip})`);
-      const TABLES = ["outreach_campaigns", "outreach_campaign_steps", "outreach_templates", "outreach_enrollments", "outreach_sends"];
+      const TABLES = ["outreach_campaigns", "outreach_campaign_steps", "outreach_templates", "outreach_enrollments", "outreach_sends", "outreach_opening_lines"];
 
       console.log("Verifying the mailbox password is write-only and a member cannot vouch for a mailbox...");
       assertEqual(psqlAs(ALICE, `select count(*) from (select id, from_email, status from discovery.sender_mailboxes) m`), "1", "Alice reads only her own mailbox's settings");
@@ -157,6 +157,24 @@ async function main() {
         assertEqual(psqlAs(ALICE, `select count(*) from discovery.${table}`), own, `Alice reads only her own ${table}`);
         assertEqual(psqlAs(ALICE, `select count(*) from discovery.${table} where workspace_id = '${bobWorkspace}'`), "0", `none of Alice's visible ${table} are Bob's`);
       }
+
+      console.log("Verifying opening lines are read by members and written only by the service role (DISC-CAMP-P0-03.2)...");
+      psql(`insert into discovery.outreach_opening_lines (workspace_id, campaign_id, prospect_id, input_hash, prompt_version, line) select '${aliceWorkspace}', '${aliceCampaign}', prospect_id, 'h1', 'write_opening_line_v1', 'Your crews in Pune keep busy all year.' from discovery.outreach_enrollments where id = '${e1}'`);
+      assertEqual(psqlAs(ALICE, `select count(*) from discovery.outreach_opening_lines`), "1", "Alice reads her opening line");
+      assertEqual(psqlAs(BOB, `select count(*) from discovery.outreach_opening_lines`), "0", "Bob reads none of Alice's opening lines");
+      assertThrows(
+        () => psqlAs(ALICE, `insert into discovery.outreach_opening_lines (workspace_id, campaign_id, prospect_id, input_hash, prompt_version, line) select '${aliceWorkspace}', '${aliceCampaign}', prospect_id, 'h2', 'v', 'Anything at all.' from discovery.outreach_enrollments where id = '${e1}'`),
+        "a member cannot write an opening line",
+      );
+      assertThrows(() => psqlAs(ALICE, `update discovery.outreach_opening_lines set line = 'Changed by hand.'`), "a member cannot change an opening line");
+      assertThrows(
+        () => psql(`insert into discovery.outreach_opening_lines (workspace_id, campaign_id, prospect_id, input_hash, prompt_version, line) select '${aliceWorkspace}', '${aliceCampaign}', prospect_id, 'h1', 'write_opening_line_v1', 'A second line for the same input.' from discovery.outreach_enrollments where id = '${e1}'`),
+        "one opening line per campaign, prospect and input",
+      );
+      assertThrows(
+        () => psql(`insert into discovery.outreach_opening_lines (workspace_id, campaign_id, prospect_id, input_hash, prompt_version, line) select '${bobWorkspace}', '${aliceCampaign}', prospect_id, 'h3', 'v', 'Wrong workspace.' from discovery.outreach_enrollments where id = '${e1}'`),
+        "an opening line belongs to its campaign's own workspace",
+      );
 
       console.log("Verifying a tenant can't write into another's workspace...");
       assertThrows(() => psqlAs(ALICE, `insert into discovery.outreach_campaigns (workspace_id, name) values ('${bobWorkspace}', 'Planted')`), "Alice can't create a campaign in Bob's workspace");

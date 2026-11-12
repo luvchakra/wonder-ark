@@ -45,6 +45,7 @@ const {
   getCampaignDetail,
   getCampaignResults,
   pauseCampaign,
+  previewBlocker,
   replaceCampaignSteps,
   resumeCampaign,
   saveCampaignTemplate,
@@ -327,8 +328,7 @@ describe("changing a campaign", () => {
     expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 31 }])).toMatchObject({ status: "refused" });
     expect(await replaceCampaignSteps(id, [{ channel: "call", delayDays: 0 }])).toMatchObject({ status: "refused" });
     expect(await replaceCampaignSteps(id, Array.from({ length: 6 }, () => ({ channel: "email" as const, delayDays: 3 })))).toMatchObject({ status: "refused" });
-    // Call, WhatsApp and LinkedIn steps wait on DISC-CAMP-P0-06.1.
-    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "call", delayDays: 4 }])).toEqual({ status: "refused", message: "Only email steps are available for now." });
+    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "sms" as never, delayDays: 4 }])).toMatchObject({ status: "refused" });
 
     // DISC-CAMP-P0-05.4: a follow-up may come one day later.
     expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 1 }])).toEqual({ status: "saved" });
@@ -339,6 +339,43 @@ describe("changing a campaign", () => {
 
     await launchCampaign(id);
     expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 3 }])).toEqual({ status: "refused", message: "Pause the campaign to change its steps." });
+  });
+
+  it("DISC-CAMP-P0-06.1: a later step may be a call, a WhatsApp or a LinkedIn message, and needs its draft before the preview", async () => {
+    const id = await draft();
+    expect(
+      await replaceCampaignSteps(id, [
+        { channel: "email", delayDays: 0 },
+        { channel: "call", delayDays: 2 },
+        { channel: "whatsapp", delayDays: 3 },
+        { channel: "linkedin", delayDays: 4 },
+      ]),
+    ).toEqual({ status: "saved" });
+    const steps = db.rows("outreach_campaign_steps");
+    expect(steps.map((step) => [step.position, step.channel, step.delay_days, step.purpose])).toEqual([
+      [1, "email", 0, "intro"],
+      [2, "call", 2, "call"],
+      [3, "whatsapp", 3, "follow_up"],
+      [4, "linkedin", 4, "last_note"],
+    ]);
+    // The first step stays an email: a person's step cannot open the sequence.
+    expect(await replaceCampaignSteps(id, [{ channel: "whatsapp", delayDays: 0 }])).toEqual({ status: "refused", message: "The first step is an email." });
+
+    // Only the email has text so far: the preview names the steps with none.
+    const detail = { campaign: campaign() as never, steps: steps as never, templates: db.rows("outreach_templates").filter((row) => row.step_id === steps[0]!.id) as never };
+    expect(previewBlocker(detail, true)).toEqual({ status: "refused", message: "Write the messages first: step 2, 3, 4 has no text yet." });
+  });
+
+  it("DISC-CAMP-P0-06.1: a person's edit of a call draft needs no subject, and may use only the merge fields", async () => {
+    const id = await draft();
+    await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "call", delayDays: 2 }]);
+    const call = db.rows("outreach_campaign_steps").find((step) => step.channel === "call")!;
+    db.rows("outreach_templates").push({ id: "t-call", campaign_id: id, step_id: call.id, workspace_id: WORKSPACE, segment: "general", subject: null, body: "Old points", origin: "ai_generated" });
+
+    expect(await saveCampaignTemplate("t-call", { subject: "", body: "Ask {{company}} how they book jobs." })).toEqual({ status: "saved" });
+    expect(db.rows("outreach_templates").find((row) => row.id === "t-call")).toMatchObject({ subject: null, body: "Ask {{company}} how they book jobs.", origin: "user_modified" });
+    expect(await saveCampaignTemplate("t-call", { subject: "", body: "Ask {{secret}}" })).toMatchObject({ status: "refused" });
+    expect(await saveCampaignTemplate("t-call", { subject: "", body: "  " })).toEqual({ status: "refused", message: "The draft needs some text." });
   });
 
   it("while paused, adds a step and changes a gap, but will not remove a step that was sent to someone", async () => {
@@ -419,5 +456,32 @@ describe("results", () => {
 
     expect(await getCampaignResults(id)).toMatchObject({ enrolled: 1, sent: 2, skipped: 1, failed: 0, bounced: 1, replied: 1, interested: 1, won: 0, inProgress: 0 });
     expect((await getCampaignResults(id)).rows[0]).toMatchObject({ company: "Company p1", status: "replied", stepsSent: 2 });
+  });
+
+  it("DISC-CAMP-P0-06.1: counts a step a person did apart from emails sent and steps skipped", async () => {
+    const id = await draft();
+    await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "call", delayDays: 2 }, { channel: "whatsapp", delayDays: 2 }, { channel: "linkedin", delayDays: 2 }]);
+    const byChannel = (channel: string) => db.rows("outreach_campaign_steps").find((step) => step.channel === channel);
+    const [email, call, whatsapp, linkedin] = ["email", "call", "whatsapp", "linkedin"].map(byChannel);
+    for (const step of [call, whatsapp, linkedin]) {
+      db.rows("outreach_templates").push({ id: `t-${step!.id}`, campaign_id: id, step_id: step!.id, workspace_id: WORKSPACE, segment: "general", subject: null, body: "Draft", origin: "ai_generated" });
+    }
+    await launchCampaign(id);
+    const enrollment = enrollments()[0]!;
+    db.rows("outreach_sends").push(
+      { enrollment_id: enrollment.id, step_id: email!.id, campaign_id: id, status: "sent", reason: null, bounced_at: null },
+      { enrollment_id: enrollment.id, step_id: call!.id, campaign_id: id, status: "skipped", reason: "task_done", bounced_at: null },
+      { enrollment_id: enrollment.id, step_id: whatsapp!.id, campaign_id: id, status: "skipped", reason: "no_phone", bounced_at: null },
+      { enrollment_id: enrollment.id, step_id: linkedin!.id, campaign_id: id, status: "skipped", reason: "task_not_reached", bounced_at: null },
+    );
+
+    const results = await getCampaignResults(id);
+    // One email was sent. The call and the LinkedIn message are a person's, not sent and not skipped.
+    expect(results).toMatchObject({ sent: 1, skipped: 1, tasksDone: 1, tasksNotReached: 1 });
+    expect(results.rows[0]).toMatchObject({
+      stepsSent: 1,
+      tasks: [{ position: 2, channel: "call", outcome: "done" }, { position: 4, channel: "linkedin", outcome: "not_reached" }],
+      passedOver: [{ position: 3, reason: "no_phone" }],
+    });
   });
 });

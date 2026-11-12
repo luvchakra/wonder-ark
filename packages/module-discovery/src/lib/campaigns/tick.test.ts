@@ -13,7 +13,11 @@
  *  - an unknown outcome, and a claim that never got one, are failed and never retried;
  *  - a reply, a won or lost outcome and a deleted contact stop the follow-ups;
  *  - a mailbox that fails pauses the campaign; bounces above 8% pause it;
- *  - one workspace's emails go only through its own mailbox.
+ *  - one workspace's emails go only through its own mailbox;
+ *  - DISC-CAMP-P0-06.1: a call, WhatsApp or LinkedIn step is never sent or dialled; any
+ *    number of enrollments waiting on one cannot hold back a due email; a reply, a won
+ *    or lost outcome and an opt-out still stop them; a prospect with no phone number is
+ *    passed over with the reason and moves on.
  */
 import { randomBytes } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -28,6 +32,7 @@ const h = vi.hoisted(() => ({
   getProduct: vi.fn(),
   getBusiness: vi.fn(),
   loadMailboxForSending: vi.fn(),
+  getOpeningLine: vi.fn(),
 }));
 
 vi.mock("../../db/admin", () => ({ createAdminClient: h.createAdminClient }));
@@ -42,6 +47,7 @@ vi.mock("../tenancy/queries", () => ({
   getProduct: h.getProduct,
   getBusiness: h.getBusiness,
 }));
+vi.mock("./opening-line", () => ({ getOpeningLine: h.getOpeningLine, openingProspect: (prospect: unknown) => prospect }));
 vi.mock("./mailbox", () => ({ loadMailboxForSending: h.loadMailboxForSending, getSenderMailbox: vi.fn() }));
 
 const { AUTO_PAUSE_MIN_SENDS, inSendWindow, pauseIfBouncing, runCampaignTick } = await import("./tick");
@@ -54,6 +60,7 @@ const NOW = new Date("2026-11-12T06:05:00.000Z");
 const publicLookup = async () => [{ address: "142.250.183.109", family: 4 }];
 
 let db: ReturnType<typeof createMemoryDb>;
+let coreDb: ReturnType<typeof createMemoryDb>;
 let licensed: Set<string>;
 let suppressed: Set<string>;
 let optOutListDown: boolean;
@@ -189,9 +196,9 @@ function claimRule(args: Record<string, unknown>) {
 function setup(tables: Record<string, Record<string, unknown>[]>) {
   db = createMemoryDb({ outreach_sends: [], messages: [], conversations: [], sender_mailboxes: [{ id: "mb-w1", workspace_id: W1, status: "verified" }], ...tables });
   h.createAdminClient.mockReturnValue(Object.assign(db.client, { rpc: async (_fn: string, args: Record<string, unknown>) => claimRule(args) }));
-  const core = createMemoryDb({ communication_suppressions: [] });
+  coreDb = createMemoryDb({ communication_suppressions: [] });
   h.createCoreAdminClient.mockReturnValue(
-    Object.assign(core.client, {
+    Object.assign(coreDb.client, {
       rpc: async (_fn: string, args: { p_email: string }) =>
         optOutListDown ? { data: null, error: { message: "permission denied for function is_email_suppressed" } } : { data: suppressed.has(emailHash(args.p_email)), error: null },
     }),
@@ -264,6 +271,36 @@ describe("a due enrollment", () => {
     await tick();
     expect(sentTo()).toEqual(["info@acme.example"]);
     expect(messages()[0]).toMatchObject({ contact_id: null, status: "sent" });
+  });
+});
+
+describe("DISC-CAMP-P0-03.2: the personal opening line", () => {
+  const OPENING = "Your crews in Pune keep busy all year, so this may be useful.";
+
+  it("starts the first email with the checked sentence when the campaign has it on", async () => {
+    Object.assign(db.rows("outreach_campaigns")[0]!, { personal_opening: true });
+    h.getOpeningLine.mockResolvedValue({ ok: true, line: OPENING, cached: true });
+    await tick();
+    expect(String(sendMail.mock.calls[0]![0].text)).toContain(`${OPENING}\n\nHello Company p1 in Pune, from FieldDesk.`);
+    expect(h.getOpeningLine).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ workspaceId: W1, campaignId: "c1", prospectId: "p1" }), undefined);
+  });
+
+  it("sends the reviewed text alone when there is no valid sentence, never holding the email back", async () => {
+    Object.assign(db.rows("outreach_campaigns")[0]!, { personal_opening: true });
+    h.getOpeningLine.mockResolvedValue({ ok: false, reason: "No opening line: the AI provider could not be reached" });
+    const summary = await tick();
+    expect(summary).toMatchObject({ sent: 1 });
+    expect(String(sendMail.mock.calls[0]![0].text)).toMatch(/^Hello Company p1 in Pune, from FieldDesk\./);
+  });
+
+  it("asks for nothing on a follow-up, or when the campaign has it off", async () => {
+    await tick();
+    expect(h.getOpeningLine).not.toHaveBeenCalled();
+    Object.assign(db.rows("outreach_campaigns")[0]!, { personal_opening: true });
+    Object.assign(enrollments()[0]!, { next_step_position: 2, next_due_at: "2026-11-12T00:00:00.000Z" });
+    await tick({ now: new Date(NOW.getTime() + 4 * 24 * 60 * 60 * 1000) });
+    expect(h.getOpeningLine).not.toHaveBeenCalled();
+    expect(sendMail).toHaveBeenCalledTimes(2);
   });
 });
 
@@ -514,11 +551,113 @@ describe("what stops the follow-ups", () => {
     expect(await tick()).toMatchObject({ sent: 1 });
   });
 
-  it("waits on a call step: that one is a person's to do", async () => {
-    seed(1, { outreach_campaign_steps: [{ ...stepsOf("c1")[0]!, channel: "call", purpose: "call" }] });
-    expect(await tick()).toMatchObject({ sent: 0, stopped: 0, skipped: 0 });
-    expect(enrollments()[0]).toMatchObject({ status: "active", next_step_position: 1 });
+});
+
+describe("DISC-CAMP-P0-06.1: a step a person does", () => {
+  // Email, then a call three days later, then an email two days after the call.
+  const callSteps = [
+    stepsOf("c1")[0]!,
+    { id: "c1-s2", campaign_id: "c1", workspace_id: W1, position: 2, channel: "call", delay_days: 3, purpose: "call" },
+    { id: "c1-s3", campaign_id: "c1", workspace_id: W1, position: 3, channel: "email", delay_days: 2, purpose: "last_note" },
+  ];
+  const callTemplates = [
+    templatesOf("c1")[0]!,
+    { id: "c1-s2-t", campaign_id: "c1", step_id: "c1-s2", workspace_id: W1, segment: "general", subject: null, body: "Say you emailed {{company}} about {{offering}}.", origin: "ai_generated" },
+    { ...templatesOf("c1")[0]!, id: "c1-s3-t", step_id: "c1-s3" },
+  ];
+  /** `count` prospects waiting on the call step, each with a phone number unless told otherwise. */
+  const waitingOnCall = (count: number, tables: Record<string, Record<string, unknown>[]> = {}) => {
+    const ids = Array.from({ length: count }, (_, i) => i + 1);
+    setup({
+      outreach_campaigns: [campaign("c1")],
+      outreach_campaign_steps: callSteps,
+      outreach_templates: callTemplates,
+      prospects: ids.map((i) => prospect(`p${i}`, W1, { phone: "+91 98765 43210" })),
+      contacts: ids.map((i) => contact(`k${i}`, `p${i}`)),
+      outreach_enrollments: ids.map((i) => enrollment(`e${String(i).padStart(4, "0")}`, "c1", `p${i}`, `k${i}`, W1, { next_step_position: 2, next_due_at: "2026-11-01T00:00:00.000Z" })),
+      ...tables,
+    });
+  };
+
+  it("sends and dials nothing for it, and leaves it waiting for the person", async () => {
+    waitingOnCall(1);
+    const summary = await tick();
+    expect(summary).toMatchObject({ sent: 0, stopped: 0, skipped: 0, tasksWaiting: 1 });
+    expect(enrollments()[0]).toMatchObject({ status: "active", next_step_position: 2 });
     expect(sendMail).not.toHaveBeenCalled();
+    expect(sends()).toHaveLength(0);
+    expect(messages()).toHaveLength(0);
+  });
+
+  it("does not hold back a due email, however many are waiting on a person", async () => {
+    // 205 enrollments have waited on the call since 1 November: more than one batch, all
+    // due before the one email. Left in the batch they would fill it and the email
+    // behind them would never be sent.
+    waitingOnCall(205);
+    db.rows("prospects").push(prospect("p-email"));
+    db.rows("contacts").push(contact("k-email", "p-email"));
+    db.rows("outreach_enrollments").push(enrollment("e-email", "c1", "p-email", "k-email", W1, { next_step_position: 1, next_due_at: "2026-11-12T00:00:00.000Z" }));
+
+    const summary = await tick();
+
+    expect(summary).toMatchObject({ sent: 1, tasksWaiting: 205 });
+    expect(sentTo()).toEqual(["k-email@prospect.example"]);
+    // The email's prospect moved on to the call; everyone waiting on a call still is.
+    expect(enrollments().find((row) => row.id === "e-email")).toMatchObject({ next_step_position: 2 });
+    expect(enrollments().filter((row) => row.id !== "e-email").every((row) => row.status === "active" && row.next_step_position === 2)).toBe(true);
+    // Twice more: still exactly one email, and nothing recorded for the calls.
+    await tick();
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    expect(sends().filter((row) => row.step_id === "c1-s2")).toHaveLength(0);
+  });
+
+  it.each([
+    ["a reply since they were enrolled", () => db.rows("messages").push({ id: "in-1", prospect_id: "p1", direction: "inbound", created_at: "2026-11-11T12:00:00.000Z" }), "replied", "Replied"],
+    ["a won prospect", () => Object.assign(db.rows("prospects")[0]!, { outcome: "won" }), "stopped", "Marked won"],
+    ["an opt-out", () => coreDb.rows("communication_suppressions").push({ business_id: `business-of-${W1}`, email_hash: emailHash("k1@prospect.example") }), "stopped", "Asked not to be emailed"],
+    ["a deleted contact", () => Object.assign(db.rows("outreach_enrollments")[0]!, { contact_id: null }), "stopped", "The contact was deleted"],
+  ])("%s stops the enrollment waiting on it", async (_label, change, status, reason) => {
+    waitingOnCall(2);
+    change();
+    const summary = await tick();
+    expect(summary).toMatchObject({ stopped: 1, tasksWaiting: 1, sent: 0 });
+    expect(enrollments()[0]).toMatchObject({ status, stop_reason: reason, next_due_at: null });
+    expect(enrollments()[1]).toMatchObject({ status: "active", next_step_position: 2 });
+  });
+
+  it("stops them outside the sending hours too: nothing is sent by doing so", async () => {
+    waitingOnCall(1, { outreach_campaigns: [campaign("c1", W1, { send_days: [6, 7] })] });
+    db.rows("prospects")[0]!.outcome = "lost";
+    expect(await tick()).toMatchObject({ stopped: 1, sent: 0 });
+    expect(enrollments()[0]).toMatchObject({ status: "stopped", stop_reason: "Marked lost" });
+  });
+
+  it("passes the step over, with the reason, for a prospect with no phone number, and moves it on", async () => {
+    waitingOnCall(1);
+    db.rows("prospects")[0]!.phone = null;
+
+    const summary = await tick();
+
+    expect(summary).toMatchObject({ skipped: 1, tasksWaiting: 0, sent: 0 });
+    expect(sends()).toMatchObject([{ step_id: "c1-s2", status: "skipped", reason: "no_phone" }]);
+    // On to the email after it, due two days from now: a missing number does not end the sequence.
+    expect(enrollments()[0]).toMatchObject({ status: "active", next_step_position: 3, next_due_at: "2026-11-14T06:05:00.000Z" });
+    expect(sendMail).not.toHaveBeenCalled();
+    // When that email is due it goes out.
+    expect(await tick({ now: new Date("2026-11-16T06:05:00.000Z") })).toMatchObject({ sent: 1 });
+  });
+
+  it("passes over a step with no draft rather than showing an empty task", async () => {
+    waitingOnCall(1, { outreach_templates: [callTemplates[0]!, callTemplates[2]!] });
+    expect(await tick()).toMatchObject({ skipped: 1 });
+    expect(sends()[0]).toMatchObject({ status: "skipped", reason: "no_message" });
+  });
+
+  it("leaves a paused campaign's waiting steps alone", async () => {
+    waitingOnCall(1, { outreach_campaigns: [campaign("c1", W1, { status: "paused" })] });
+    db.rows("prospects")[0]!.phone = null;
+    expect(await tick()).toMatchObject({ campaigns: 0, skipped: 0, stopped: 0 });
+    expect(sends()).toHaveLength(0);
   });
 });
 

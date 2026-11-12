@@ -14,6 +14,7 @@ export type AiOperation =
   | "generate_outreach_strategy"
   | "generate_outreach_message"
   | "write_campaign_messages"
+  | "write_opening_line"
   | "generate_reply"
   | "classify_reply"
   | "chat"
@@ -72,6 +73,8 @@ const OPERATION_REGISTRY: Record<AiOperation, AiOperationSpec> = {
   // DISC-CAMP-P0-03.1: a campaign's messages for one line of work. The same bounded
   // writing task as generate_outreach_message, from the offering's own profile.
   write_campaign_messages: { qualityTier: "balanced", requiresWebSearch: false },
+  // DISC-CAMP-P0-03.2: one sentence per prospect, many per campaign, so the fast tier.
+  write_opening_line: { qualityTier: "fast", requiresWebSearch: false },
   generate_reply: { qualityTier: "balanced", requiresWebSearch: false },
   classify_reply: { qualityTier: "fast", requiresWebSearch: false },
   // Reasoning, the strongest tier: the founder asked for this directly after the

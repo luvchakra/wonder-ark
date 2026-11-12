@@ -1,5 +1,5 @@
 import { UNTRUSTED_RULES, untrusted } from "../shared/untrusted";
-import type { StepPurpose } from "../../lib/campaigns/types";
+import type { StepChannel, StepPurpose, TaskChannel } from "../../lib/campaigns/types";
 
 export const WRITE_CAMPAIGN_MESSAGES_PROMPT_VERSION = "write_campaign_messages_v1";
 
@@ -13,6 +13,13 @@ const PURPOSE_BRIEF: Record<StepPurpose, string> = {
   follow_up: "A short follow-up to the earlier email: one new, specific reason it is worth a reply. Do not repeat the first email or apologise for writing.",
   last_note: "The last note: brief and polite, says this is the final email, and leaves the door open.",
   call: "Not an email.",
+};
+
+/** DISC-CAMP-P0-06.1: a step a person does. The draft is for them to say or send. */
+const TASK_BRIEF: Record<TaskChannel, string> = {
+  call: "Not an email. Talking points for a phone call that a person at the business makes: how to open, the one problem to raise, two or three questions to ask, and how to close with a next step. 60 to 140 words, as short lines.",
+  whatsapp: "Not an email. A short WhatsApp message that a person at the business sends themselves: who they are, one reason it is relevant, and one question. 25 to 60 words.",
+  linkedin: "Not an email. A short LinkedIn message that a person at the business sends themselves: who they are, one reason it is relevant, and one question. 25 to 60 words.",
 };
 
 /**
@@ -32,12 +39,28 @@ export function writeCampaignMessagesPrompt(input: {
   idealCustomer: { painPoints: string[]; buyingSignals: string[] } | null;
   /** The line of work these messages are for, or null for the general text. */
   lineOfWork: string | null;
-  steps: { position: number; purpose: StepPurpose; delayDays: number }[];
+  /** `channel` is left out for an email. A sequence of emails only reads as it always has. */
+  steps: { position: number; purpose: StepPurpose; delayDays: number; channel?: StepChannel }[];
 }): string {
   const fields = CAMPAIGN_PROMPT_FIELDS.map((field) => `{{${field}}}`).join(", ");
+  const taskOf = (step: { channel?: StepChannel }): TaskChannel | null => (step.channel && step.channel !== "email" ? step.channel : null);
+  const hasTasks = input.steps.some((step) => taskOf(step));
   const steps = input.steps
-    .map((step) => `- Step ${step.position}${step.position === 1 ? "" : ` (sent ${step.delayDays} days after the one before)`}: ${PURPOSE_BRIEF[step.purpose]}`)
+    .map((step) => {
+      const task = taskOf(step);
+      const when = step.position === 1 ? "" : ` (${task ? "done" : "sent"} ${step.delayDays} days after the one before)`;
+      return `- Step ${step.position}${when}: ${task ? TASK_BRIEF[task] : PURPOSE_BRIEF[step.purpose]}`;
+    })
     .join("\n");
+  // DISC-CAMP-P0-06.1: said only when the sequence has a step that is not an email.
+  const taskRules = hasTasks
+    ? `
+Rules for a step that is not an email (a call, a WhatsApp message or a LinkedIn message):
+- A person at the business does it. Write what they would say or send, in the first person. Nothing is sent for them.
+- Leave its subject empty. It has no signature lines.
+- The same placeholders and no others. No link, web address, phone number or email address, and no invented facts.
+`
+    : "";
 
   return `You write short business-to-business outreach emails for a small business. Write one email for each step listed below. They are a sequence sent to the same company, so later ones follow from the first.
 
@@ -50,7 +73,7 @@ Rules for every email:
 - Do not include any link, web address, phone number or attachment. The email's footer adds the sender's details and the unsubscribe link.
 - A truthful subject line of at most 9 words that says what the email is about. No "Re:" or "Fwd:".
 - End with ${"{{sender_name}}"} on its own line, then ${"{{business_name}}"}.
-
+${taskRules}
 Steps to write:
 ${steps}
 

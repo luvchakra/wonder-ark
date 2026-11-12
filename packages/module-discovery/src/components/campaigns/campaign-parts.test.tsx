@@ -3,6 +3,9 @@
  * what the code does (CLAUDE.md, AI rule 7), that the mailbox form never carries a
  * password back, that every text shows where it came from, that the funnel shows only
  * counted rows, and the control counts ("Minimal UI").
+ *
+ * DISC-CAMP-P0-06.1: a call, WhatsApp or LinkedIn step is shown everywhere as a task for
+ * a person, and no line about one says it was, or will be, sent.
  */
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -118,10 +121,23 @@ describe("steps and messages", () => {
     { id: "t0", campaign_id: "c1", step_id: "s1", workspace_id: "w1", segment: "general", subject: "Hi", body: "General text", origin: "user_modified" as const, ai_run_id: null },
   ];
 
+  it("DISC-CAMP-P0-06.1: names a step a person does as theirs, and shows its draft with no subject", () => {
+    const call = { id: "s3", campaign_id: "c1", workspace_id: "w1", position: 3, channel: "call" as const, delay_days: 2, purpose: "call" as const };
+    expect(text(renderToStaticMarkup(<StepList steps={[steps[0]!, call]} />))).toBe(
+      "1. Introduction email, sent first 3. Call, 2 days after step 2, for you to do from the Today list",
+    );
+    const draft = { id: "t3", campaign_id: "c1", step_id: "s3", workspace_id: "w1", segment: "general", subject: null, body: "Ask how they book jobs.", origin: "ai_generated" as const, ai_run_id: null };
+    const html = renderToStaticMarkup(<TemplateList steps={[call]} templates={[draft]} editable saveAction={() => noop} />);
+    expect(text(html)).toContain("Step 3: Call · a draft for you; nothing is sent for this step Everyone else AI-generated Ask how they book jobs.");
+    expect(text(html)).not.toContain("Subject");
+    expect(html).not.toContain('name="subject"');
+    expect(controls(html)).toBe(1);
+  });
+
   it("labels every text with where it came from, general first, and renders it as text", () => {
     const html = renderToStaticMarkup(<TemplateList steps={steps} templates={templates} editable={false} saveAction={() => noop} />);
     expect(text(html)).toBe(
-      "Step 1: Introduction Everyone else AI-generated, edited by you Subject: Hi General text Line of work: plumber AI-generated Subject: For {{company}} Hello &lt;b&gt;there&lt;/b&gt; Step 2: Follow-up No text yet.",
+      "Step 1: Introduction email Everyone else AI-generated, edited by you Subject: Hi General text Line of work: plumber AI-generated Subject: For {{company}} Hello &lt;b&gt;there&lt;/b&gt; Step 2: Follow-up email No text yet.",
     );
     expect(html).not.toContain("<b>there</b>");
     expect(controls(html)).toBe(0);
@@ -144,10 +160,12 @@ describe("results", () => {
     interested: 1,
     won: 0,
     inProgress: 1,
+    tasksDone: 0,
+    tasksNotReached: 0,
     rows: [
-      { enrollmentId: "e1", prospectId: "p1", company: "Shree Electricals", status: "replied", stopReason: "Replied", stepsSent: 2, nextDueAt: null },
-      { enrollmentId: "e2", prospectId: "p2", company: "Beta Plumbing", status: "active", stopReason: null, stepsSent: 1, nextDueAt: "2026-11-15T06:05:00Z" },
-      { enrollmentId: "e3", prospectId: "p3", company: "Gamma", status: "stopped", stopReason: "Not sent: this prospect has no value for the first part of the prospect's location", stepsSent: 0, nextDueAt: null },
+      { enrollmentId: "e1", prospectId: "p1", company: "Shree Electricals", status: "replied", stopReason: "Replied", stepsSent: 2, nextDueAt: null, tasks: [], passedOver: [] },
+      { enrollmentId: "e2", prospectId: "p2", company: "Beta Plumbing", status: "active", stopReason: null, stepsSent: 1, nextDueAt: "2026-11-15T06:05:00Z", tasks: [], passedOver: [] },
+      { enrollmentId: "e3", prospectId: "p3", company: "Gamma", status: "stopped", stopReason: "Not sent: this prospect has no value for the first part of the prospect's location", stepsSent: 0, nextDueAt: null, tasks: [], passedOver: [] },
     ],
   };
 
@@ -160,6 +178,30 @@ describe("results", () => {
     expect(shown).toContain("Next step due 15 Nov 2026");
     expect(shown).toContain("Not sent: this prospect has no value for the first part of the prospect's location");
     expect(controls(html)).toBe(3);
+  });
+
+  it("DISC-CAMP-P0-06.1: shows what a person did, and what was passed over, apart from emails sent", () => {
+    const html = renderToStaticMarkup(
+      <CampaignResultsView
+        results={{
+          ...results,
+          tasksDone: 1,
+          tasksNotReached: 1,
+          rows: [
+            {
+              ...results.rows[1]!,
+              tasks: [{ position: 2, channel: "call", outcome: "done" }, { position: 4, channel: "linkedin", outcome: "not_reached" }],
+              passedOver: [{ position: 3, reason: "no_phone" }],
+            },
+          ],
+        }}
+        prospectsPath="/x"
+      />,
+    );
+    const shown = text(html);
+    expect(shown).toContain("1 step was marked done by a person, and 1 was marked couldn't reach. Nothing was sent for them.");
+    expect(shown).toContain("Emails sent: 1 Next step due 15 Nov 2026. Step 2, call: done. Step 4, linkedin: couldn't reach. Step 3 passed over: No phone number");
+    expect(shown).not.toMatch(/call: sent|linkedin: sent/i);
   });
 
   it("says so when nobody is enrolled", () => {
@@ -181,6 +223,12 @@ describe("the Activate dialog's lines", () => {
       "Follow-ups to a prospect stop when it replies, its email bounces, it unsubscribes, or you mark it won or lost.",
       "You can pause the campaign at any time, and nothing more is sent while it is paused.",
     ]);
+    // DISC-CAMP-P0-06.1: a step for a person is not counted as an email, and is said to wait.
+    const withCall = activateLines({ campaign, wouldEnrol: 2, mailbox, steps: [...steps, { ...steps[1]!, id: "s3", position: 3, channel: "call" as const, delay_days: 2, purpose: "call" as const }] });
+    expect(withCall[1]).toBe("Each gets the 2 emails you previewed, from asha@acme.example. Nobody approves each email first.");
+    expect(withCall[4]).toBe(
+      "3 steps for each prospect: step 2 (an email) 3 days after step 1, step 3 (a call for you to make) 2 days after step 2. WonderArk sends the emails. A step for you appears on the Today list when it is due; nothing is sent or dialled for it, and the steps after it wait until you mark it done.",
+    );
     expect(activateLines({ campaign: { ...campaign, auto_enroll: true }, wouldEnrol: 1, mailbox, steps: [steps[0]!] }).slice(0, 2)).toEqual([
       "1 prospect is enrolled now, and new prospects that fit are added as they appear.",
       "Each gets the email you previewed, from asha@acme.example. Nobody approves each email first.",
@@ -198,7 +246,11 @@ describe("Schedule and Audience", () => {
     expect(html.match(/type="submit"/g)).toHaveLength(1);
     expect(text(html)).toContain("blank for the mailbox's 30");
     expect(text(html)).toContain("Changing the schedule means previewing the campaign again before it can send.");
-    expect(text(html)).toContain("One that has already been sent to someone can't be removed.");
+    expect(text(html)).toContain("One that has already been sent or done for someone can't be removed.");
+    // DISC-CAMP-P0-06.1: each later step says what it is; an email unless chosen otherwise.
+    expect(html.match(/<select[^>]*name="channel\d"/g)).toHaveLength(4);
+    expect(html).toMatch(/name="channel2"[\s\S]*?<option value="email" selected="">Email<\/option><option value="call">Call<\/option><option value="whatsapp">WhatsApp<\/option><option value="linkedin">LinkedIn<\/option>/);
+    expect(text(html)).toContain("nothing is sent or dialled for it, and the steps after it wait until you mark it done");
   });
 
   it("holds the name and who is enrolled, with one Save", () => {
@@ -216,7 +268,7 @@ describe("the preview", () => {
     alreadyEnrolled: false,
     leftOut: { no_email: 2 },
     schedule: ["Emails go out on Mon, Tue.", "At most 30 emails a day."],
-    steps: [{ position: 1, purpose: "intro" as const }, { position: 2, purpose: "follow_up" as const }],
+    steps: [{ position: 1, purpose: "intro" as const, channel: "email" as const }, { position: 2, purpose: "follow_up" as const, channel: "email" as const }],
     step: 1,
     index: 0,
     lastIndex: 1,
@@ -225,7 +277,7 @@ describe("the preview", () => {
       {
         segment: "general",
         prospects: 1,
-        email: { ok: true as const, prospectId: "p3", company: "Gamma <b>Dental</b>", from: "Asha <asha@acme.example>", to: "info@gamma.example", subject: "An idea for Gamma", text: "Hello Gamma.\n\n--\nUnsubscribe: https://app.example/u" },
+        email: { ok: true as const, kind: "email" as const, prospectId: "p3", company: "Gamma <b>Dental</b>", from: "Asha <asha@acme.example>", to: "info@gamma.example", subject: "An idea for Gamma", text: "Hello Gamma.\n\n--\nUnsubscribe: https://app.example/u" },
       },
       { segment: "plumber", prospects: 2, email: { ok: false as const, prospectId: "p2", company: "Beta Plumbing", reason: "Not sent: this prospect has no value for the first part of the prospect's location" } },
     ],
@@ -264,7 +316,31 @@ describe("the preview", () => {
 
   it("says when a line of work has no further prospect, and when there is nobody at all", () => {
     expect(text(render({ index: 1, lines: [{ segment: "general", prospects: 1, email: null }] }))).toContain("No prospect 2 in this line of work.");
-    expect(text(render({ audience: 0, lines: [] }))).toContain("Nobody would be written to, so there is no email to show.");
+    expect(text(render({ audience: 0, lines: [] }))).toContain("Nobody would be written to, so there is nothing to show.");
+  });
+
+  it("DISC-CAMP-P0-06.1: shows a call step as a task for a person, with the draft, and no test to send", () => {
+    const html = render({
+      steps: [...preview.steps, { position: 3, purpose: "call" as const, channel: "call" as const }],
+      step: 3,
+      lines: [
+        {
+          segment: "general",
+          prospects: 2,
+          email: { ok: true as const, kind: "task" as const, channel: "call" as const, prospectId: "p1", company: "Beta <i>Plumbing</i>", detail: { text: "+91 98765 43210", href: "tel:+919876543210" }, text: "Ask how they book jobs.", origin: "ai_generated" as const },
+        },
+        { segment: "plumber", prospects: 1, email: { ok: false as const, prospectId: "p2", company: "Gamma", reason: "No phone number" } },
+      ],
+    });
+    const shown = text(html);
+    expect(shown).toContain("A task for you, not sent by WonderArk: step 3, call, prospect 1 in each line of work");
+    expect(shown).toContain("Call Beta &lt;i&gt;Plumbing&lt;/i&gt;: +91 98765 43210. This would appear on your Today list when it is due. Nothing is sent or dialled.");
+    expect(shown).toContain("Talking points · AI-generated Ask how they book jobs.");
+    expect(shown).toContain("Gamma would be passed over for this step. No phone number.");
+    expect(shown).not.toContain("Send me a test");
+    expect(html).not.toContain("<i>Plumbing</i>");
+    // Two step links, Next prospect and the confirmation: no control on the task itself.
+    expect(controls(html)).toBe(4);
   });
 });
 

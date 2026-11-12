@@ -10,6 +10,7 @@ export const OPERATION_LABEL: Record<string, string> = {
   generate_outreach_strategy: "Outreach strategy",
   generate_outreach_message: "Message generation",
   write_campaign_messages: "Campaign messages",
+  write_opening_line: "Personal opening lines",
   generate_reply: "Reply generation",
   classify_reply: "Reply classification",
   chat: "AI assistant",

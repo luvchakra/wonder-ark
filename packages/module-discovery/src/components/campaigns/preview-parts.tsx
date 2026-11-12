@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { AiActionState } from "@cofounderai/core/actions/ai-action-state";
 import { AiActionForm } from "../ai/ai-action-form";
 import type { CampaignPreview } from "../../lib/campaigns/preview";
-import { GENERAL_SEGMENT, STEP_PURPOSE_LABEL } from "../../lib/campaigns/types";
+import { GENERAL_SEGMENT, STEP_CHANNEL_LABEL, STEP_PURPOSE_LABEL, TASK_DRAFT_LABEL, TEMPLATE_ORIGIN_LABEL, isTaskChannel, stepLabel } from "../../lib/campaigns/types";
 import { leftOutText } from "./campaign-parts";
 import { TestSendButton } from "./test-send-button";
 
@@ -23,6 +23,10 @@ type TestSendState = { status: "sent" | "failed"; message: string } | null;
  * prospect, one "Send me a test" per line of work, and "This looks right". Each email is
  * a card; the cards stack at every width, so there is no table to reflow on a phone.
  * Everything shown is stored text, rendered as text.
+ *
+ * DISC-CAMP-P0-06.1: a call, WhatsApp or LinkedIn step is shown as a task for a person,
+ * never as something WonderArk sends: who would get the task, the number or page it is
+ * done with as text, and the draft. It has no "Send me a test": there is nothing to send.
  */
 export function CampaignPreviewView({
   preview,
@@ -37,7 +41,8 @@ export function CampaignPreviewView({
 }) {
   const here = (step: number, index: number) => `${campaignPath}?preview=1&step=${step}&n=${index}`;
   const leftOut = leftOutText(preview.leftOut);
-  const stepLabel = preview.steps.find((step) => step.position === preview.step);
+  const shown = preview.steps.find((step) => step.position === preview.step);
+  const isTask = shown ? isTaskChannel(shown.channel) : false;
   return (
     <div className="flex flex-col gap-6">
       <section className="flex flex-col gap-1">
@@ -61,8 +66,8 @@ export function CampaignPreviewView({
       <section className="flex flex-col gap-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-sm font-medium">
-            The emails: step {preview.step}
-            {stepLabel ? `, ${STEP_PURPOSE_LABEL[stepLabel.purpose].toLowerCase()}` : ""}, prospect {preview.index + 1} in each line of work
+            {isTask ? "A task for you, not sent by WonderArk" : "The emails"}: step {preview.step}
+            {shown ? `, ${(isTask ? stepLabel(shown) : STEP_PURPOSE_LABEL[shown.purpose]).toLowerCase()}` : ""}, prospect {preview.index + 1} in each line of work
           </h2>
           <nav aria-label="Preview" className="flex flex-wrap items-center gap-3 text-sm">
             {preview.steps.length > 1
@@ -91,7 +96,7 @@ export function CampaignPreviewView({
           </nav>
         </div>
 
-        {preview.lines.length === 0 ? <p className="text-sm text-muted-foreground">Nobody would be written to, so there is no email to show.</p> : null}
+        {preview.lines.length === 0 ? <p className="text-sm text-muted-foreground">Nobody would be written to, so there is nothing to show.</p> : null}
         {preview.lines.map((line) => (
           <article key={line.segment} className="flex flex-col gap-2 rounded-lg border bg-card p-3">
             <p className="text-sm font-medium">
@@ -103,6 +108,17 @@ export function CampaignPreviewView({
             </p>
             {line.email === null ? (
               <p className="text-sm text-muted-foreground">No prospect {preview.index + 1} in this line of work.</p>
+            ) : line.email.ok && line.email.kind === "task" ? (
+              <>
+                <p className="text-sm">
+                  {STEP_CHANNEL_LABEL[line.email.channel]} <span className="font-medium">{line.email.company}</span>: <span className="break-words">{line.email.detail.text}</span>.
+                  This would appear on your Today list when it is due. Nothing is sent or dialled.
+                </p>
+                <p className="border-t pt-2 text-xs text-muted-foreground">
+                  {TASK_DRAFT_LABEL[line.email.channel]} · {TEMPLATE_ORIGIN_LABEL[line.email.origin]}
+                </p>
+                <p className="whitespace-pre-wrap break-words text-sm">{line.email.text}</p>
+              </>
             ) : line.email.ok ? (
               <>
                 <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-0.5 text-sm">
@@ -115,12 +131,19 @@ export function CampaignPreviewView({
                   <dt className="text-muted-foreground">Subject</dt>
                   <dd className="break-words font-medium">{line.email.subject}</dd>
                 </dl>
+                {line.email.opening ? (
+                  <p className="text-xs text-muted-foreground">
+                    {line.email.opening.written
+                      ? "The first sentence is AI-generated for this company."
+                      : `${line.email.opening.reason}. This email goes with your text alone.`}
+                  </p>
+                ) : null}
                 <p className="whitespace-pre-wrap break-words border-t pt-2 text-sm">{line.email.text}</p>
                 <TestSendButton action={testAction(line.segment, preview.step, preview.index)} />
               </>
             ) : (
               <p className="text-sm">
-                <span className="font-medium">{line.email.company}</span> would be skipped. {line.email.reason}.
+                <span className="font-medium">{line.email.company}</span> would be {isTask ? "passed over for this step" : "skipped"}. {line.email.reason}.
               </p>
             )}
           </article>

@@ -9,6 +9,7 @@ const OPERATIONS: AiOperation[] = [
   "generate_outreach_strategy",
   "generate_outreach_message",
   "write_campaign_messages",
+  "write_opening_line",
   "generate_reply",
   "classify_reply",
   "chat",

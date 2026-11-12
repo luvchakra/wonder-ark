@@ -246,7 +246,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "What does activating a campaign do, and how do I stop it?",
     answer:
-      "Under an offering's Prospects tab, Campaigns sends a short sequence of emails to your prospects from a mailbox you connect under Sending from. First open Preview: it shows who would be enrolled, the schedule, and the actual email for a real prospect in each line of work, and Send me a test sends that email to your own mailbox. Press This looks right, and Activate appears. Activate enrols those prospects and then sends without you approving each email, at most the daily limit (the mailbox's 30 a day unless you change it, or fewer if you set one for the campaign under Schedule), within the days and hours under Schedule. Follow-ups to a prospect stop when it replies, its email bounces, it unsubscribes, or you mark it won or lost. Pause stops all sending at once and Resume starts it again. Campaigns send email only; calls and WhatsApp or LinkedIn messages are yours to make.",
+      "Under an offering's Prospects tab, Campaigns sends a short sequence of emails to your prospects from a mailbox you connect under Sending from. First open Preview: it shows who would be enrolled, the schedule, and the actual email for a real prospect in each line of work, and Send me a test sends that email to your own mailbox. Press This looks right, and Activate appears. Activate enrols those prospects and then sends without you approving each email, at most the daily limit (the mailbox's 30 a day unless you change it, or fewer if you set one for the campaign under Schedule), within the days and hours under Schedule. Follow-ups to a prospect stop when it replies, its email bounces, it unsubscribes, or you mark it won or lost. Pause stops all sending at once and Resume starts it again. Campaigns send only email; a call, WhatsApp or LinkedIn step is yours to do from the Today list.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },
@@ -254,7 +254,15 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "How do I change how often a campaign sends?",
     answer:
-      "Open Schedule on the campaign. You can set how many emails a day this campaign may send (leave it blank to use the mailbox's limit), the days and hours emails go out, and how many emails the sequence has with the days between each (1 to 30). The schedule can be changed while the campaign is a draft or paused; pause a running campaign first. After a change, open Preview and confirm it again before the campaign can send.",
+      "Open Schedule on the campaign. You can set how many emails a day this campaign may send (leave it blank to use the mailbox's limit), the days and hours emails go out, and how many steps the sequence has with the days between each (1 to 30). The schedule can be changed while the campaign is a draft or paused; pause a running campaign first. After a change, open Preview and confirm it again before the campaign can send.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
+    question: "Can a campaign include calls, WhatsApp or LinkedIn messages?",
+    answer:
+      "Yes, as steps you do yourself. Open Schedule on a draft or paused campaign and choose Call, WhatsApp or LinkedIn for any step after the first. Write messages drafts talking points for a call or a short message for WhatsApp or LinkedIn, which you can edit. WonderArk never sends or dials these. When the step is due for a prospect it appears on the Today list at the top of Prospects with the draft and the phone number or LinkedIn page. Do it yourself, press Mark done and choose Done or Couldn't reach; the prospect then moves to its next step. Later steps wait until you do. A call or WhatsApp step for a prospect with no phone number is passed over with the reason shown in the campaign's results.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },

@@ -18,8 +18,9 @@ import {
 } from "@cofounderai/module-discovery/lib/campaigns/campaigns";
 import { saveSenderMailbox, sendMailboxTest } from "@cofounderai/module-discovery/lib/campaigns/mailbox";
 import { sendCampaignTest } from "@cofounderai/module-discovery/lib/campaigns/preview";
+import { markTaskDone } from "@cofounderai/module-discovery/lib/campaigns/tasks";
 import { runCampaignTick } from "@cofounderai/module-discovery/lib/campaigns/tick";
-import { MAX_STEPS } from "@cofounderai/module-discovery/lib/campaigns/types";
+import { MAX_STEPS, type StepChannel, type TaskOutcome } from "@cofounderai/module-discovery/lib/campaigns/types";
 import { writeCampaignMessages } from "@cofounderai/module-discovery/lib/campaigns/write-messages";
 
 /**
@@ -87,6 +88,7 @@ export async function saveAudienceAction(businessId: string, productId: string, 
       },
       autoEnroll: formData.get("autoEnroll") !== null,
       includeUnverified: formData.get("includeUnverified") !== null,
+      personalOpening: formData.get("personalOpening") !== null,
     });
     if (outcome.status === "refused") throw new Error(outcome.message);
     revalidatePath(`${await campaignsPath(businessId, productId)}/${campaignId}`);
@@ -109,12 +111,14 @@ export async function saveScheduleAction(businessId: string, productId: string, 
     });
     if (settings.status === "refused") throw new Error(settings.message);
 
-    // Step 1 is always there; a later step exists when its days field is filled.
-    const steps = [{ channel: "email" as const, delayDays: 0 }];
+    // Step 1 is always there, and an email; a later step exists when its days field is
+    // filled. DISC-CAMP-P0-06.1: a later step is an email unless the form says a call, a
+    // WhatsApp message or a LinkedIn message. The library refuses anything else.
+    const steps: { channel: StepChannel; delayDays: number }[] = [{ channel: "email", delayDays: 0 }];
     for (let position = 2; position <= MAX_STEPS; position += 1) {
       const days = numberField(formData, `delayDays${position}`);
       if (days === null) break;
-      steps.push({ channel: "email" as const, delayDays: days });
+      steps.push({ channel: (String(formData.get(`channel${position}`) ?? "") || "email") as StepChannel, delayDays: days });
     }
     const changed = await replaceCampaignSteps(campaignId, steps);
     revalidatePath(`${await campaignsPath(businessId, productId)}/${campaignId}`);
@@ -211,6 +215,23 @@ export async function activateCampaignAction(businessId: string, productId: stri
         console.error("The first campaign batch failed:", error instanceof Error ? error.message : error);
       }
     });
+  });
+}
+
+/**
+ * DISC-CAMP-P0-06.1: "Mark done" on a campaign task's row of the Today list. The person
+ * made the call or sent the message themselves; this records how it went ("done" or
+ * "not_reached") and moves the prospect to its next step. Nothing is sent. The library
+ * reads the enrollment as the person, checks the licence and discovery.manage, and
+ * records a step once however often this is pressed.
+ */
+export async function markTaskDoneAction(businessId: string, productId: string, enrollmentId: string, outcome: TaskOutcome): Promise<AiActionState> {
+  return runAiAction(async () => {
+    const result = await markTaskDone(enrollmentId, outcome);
+    const path = await campaignsPath(businessId, productId);
+    revalidatePath(path.replace(/\/campaigns$/, "/prospects"));
+    revalidatePath(path, "layout");
+    if (result.status === "refused") throw new Error(result.message);
   });
 }
 

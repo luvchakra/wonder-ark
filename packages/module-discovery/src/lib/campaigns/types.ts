@@ -97,8 +97,42 @@ export type OutreachSend = {
 };
 
 /** Whether a campaign may hold call, WhatsApp and LinkedIn steps, which a person does
- * from a draft (DISC-CAMP-P0-06.1). Off until that screen exists. */
-export const TASK_STEPS_AVAILABLE = false;
+ * from a draft on the Today list (DISC-CAMP-P0-06.1). */
+export const TASK_STEPS_AVAILABLE = true;
+
+/**
+ * DISC-CAMP-P0-06.1: a step WonderArk does not send. A call, a WhatsApp message or a
+ * LinkedIn message is a task for a person: the campaign writes a draft, the Today list
+ * shows it when it is due, and the person records how it went. Nothing is dialled or
+ * sent for it.
+ */
+export type TaskChannel = Exclude<StepChannel, "email">;
+export const isTaskChannel = (channel: StepChannel): channel is TaskChannel => channel !== "email";
+
+/** How a person's task went. Either one moves the prospect on to the next step. */
+export type TaskOutcome = "done" | "not_reached";
+export const TASK_OUTCOMES: readonly TaskOutcome[] = ["done", "not_reached"];
+export const TASK_OUTCOME_LABEL: Record<TaskOutcome, string> = { done: "Done", not_reached: "Couldn't reach" };
+
+/**
+ * A task has no row of its own: it is recorded in `outreach_sends`, the one record of
+ * what happened to a step, as a step WonderArk did not send (`skipped`) with one of these
+ * as the reason. The page never calls such a row "skipped" or "sent": it reads the
+ * reason and says a person did it, or could not reach the prospect.
+ */
+export const TASK_REASON: Record<TaskOutcome, string> = { done: "task_done", not_reached: "task_not_reached" };
+export const taskOutcomeOf = (reason: string | null | undefined): TaskOutcome | null =>
+  reason === TASK_REASON.done ? "done" : reason === TASK_REASON.not_reached ? "not_reached" : null;
+
+/** Why a task step was passed over for a prospect, in the page's words. The prospect
+ * moves on to the next step: a missing phone number does not end its emails. */
+export const TASK_SKIP_LABEL = {
+  no_phone: "No phone number",
+  no_message: "No text was written for this step",
+  missing_merge_field: "The step's text uses a detail this prospect doesn't have",
+  invalid_template: "The step's text has a merge field that can't be filled",
+} as const;
+export type TaskSkipCode = keyof typeof TASK_SKIP_LABEL;
 
 export const MAX_STEPS = 5;
 export const MIN_FOLLOW_UP_DAYS = 1;
@@ -127,6 +161,17 @@ export const STEP_CHANNEL_LABEL: Record<StepChannel, string> = {
   call: "Call",
   whatsapp: "WhatsApp",
   linkedin: "LinkedIn",
+};
+/** What a step is, in a sentence: "Follow-up email", "Call", "WhatsApp message". */
+export function stepLabel(step: Pick<CampaignStep, "channel" | "purpose">): string {
+  if (step.channel === "email") return `${STEP_PURPOSE_LABEL[step.purpose]} email`;
+  return step.channel === "call" ? "Call" : `${STEP_CHANNEL_LABEL[step.channel]} message`;
+}
+/** What the campaign writes for a task step. */
+export const TASK_DRAFT_LABEL: Record<TaskChannel, string> = {
+  call: "Talking points",
+  whatsapp: "Message to send",
+  linkedin: "Message to send",
 };
 export const CAMPAIGN_STATUS_LABEL: Record<CampaignStatus, string> = {
   draft: "Draft",
