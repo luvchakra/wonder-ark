@@ -615,6 +615,7 @@ adds its stories here when it is built.
 ### DISC-DATA-P0-04.1 — Enrich on approval and Fill missing details (B4)
 ### DISC-DATA-P0-04.2 — Find contacts, address status and sending rules (B4)
 ### DISC-DATA-P0-04.3 — Removal: "They asked not to be contacted" (B4)
+### DISC-DATA-P0-05.1 — Weekly saved search (B7)
 ### DISC-NAV-P0-01.1 — Four-tab offering navigation (B6)
 ### DISC-NAV-P0-01.2 — Today list at the top of Prospects (B6)
 ### DISC-NAV-P0-01.3 — Plain labels: Ideal customer, Find, To review (B6)
@@ -653,4 +654,16 @@ B4, as built:
 - **"They asked not to be contacted" keeps the contact if the gateway cannot take the request**, and says why, so the request is not lost. The address goes to two lists (changed 2026-11-12; at first only the gateway's): first the business's own opt-out list, `core.communication_suppressions`, through `core/privacy/suppression.ts::suppressEmailOnRequest` (the caller's own session, reason `manual`, hash only), which every outreach send already checks in `prepareOutreachEmail`; then the gateway's. If the gateway cannot take it, the address is already blocked for the business and the message says so.
 - **`contacts.source` holds the source's name** as the gateway gave it (for example "Hunter"), since the table has one source column and that is what is shown.
 - **The prospect page reads before it edits.** Details are a read-only list with each value's source; the edit form and the add-contact form are folded. Sources are shown as text; the links are the company's website and profiles and the record at the prospect's own source.
+
+B7, as built:
+
+- **No migration.** `discovery.saved_searches` and its access rules came with B1 (`20261111100000`); `scripts/test-discovery-saved-searches-rls.mjs` covers isolation and licence gating.
+- **What is stored is the Find form's own search** (`sourceId`, `what`, `where`, and the two "More filters" values), not the gateway request, so each run goes through `runFind` like a person's search: the source is looked up in the gateway's list at that moment, and the usage check, ICP pre-filter and duplicate check all apply.
+- **"Free sources only" is checked twice.** Saving is refused for a paid source, the AI web search or the file import. At run time a source the gateway now lists as paid is refused before the search, so a source that changes later never spends paid lookups.
+- **The cron route only queues** (`/api/cron/run-saved-searches`, 05:50 UTC, ten minutes before the drain). It claims a due search by moving `next_run_at` a week on only if it still holds the date that was read, then publishes `discovery.saved_search.run_requested`; a failed publish puts the date back. The drain runs once a day, so a run starts up to a day after it falls due.
+- **Idempotency is the ledger.** A run is recorded in `discovery.ai_runs` under the saved search and its due date. A redelivered event finds that row, succeeded or failed, and asks the gateway nothing; the suggestions' unique key does the rest.
+- **A failed run is not retried.** The handler records the failure on the saved search (`last_result`) and returns; next week's run is the retry. Only a database error throws for the drain to retry. A request refused before it left the server (source not set up, allowance used) writes no ledger row, as elsewhere, and is still recorded on the saved search.
+- **Known limit:** if the gateway answered but staging then failed on a database error, the drain's retry finds the ledger row and skips, so that week's results wait for the next run.
+- **Find gains two conditional controls**, so its count cannot go down: "Run this weekly" in the result of a search that just ran on a free source (hidden when that search is already the weekly one), and Pause or Resume on the weekly search's line. A page with neither state has the same five controls as before.
+- **Saved searches are for companies in this version** (`kind = 'company'`). Channel searches arrive with B5.2.
 

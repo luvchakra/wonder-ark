@@ -16,7 +16,10 @@ import {
   type DataSourceQuota,
   type FindOutcome,
   type FindState,
+  type SaveWeeklySearchState,
+  type SavedSearchSummary,
 } from "../../lib/data-sources/types";
+import { RunWeeklyButton } from "./weekly-search";
 
 /**
  * DISC-DATA-P0-03.1: the Find form. Four controls and a fold, in this order: what,
@@ -37,6 +40,8 @@ export function FindForm({
   note,
   defaults,
   primary,
+  saveWeeklyAction,
+  weekly,
 }: {
   action: (prevState: FindState, formData: FormData) => Promise<FindState>;
   sources: DataSource[];
@@ -47,6 +52,10 @@ export function FindForm({
   defaults: { what: string; where: string; hiringKeywords: string };
   /** Find is the page's primary action unless suggestions are waiting for review. */
   primary: boolean;
+  /** DISC-DATA-P0-05.1: saves the search that just ran, to run weekly. */
+  saveWeeklyAction?: (prevState: SaveWeeklySearchState, formData: FormData) => Promise<SaveWeeklySearchState>;
+  /** The offering's weekly search, if it has one. */
+  weekly?: SavedSearchSummary | null;
 }) {
   const [state, formAction] = useActionState<FindState, FormData>(action, null);
   const [sourceId, setSourceId] = useState(defaultSourceId);
@@ -154,7 +163,7 @@ export function FindForm({
       </form>
 
       {note ? <p className="text-xs text-muted-foreground">{note}</p> : null}
-      {state ? <FindOutcomeMessage outcome={state} /> : null}
+      {state ? <FindOutcomeMessage outcome={state} saveWeeklyAction={saveWeeklyAction} weekly={weekly ?? null} /> : null}
     </div>
   );
 }
@@ -165,7 +174,15 @@ function plural(count: number, one: string, many: string): string {
 
 /** What the last run did, in full: how many came back, how many were added, and every
  * reason something was left out. A failed run is an alert, never dressed as a result. */
-function FindOutcomeMessage({ outcome }: { outcome: FindOutcome }) {
+function FindOutcomeMessage({
+  outcome,
+  saveWeeklyAction,
+  weekly,
+}: {
+  outcome: FindOutcome;
+  saveWeeklyAction?: (prevState: SaveWeeklySearchState, formData: FormData) => Promise<SaveWeeklySearchState>;
+  weekly: SavedSearchSummary | null;
+}) {
   if (outcome.status === "failed") {
     return (
       <div className="flex max-w-xl flex-col gap-2">
@@ -207,6 +224,9 @@ function FindOutcomeMessage({ outcome }: { outcome: FindOutcome }) {
               : "Unavailable"}
         </p>
       ))}
+      {outcome.weekly && saveWeeklyAction ? (
+        <RunWeeklyButton search={outcome.weekly} action={saveWeeklyAction} current={weekly} />
+      ) : null}
     </div>
   );
 }

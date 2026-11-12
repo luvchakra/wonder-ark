@@ -9,6 +9,7 @@ import type { DomainEvent } from "@cofounderai/core/events/types";
 const h = vi.hoisted(() => ({
   handlers: new Map<string, (event: unknown) => Promise<void>>(),
   enrichProspect: vi.fn(),
+  runSavedSearch: vi.fn(),
   adminClient: { admin: true },
 }));
 
@@ -19,6 +20,11 @@ vi.mock("../db/admin", () => ({ createAdminClient: () => h.adminClient }));
 vi.mock("../lib/data-sources/enrichment", () => ({
   ENRICHMENT_REQUESTED_EVENT: "discovery.prospect.enrichment_requested",
   enrichProspect: h.enrichProspect,
+}));
+
+vi.mock("../lib/data-sources/saved-searches", () => ({
+  SAVED_SEARCH_RUN_REQUESTED_EVENT: "discovery.saved_search.run_requested",
+  runSavedSearch: h.runSavedSearch,
 }));
 
 const { UsageLimitExceededError } = await import("../lib/usage/limits");
@@ -72,5 +78,40 @@ describe("discovery.prospect.enrichment_requested", () => {
   it("lets any other error through, so the drain retries it", async () => {
     h.enrichProspect.mockRejectedValue(new Error("database is down"));
     await expect(handle({ prospectId: "p1" })).rejects.toThrow("database is down");
+  });
+});
+
+describe("discovery.saved_search.run_requested (DISC-DATA-P0-05.1)", () => {
+  const run = (payload: Record<string, unknown>) =>
+    h.handlers.get("discovery.saved_search.run_requested")!({
+      id: "e2",
+      business_id: "b1",
+      type: "discovery.saved_search.run_requested",
+      payload,
+    } as unknown as DomainEvent);
+
+  it("runs the saved search for the event's business and its due date", async () => {
+    h.runSavedSearch.mockResolvedValue({ status: "ran", result: { status: "completed", found: 2, added: 1 } });
+    await run({ savedSearchId: "ss1", dueAt: "2026-11-12T05:00:00.000Z" });
+    expect(h.runSavedSearch).toHaveBeenCalledWith("ss1", "2026-11-12T05:00:00.000Z", "b1");
+  });
+
+  it("finishes without a retry when the search failed or was skipped", async () => {
+    h.runSavedSearch.mockResolvedValue({ status: "ran", result: { status: "failed", message: "Unavailable" } });
+    await expect(run({ savedSearchId: "ss1", dueAt: "d" })).resolves.toBeUndefined();
+    h.runSavedSearch.mockResolvedValue({ status: "skipped", reason: "paused" });
+    await expect(run({ savedSearchId: "ss1", dueAt: "d" })).resolves.toBeUndefined();
+  });
+
+  it("ignores an event that does not name a search and a due date", async () => {
+    await run({});
+    await run({ savedSearchId: "ss1" });
+    await run({ savedSearchId: 7, dueAt: "d" });
+    expect(h.runSavedSearch).not.toHaveBeenCalled();
+  });
+
+  it("lets a database error through, so the drain retries it", async () => {
+    h.runSavedSearch.mockRejectedValue(new Error("database is down"));
+    await expect(run({ savedSearchId: "ss1", dueAt: "d" })).rejects.toThrow("database is down");
   });
 });

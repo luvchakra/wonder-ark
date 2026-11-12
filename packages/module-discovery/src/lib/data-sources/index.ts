@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { getBusinessIdForWorkspace } from "../tenancy/queries";
 import { listSources, type GatewaySource } from "./workslake-client";
 import {
@@ -98,10 +99,11 @@ export function fromGatewaySource(source: GatewaySource): DataSource[] {
 /**
  * The sources this workspace can use. The tenant sent to the gateway is the business the
  * workspace belongs to, read here through the caller's own access: a workspace the
- * caller cannot read resolves to no business and the call is refused.
+ * caller cannot read resolves to no business and the call is refused. `client` is for a
+ * caller with no signed-in user (a saved search run by the events drain).
  */
-export async function listDataSources(workspaceId: string): Promise<DataSourceList> {
-  const businessId = await getBusinessIdForWorkspace(workspaceId);
+export async function listDataSources(workspaceId: string, client?: SupabaseClient): Promise<DataSourceList> {
+  const businessId = await getBusinessIdForWorkspace(workspaceId, client);
   if (!businessId) throw new Error("Workspace not found.");
 
   const result = await listSources({ tenantId: businessId });

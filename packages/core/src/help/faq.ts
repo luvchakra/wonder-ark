@@ -244,6 +244,14 @@ export const FAQ: FaqEntry[] = [
   },
   {
     category: "Day to day",
+    question: "Can a prospect search run again on its own?",
+    answer:
+      "Yes. Under an offering's Find tab, run a search on a free WorksLake source and click Run this weekly in its result. The search then runs every 7 days using free sources only, never paid lookups, and adds only companies that are new to To review, where you still approve each one. An offering has one weekly search. The line under the search form shows its last run and next run, and Pause stops it until you press Resume.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
     question: "Why can't I send an email to one of my contacts?",
     answer:
       "If Find contacts added the contact and its address is marked Invalid, WonderArk won't send to it: choose another contact or correct the address. An address marked Risky or Not verified can be sent to after you confirm once. A contact you typed yourself has no mark and sends as usual. Separately, an address that unsubscribed from your business's emails is never sent to.",

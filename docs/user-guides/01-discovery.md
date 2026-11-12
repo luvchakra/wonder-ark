@@ -198,6 +198,15 @@ Everything that brings companies in is under the **Find** tab.
   category, why it fits and a badge naming its source. Untick any you don't want, then
   click **Approve selected** to add the rest to your prospects, or **Discard selected** to
   remove them. Running the same search again doesn't add the same company twice.
+  **Run this weekly**, shown in the result of a search on a free WorksLake source, saves that
+  search to run again every 7 days. A weekly run uses free sources only, never paid lookups,
+  counts toward your monthly run allowance like any other search, and adds only companies
+  that are new; they wait under **To review** for you to approve, as always. An offering has
+  one weekly search: saving another asks before it replaces the first. A line under the
+  search form shows what the weekly search looks for, when it last ran and what that run
+  found (or that it failed, and why), and when it runs next. **Pause** stops it until you
+  press **Resume**. Searches are checked once a day, so a run can start up to a day after
+  it falls due.
 - **Import** loads a list from CSV, Excel or PDF, or pasted CSV. `company_name` is
   required; a file in another layout is restructured by AI for you to check before import.
 - **Add**, on the **Prospects** tab, creates one prospect by hand.

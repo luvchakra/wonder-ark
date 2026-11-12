@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "../../db/server";
 import { extractDomain } from "./mutations";
 
@@ -18,8 +19,10 @@ export type DuplicateMatch = { id: string; company_name: string };
 export async function findDuplicateProspect(
   workspaceId: string,
   candidate: DuplicateCandidate,
+  /** For a caller with no signed-in user (a saved search run by the events drain). */
+  client?: SupabaseClient,
 ): Promise<DuplicateMatch | null> {
-  const supabase = await createClient();
+  const supabase = client ?? (await createClient());
   const domain = candidate.website ? extractDomain(candidate.website) : null;
 
   if (domain) {
