@@ -19,14 +19,14 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 592 |
+| ✅ Done | 599 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
-| ⬜ Not started | 16 |
-| **Total** | **691** |
+| ⬜ Not started | 13 |
+| **Total** | **695** |
 
 | Backlog | Done | Set aside | Remaining | Total |
 |---|---|---|---|---|
@@ -41,22 +41,19 @@ file is stale, so it cannot quietly drift out of date.
 | [Multi-user / multi-business RBAC](./plan/15-MULTI-USER-RBAC-BACKLOG.md) | 39 | 0 | 0 | 39 |
 | [WonderArk branding](./plan/16-BRANDING-BACKLOG.md) | 13 | 0 | 0 | 13 |
 | [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 17 | 0 | 0 | 17 |
-| [Module menus](./plan/18-MODULE-MENUS.md) | 4 | 0 | 0 | 4 |
-| [Discovery — outreach campaigns](./plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md) | 0 | 0 | 16 | 16 |
+| [Module menus](./plan/18-MODULE-MENUS.md) | 8 | 0 | 0 | 8 |
+| [Discovery — outreach campaigns](./plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md) | 3 | 0 | 13 | 16 |
 
 ## What is left
 
-17 stories are neither built nor deliberately set aside:
+14 stories are neither built nor deliberately set aside:
 
 | ID | Story | Status | Note |
 |---|---|---|---|
 | `DISC-OFFER-P0-03.3` | Offering Navigation | ❔ Unverified | Discussed in `docs/design/discovery-offering-backlog-audit.md`, but no code cites it — confirm before relying on this |
-| `DISC-CAMP-P0-01.1` | Tables, RLS, audit triggers, claim function | ⬜ Not started | — |
-| `DISC-CAMP-P0-01.2` | Ownership-map row, CLAUDE.md exception, security rules line on campaign sends | ⬜ Not started | — |
 | `DISC-CAMP-P0-02.1` | Enrolment from the audience filter, with reasons for those left out | ⬜ Not started | — |
 | `DISC-CAMP-P0-02.2` | Tick | ⬜ Not started | — |
 | `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ⬜ Not started | — |
-| `DISC-CAMP-P0-02.4` | Sender mailbox | ⬜ Not started | — |
 | `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ⬜ Not started | — |
 | `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ⬜ Not started | — |
 | `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ⬜ Not started | — |
@@ -1310,6 +1307,10 @@ Source: [`docs/plan/18-MODULE-MENUS.md`](./plan/18-MODULE-MENUS.md)
 | `PLATFORM-NAV-P0-01.2` | Inventory menu | ✅ Done | `packages/module-inventory/src/manifest.ts` +1 |
 | `PLATFORM-NAV-P0-01.3` | CRM menu | ✅ Done | `packages/module-crm/src/manifest.ts` +1 |
 | `PLATFORM-NAV-P0-01.4` | Finance menu | ✅ Done | `packages/module-registry/src/index.ts` |
+| `PLATFORM-NAV-P0-02.1` | Service pages | ✅ Done | `packages/module-fsm/src/components/dashboard/dispatcher-dashboard-view.tsx` +3 |
+| `PLATFORM-NAV-P0-02.2` | Inventory pages | ✅ Done | `packages/module-inventory/src/components/dashboard/dashboard-view.tsx` +6 |
+| `PLATFORM-NAV-P0-02.3` | CRM pages | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/crm/follow-ups/page.tsx` +5 |
+| `PLATFORM-NAV-P0-02.4` | Finance pages | ✅ Done | `packages/module-gst/src/components/dashboard/compliance-dashboard-view.tsx` +2 |
 
 ## Discovery — outreach campaigns
 
@@ -1319,12 +1320,12 @@ Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUT
 
 | ID | Story | Status | Evidence / note |
 |---|---|---|---|
-| `DISC-CAMP-P0-01.1` | Tables, RLS, audit triggers, claim function | ⬜ Not started | — |
-| `DISC-CAMP-P0-01.2` | Ownership-map row, CLAUDE.md exception, security rules line on campaign sends | ⬜ Not started | — |
+| `DISC-CAMP-P0-01.1` | Tables, RLS, audit triggers, claim function | ✅ Done | `scripts/test-discovery-outreach-campaigns-rls.mjs` +1 |
+| `DISC-CAMP-P0-01.2` | Ownership-map row, CLAUDE.md exception, security rules line on campaign sends | ✅ Done | `supabase/migrations/20261112100000_discovery_outreach_campaigns.sql` |
 | `DISC-CAMP-P0-02.1` | Enrolment from the audience filter, with reasons for those left out | ⬜ Not started | — |
 | `DISC-CAMP-P0-02.2` | Tick | ⬜ Not started | — |
 | `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ⬜ Not started | — |
-| `DISC-CAMP-P0-02.4` | Sender mailbox | ⬜ Not started | — |
+| `DISC-CAMP-P0-02.4` | Sender mailbox | ✅ Done | `scripts/test-discovery-outreach-campaigns-rls.mjs` +1 |
 | `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ⬜ Not started | — |
 | `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ⬜ Not started | — |
 | `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ⬜ Not started | — |

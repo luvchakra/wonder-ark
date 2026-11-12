@@ -4,18 +4,21 @@ CRM runs your pipeline from first message to won customer: conversations from Wh
 Instagram and Facebook, leads, opportunities, a lost-business recovery queue, reviews, and a
 customer profile that pulls in data from every other licensed module.
 
-Last updated: 2026-10-21
+Last updated: 2026-11-12
 
 ## Navigation
 
-**Overview**: Dashboard, Inbox, Conversations, Potential Lost Business, Reviews, Analytics,
-Reactivation
-**Sales**: Leads, Sales Opportunities, Follow-ups, Exceptions
-**Administration**: Channels, WhatsApp, Routing Rules
+Everyday pages, at the top of the menu: Inbox, Dashboard, Leads, Sales Opportunities,
+Follow-ups
+**Insights**: Analytics, Conversations, Reviews, Potential Lost Business, Reactivation,
+Exceptions
+**Setup**: Channels, WhatsApp, Routing Rules
 
 > **Inbox vs. Conversations**: **Inbox** is a ticket list — tickets you log by hand with
-> **New ticket**, each with a status (open, pending, closed) and an assignee, plus
-> **Customer 360** and **Convert to prospect** on each row. Incoming messages don't create
+> **New ticket** (it opens the form; **Create ticket** saves), each with a status (open,
+> pending, closed) and an assignee you change in the row. **Customer 360** and **Convert
+> to prospect** are on the row too, under its **More** button when a ticket has both.
+> Incoming messages don't create
 > tickets; they arrive in **Conversations**, where you read the thread and reply.
 
 ## Daily workflows
@@ -45,14 +48,16 @@ Reactivation
     also covers **Send automatically**.
 - **Leads** — a list with inline status editing (10 stages from new through
   won/lost/disqualified) and inline owner reassignment, both directly in the
-  row.
+  row. Choosing a status or an owner saves it.
 - **Sales Opportunities** — Kanban view by default (drag a card to change
-  its stage) or a List view (toggle in the page), which additionally lets
-  you edit deal value and reassign owner inline. Pipeline and won value
-  totals are shown as summary cards.
+  its stage) or a List view (toggle in the page) showing each deal's value,
+  close date and owner. **View** opens the opportunity, where you edit the
+  deal value and reassign its owner. Pipeline and won value totals are shown
+  as summary cards.
 - **Follow-up Queue** — one worklist across leads, opportunities and conversations, with
-  tabs for All / Due today / Overdue / Upcoming / Unassigned / High priority, filters for
-  owner, source, channel and priority, and an inline **Complete** button.
+  tabs for All / Due today / Overdue / Upcoming / Unassigned / High priority, an inline
+  **Complete** button, and **Filters** for owner, source, channel and priority (a filter
+  applies as soon as you choose it; the button shows how many are in effect).
 - **Potential Lost Business** — every unanswered commercial message, oldest first, with an
   intent picked by keyword rules (not AI) that you can **Correct**. Actions: **Respond**,
   **Convert ▾** (Lead / Opportunity / Task) or ✕ "Not relevant".

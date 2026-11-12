@@ -11,7 +11,8 @@ import { Badge } from "@cofounderai/core/ui/badge";
 import { Button } from "@cofounderai/core/ui/button";
 import { EmptyState } from "@cofounderai/core/ui/empty-state";
 import { Label } from "@cofounderai/core/ui/label";
-import { NativeSelect } from "@cofounderai/core/ui/native-select";
+import { AutoSubmitSelect } from "@cofounderai/core/ui/auto-submit-select";
+import { Fold } from "@cofounderai/core/ui/fold";
 import { SubmitButton } from "@cofounderai/core/ui/submit-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@cofounderai/core/ui/table";
 import { CheckCircle2, ListTodo } from "lucide-react";
@@ -69,7 +70,8 @@ export default async function CrmFollowUpsPage({
   );
 
   const basePath = `/${businessSlug}/crm/follow-ups`;
-  const hasActiveFilters = Boolean(search.ownerId || search.source || search.channel || search.priority);
+  const activeFilterCount = [search.ownerId, search.source, search.channel, search.priority].filter(Boolean).length;
+  const hasActiveFilters = activeFilterCount > 0;
   const todayStart = new Date(new Date().setHours(0, 0, 0, 0)).getTime();
   const isOverdue = (dueAt: string) => new Date(dueAt).getTime() < todayStart;
 
@@ -93,59 +95,61 @@ export default async function CrmFollowUpsPage({
         ))}
       </div>
 
-      <form method="get" className="flex flex-wrap items-end gap-2">
-        <input type="hidden" name="view" value={view} />
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="ownerId">Owner</Label>
-          <NativeSelect id="ownerId" name="ownerId" defaultValue={search.ownerId ?? ""}>
-            <option value="">All owners</option>
-            {employees.map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.full_name ?? e.email ?? "Unnamed"}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="source">Source</Label>
-          <NativeSelect id="source" name="source" defaultValue={search.source ?? ""}>
-            <option value="">All sources</option>
-            {sources.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="channel">Channel</Label>
-          <NativeSelect id="channel" name="channel" defaultValue={search.channel ?? ""}>
-            <option value="">All channels</option>
-            {channels.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </NativeSelect>
-        </div>
-        <div className="flex flex-col gap-1.5">
-          <Label htmlFor="priority">Priority</Label>
-          <NativeSelect id="priority" name="priority" defaultValue={search.priority ?? ""}>
-            <option value="">All priorities</option>
-            <option value="low">Low</option>
-            <option value="normal">Normal</option>
-            <option value="high">High</option>
-          </NativeSelect>
-        </div>
-        <Button type="submit" size="sm" variant="outline">
-          Apply
-        </Button>
-        {hasActiveFilters ? (
-          <Button asChild size="sm" variant="ghost">
-            <Link href={view === "all" ? basePath : `${basePath}?view=${view}`}>Clear filters</Link>
-          </Button>
-        ) : null}
-      </form>
+      {/* PLATFORM-NAV-P0-02.3: the six views stay on screen; the four filters sit behind
+          one Filters button, which shows how many are in effect and opens on them.
+          Choosing a value applies it, so there is no Apply button. */}
+      <Fold label="Filters" count={activeFilterCount} defaultOpen={hasActiveFilters}>
+        <form method="get" className="flex flex-wrap items-end gap-2">
+          <input type="hidden" name="view" value={view} />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="ownerId">Owner</Label>
+            <AutoSubmitSelect id="ownerId" name="ownerId" defaultValue={search.ownerId ?? ""}>
+              <option value="">All owners</option>
+              {employees.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.full_name ?? e.email ?? "Unnamed"}
+                </option>
+              ))}
+            </AutoSubmitSelect>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="source">Source</Label>
+            <AutoSubmitSelect id="source" name="source" defaultValue={search.source ?? ""}>
+              <option value="">All sources</option>
+              {sources.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </AutoSubmitSelect>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="channel">Channel</Label>
+            <AutoSubmitSelect id="channel" name="channel" defaultValue={search.channel ?? ""}>
+              <option value="">All channels</option>
+              {channels.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </AutoSubmitSelect>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="priority">Priority</Label>
+            <AutoSubmitSelect id="priority" name="priority" defaultValue={search.priority ?? ""}>
+              <option value="">All priorities</option>
+              <option value="low">Low</option>
+              <option value="normal">Normal</option>
+              <option value="high">High</option>
+            </AutoSubmitSelect>
+          </div>
+          {hasActiveFilters ? (
+            <Button asChild size="sm" variant="ghost">
+              <Link href={view === "all" ? basePath : `${basePath}?view=${view}`}>Clear filters</Link>
+            </Button>
+          ) : null}
+        </form>
+      </Fold>
 
       {rows.length === 0 ? (
         <EmptyState icon={ListTodo} message="No follow-ups match this view." />

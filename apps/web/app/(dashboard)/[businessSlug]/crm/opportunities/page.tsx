@@ -12,34 +12,11 @@ import { Badge } from "@cofounderai/core/ui/badge";
 import { Button } from "@cofounderai/core/ui/button";
 import { Card, CardContent } from "@cofounderai/core/ui/card";
 import { EmptyState } from "@cofounderai/core/ui/empty-state";
-import { NativeSelect } from "@cofounderai/core/ui/native-select";
-import { SubmitButton } from "@cofounderai/core/ui/submit-button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@cofounderai/core/ui/table";
 import { Target } from "lucide-react";
-import type { EmployeeOption } from "@cofounderai/module-crm/lib/tickets/types";
-import { assignOpportunityAction, updateOpportunityStageAction, updateOpportunityValueAction } from "./actions";
+import { updateOpportunityStageAction } from "./actions";
 import { OpportunitiesKanban } from "./opportunities-kanban";
-import { EditValueDialog } from "./edit-value-dialog";
 import { ExportMenu } from "@cofounderai/core/export-ui/export-menu";
-
-/** CRM-05.4's inline assign form -- mirrors the Leads page's own AssignForm exactly. */
-function AssignForm({ businessId, opportunityId, ownerId, employees }: { businessId: string; opportunityId: string; ownerId: string | null; employees: EmployeeOption[] }) {
-  return (
-    <form action={assignOpportunityAction.bind(null, businessId, opportunityId)} className="flex items-center gap-2">
-      <NativeSelect name="ownerId" defaultValue={ownerId ?? ""} className="w-auto">
-        <option value="">Unassigned</option>
-        {employees.map((e) => (
-          <option key={e.id} value={e.id}>
-            {e.full_name ?? e.email ?? "Unnamed"}
-          </option>
-        ))}
-      </NativeSelect>
-      <SubmitButton size="sm" variant="outline" pendingText="Assigning...">
-        Assign
-      </SubmitButton>
-    </form>
-  );
-}
 
 /**
  * CRM-04.2's Opportunity Pipeline -- Kanban (default) and List views of the same data,
@@ -49,8 +26,11 @@ function AssignForm({ businessId, opportunityId, ownerId, employees }: { busines
  * docs/design/claude-ui-design-rules.md the same way the Leads page does: a real table
  * on desktop, cards below `md`.
  *
- * CRM-05.4 adds the Owner column/assign form to List view (Kanban stays focused on
- * stage drag/drop, same reasoning CRM-04.3's value edit stayed List-only).
+ * CRM-05.4 adds the Owner column to List view (Kanban stays focused on stage drag/drop).
+ *
+ * PLATFORM-NAV-P0-02.3: a List row carries one action, View. Assigning an owner
+ * (CRM-05.4) and editing the value (CRM-04.3) are on the opportunity's own page, which
+ * View opens and which already had both; the row shows the owner and the value as text.
  */
 export default async function CrmOpportunitiesPage({
   params,
@@ -139,18 +119,16 @@ export default async function CrmOpportunitiesPage({
                   </span>
                   <span>Created {formatDate(opportunity.created_at)}</span>
                 </div>
-                <Badge variant={opportunity.owner_id ? "secondary" : "outline"} className="w-fit">
-                  {employeeById.get(opportunity.owner_id ?? "")?.full_name ?? "Unassigned"}
-                </Badge>
-                <AssignForm businessId={businessId} opportunityId={opportunity.id} ownerId={opportunity.owner_id} employees={employees} />
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <Badge variant={opportunity.owner_id ? "secondary" : "outline"} className="w-fit">
+                    {employeeById.get(opportunity.owner_id ?? "")?.full_name ?? "Unassigned"}
+                  </Badge>
                   <Link
                     href={`/${businessSlug}/crm/opportunities/${opportunity.id}`}
-                    className="text-xs text-primary hover:underline"
+                    className="text-xs font-medium text-primary hover:underline"
                   >
                     View
                   </Link>
-                  <EditValueDialog opportunity={opportunity} action={updateOpportunityValueAction.bind(null, businessId, opportunity.id)} />
                 </div>
               </li>
             ))}
@@ -184,19 +162,18 @@ export default async function CrmOpportunitiesPage({
                   <TableCell className="text-muted-foreground">{opportunity.estimated_value ? inr.format(opportunity.estimated_value) : "—"}</TableCell>
                   <TableCell className="text-muted-foreground">{opportunity.expected_close_date ? formatDate(opportunity.expected_close_date) : "—"}</TableCell>
                   <TableCell>
-                    <AssignForm businessId={businessId} opportunityId={opportunity.id} ownerId={opportunity.owner_id} employees={employees} />
+                    <Badge variant={opportunity.owner_id ? "secondary" : "outline"}>
+                      {employeeById.get(opportunity.owner_id ?? "")?.full_name ?? "Unassigned"}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">{formatDate(opportunity.created_at)}</TableCell>
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link
-                        href={`/${businessSlug}/crm/opportunities/${opportunity.id}`}
-                        className="text-xs text-primary hover:underline"
-                      >
-                        View
-                      </Link>
-                      <EditValueDialog opportunity={opportunity} action={updateOpportunityValueAction.bind(null, businessId, opportunity.id)} />
-                    </div>
+                    <Link
+                      href={`/${businessSlug}/crm/opportunities/${opportunity.id}`}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      View
+                    </Link>
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
-import { AutoSubmitSelect } from "./auto-submit-select";
+import { AutoSubmitSelect, isSteppingKey } from "./auto-submit-select";
 import { Fold } from "./fold";
 import { MoreMenu, MoreMenuItem } from "./more-menu";
 
@@ -77,5 +77,10 @@ describe("AutoSubmitSelect", () => {
     expect(html).toContain('name="status"');
     expect(count(html, "button")).toBe(0);
     expect(html).not.toMatch(/\sdisabled(=|\s|>)/);
+  });
+
+  it("treats arrow keys and typed letters as stepping, not as a choice", () => {
+    for (const key of ["ArrowDown", "ArrowUp", "Home", "End", "PageDown", "w"]) expect(isSteppingKey(key)).toBe(true);
+    for (const key of ["Enter", "Tab", "Escape", "Shift"]) expect(isSteppingKey(key)).toBe(false);
   });
 });
