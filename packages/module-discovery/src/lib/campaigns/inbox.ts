@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ingestInboundEmail } from "../conversations/ingest-inbound-email";
-import { readInbox, type ImapDeps } from "./imap";
+import { normaliseMessageId, readInbox, type ImapDeps } from "./imap";
 import type { SendingMailbox } from "./mailbox";
 import { recordBounce } from "./stops";
 
@@ -57,6 +57,23 @@ export async function syncMailboxInbox(db: SupabaseClient, workspaceId: string, 
   const sentEnrollments = new Set(((sends.data ?? []) as { enrollment_id: string; status: string }[]).filter((send) => send.status !== "skipped").map((send) => send.enrollment_id));
   const launched = ((campaigns.data ?? []) as { launched_at: string | null }[]).map((row) => row.launched_at).filter((value): value is string => Boolean(value)).sort();
 
+  // The emails this workspace sent to the people it enrolled, by Message-ID: a reply
+  // that answers one of them is theirs, whatever address it comes from.
+  const enrolledProspects = [...new Set(enrolled.map((row) => row.prospect_id))];
+  const { data: sentRows, error: sentError } = await db
+    .from("messages")
+    .select("provider_message_id, prospect_id, contact_id")
+    .eq("workspace_id", workspaceId)
+    .eq("direction", "outbound")
+    .eq("channel", "email")
+    .in("prospect_id", enrolledProspects);
+  if (sentError) throw sentError;
+  const sentById = new Map<string, { prospectId: string; contactId: string | null }>();
+  for (const row of (sentRows ?? []) as { provider_message_id: string | null; prospect_id: string; contact_id: string | null }[]) {
+    const id = normaliseMessageId(row.provider_message_id);
+    if (id) sentById.set(id, { prospectId: row.prospect_id, contactId: row.contact_id });
+  }
+
   const inbox = await readInbox(
     { host: mailbox.imap.host, port: mailbox.imap.port, username: mailbox.connection.username, password: mailbox.connection.password },
     {
@@ -65,6 +82,7 @@ export async function syncMailboxInbox(db: SupabaseClient, workspaceId: string, 
       uidValidity: mailbox.imap.uidValidity,
       knownSenders: new Set(addressOf.values()),
       sentTo: new Set([...addressOf.entries()].filter(([enrollmentId]) => sentEnrollments.has(enrollmentId)).map(([, address]) => address)),
+      sentMessageIds: new Set(sentById.keys()),
     },
     deps,
   );
@@ -85,6 +103,9 @@ export async function syncMailboxInbox(db: SupabaseClient, workspaceId: string, 
         // Without a Message-ID the mailbox's own id for the message stands in for it.
         messageId: message.messageId ?? `imap:${inbox.uidValidity}:${message.uid}`,
         workspaceId,
+        // From an address nobody enrolled, recognised by the email it answers: it is
+        // that prospect's reply.
+        ...(message.answers && sentById.has(message.answers) ? { answersProspect: sentById.get(message.answers)! } : {}),
       });
       if (result.matched && !result.duplicate) replies += 1;
       continue;

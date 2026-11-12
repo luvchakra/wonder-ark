@@ -5,7 +5,7 @@
  * is never fetched; the host guard runs first; only what is new is listed.
  */
 import { describe, expect, it, vi } from "vitest";
-import { failedRecipientsIn, looksLikeFailureNotice, readInbox, type ImapSession, type InboxEnvelope } from "./imap";
+import { failedRecipientsIn, htmlToText, looksLikeFailureNotice, normaliseMessageId, readInbox, textPartsOf, type ImapSession, type InboxEnvelope } from "./imap";
 
 const PASSWORD = "app-password-9f2c";
 const mailbox = { host: "imap.acme.example", port: 993, username: "asha@acme.example", password: PASSWORD };
@@ -50,6 +50,33 @@ describe("readInbox", () => {
     expect(fake.text.mock.calls.map(([uid]) => uid)).toEqual([2]);
     expect(JSON.stringify(result)).not.toContain("PRIVATE");
     expect(fake.close).toHaveBeenCalled();
+  });
+
+  it("keeps a reply from an unknown address when it answers an email we sent, and leaves one that does not unread", async () => {
+    const { fake, connect } = session(
+      [
+        envelope(7, "owner.personal@elsewhere.example", { inReplyTo: " <out1@acme.example> " }),
+        envelope(8, "stranger@elsewhere.example", { inReplyTo: "<someone-elses-thread@other.example>" }),
+        envelope(9, "stranger@elsewhere.example", { inReplyTo: null }),
+      ],
+      { 7: "Yes, call me", 8: "PRIVATE eight", 9: "PRIVATE nine" },
+    );
+
+    const result = await readInbox(mailbox, { ...query, sentMessageIds: new Set(["out1@acme.example"]) }, { lookup: publicLookup, connect });
+
+    expect(result).toMatchObject({
+      ok: true,
+      ignored: 2,
+      messages: [{ kind: "reply", uid: 7, from: "owner.personal@elsewhere.example", text: "Yes, call me", answers: "out1@acme.example" }],
+    });
+    expect(fake.text.mock.calls.map(([uid]) => uid)).toEqual([7]);
+    expect(JSON.stringify(result)).not.toContain("PRIVATE");
+  });
+
+  it("does not mark a reply from an enrolled address as answering anything: its sender already says whose it is", async () => {
+    const { connect } = session([envelope(2, "buyer@prospect.example", { inReplyTo: "<out1@acme.example>" })], { 2: "Tell me more" });
+    const result = await readInbox(mailbox, { ...query, sentMessageIds: new Set(["out1@acme.example"]) }, { lookup: publicLookup, connect });
+    expect(result.ok && result.messages[0]).not.toHaveProperty("answers");
   });
 
   it("keeps a failure notice only when it names an address we sent to", async () => {
@@ -143,3 +170,41 @@ describe("recognising a failure notice", () => {
     expect(failedRecipientsIn("nothing here", sentTo)).toEqual([]);
   });
 });
+
+describe("a reply's text", () => {
+  it("prefers the plain-text part, and never reads an attachment or an arbitrary first part", () => {
+    const alternative = { type: "multipart/alternative", childNodes: [{ part: "1", type: "text/plain" }, { part: "2", type: "text/html" }] };
+    expect(textPartsOf(alternative)).toEqual([{ part: "1", html: false }]);
+
+    const htmlOnly = { type: "multipart/mixed", childNodes: [{ part: "1", type: "text/html" }, { part: "2", type: "application/pdf", disposition: "attachment" }] };
+    expect(textPartsOf(htmlOnly)).toEqual([{ part: "1", html: true }]);
+
+    expect(textPartsOf({ type: "text/html" })).toEqual([{ part: "1", html: true }]);
+    expect(textPartsOf({ type: "text/plain" })).toEqual([{ part: "1", html: false }]);
+    // No text part at all: there is no text, rather than a container or a file read as text.
+    expect(textPartsOf({ type: "multipart/mixed", childNodes: [{ part: "1", type: "image/png" }, { part: "2", type: "text/plain", disposition: "attachment" }] })).toEqual([]);
+    expect(textPartsOf({ type: "application/pdf" })).toEqual([]);
+    expect(textPartsOf(undefined)).toEqual([]);
+  });
+
+  it("reads a failure report's status part as well as its text", () => {
+    const report = { type: "multipart/report", childNodes: [{ part: "1", type: "text/plain" }, { part: "2", type: "message/delivery-status" }, { part: "3", type: "message/rfc822" }] };
+    expect(textPartsOf(report)).toEqual([{ part: "1", html: false }, { part: "2", html: false }]);
+  });
+
+  it("turns HTML into text: no tags, scripts or styles, line breaks kept, entities decoded", () => {
+    const html = `<html><head><style>p{color:red}</style><title>x</title></head><body><!-- hidden --><p>Hi&nbsp;Asha,</p><div>Yes &amp; thanks.<br>Call me &lt;tomorrow&gt; &#8212; it&#39;s fine.</div><script>alert("x")</script><ul><li>One</li><li>Two</li></ul></body></html>`;
+    expect(htmlToText(html)).toBe("Hi Asha,\nYes & thanks.\nCall me <tomorrow> — it's fine.\nOne\nTwo");
+    expect(htmlToText("plain text")).toBe("plain text");
+    expect(htmlToText("<p>a</p>\n\n\n\n<p>b</p>")).toBe("a\n\nb");
+    expect(htmlToText('<img src=x onerror="alert(1)">Hello')).toBe("Hello");
+  });
+
+  it("compares Message-IDs without their brackets", () => {
+    expect(normaliseMessageId(" <abc@mail.example> ")).toBe("abc@mail.example");
+    expect(normaliseMessageId("abc@mail.example")).toBe("abc@mail.example");
+    expect(normaliseMessageId("  ")).toBeNull();
+    expect(normaliseMessageId(null)).toBeNull();
+  });
+});
+

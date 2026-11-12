@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createAdminClient } from "../../db/admin";
 import { classifyReply } from "../ai/classify-reply";
-import { STOP_REASON, stopEnrollmentsForProspect, suppressAddress } from "../campaigns/stops";
+import { STOP_REASON, recipientOfMessage, stopEnrollmentsForProspect, suppressAddress } from "../campaigns/stops";
 import type { Message } from "../messages/types";
 
 export type InboundEmailPayload = {
@@ -14,6 +14,13 @@ export type InboundEmailPayload = {
   messageId?: string | null;
   /** Only look in this workspace: the mailbox reader knows whose mailbox it read. */
   workspaceId?: string;
+  /**
+   * DISC-CAMP-P0-04.2: set by the mailbox reader, with `workspaceId`, when the reply was
+   * recognised by the email it answers (its In-Reply-To) rather than by its sender. The
+   * reply then belongs to the prospect that email was sent to, whatever address it came
+   * from. Never taken from a webhook body.
+   */
+  answersProspect?: { prospectId: string; contactId: string | null };
 };
 
 export type IngestResult =
@@ -99,7 +106,10 @@ export async function ingestInboundEmail(payload: InboundEmailPayload): Promise<
 
   const admin = createAdminClient();
 
-  const sender = await findSender(admin, fromEmail, payload.workspaceId);
+  const sender =
+    payload.answersProspect && payload.workspaceId
+      ? { contactId: payload.answersProspect.contactId, workspaceId: payload.workspaceId, prospectId: payload.answersProspect.prospectId }
+      : await findSender(admin, fromEmail, payload.workspaceId);
   if (!sender) return { matched: false, reason: `No contact found for ${fromEmail}.` };
   const contact = { id: sender.contactId, workspace_id: sender.workspaceId, prospect_id: sender.prospectId };
 
@@ -186,6 +196,10 @@ export async function ingestInboundEmail(payload: InboundEmailPayload): Promise<
       // to; it cannot send, delete or reach another workspace.
       try {
         await suppressAddress(contact.workspace_id, fromEmail, "unsubscribe", admin);
+        // Answered from another address: the one that was written to is opted out too.
+        if (payload.answersProspect) {
+          await suppressAddress(contact.workspace_id, await recipientOfMessage(admin, { contact_id: contact.id, prospect_id: contact.prospect_id }), "unsubscribe", admin);
+        }
       } catch (suppressError) {
         console.error("An unsubscribe request could not be added to the opt-out list:", suppressError instanceof Error ? suppressError.message : suppressError);
       }

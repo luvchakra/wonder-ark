@@ -165,6 +165,35 @@ describe("reading the mailbox", () => {
     expect(stored()).toMatchObject({ last_seen_uid: 11, last_seen_uid_validity: 77, last_error: null });
   });
 
+  // DISC-CAMP-P0-04.2: people often answer from another address than the one written to.
+  it("takes a reply from an unknown address that answers an email we sent, and stops that prospect's follow-ups", async () => {
+    inbox = {
+      envelopes: [
+        envelope(20, "owner.personal@elsewhere.example", { inReplyTo: "<out2@acme>" }),
+        envelope(21, "stranger@elsewhere.example", { inReplyTo: "<not-ours@other.example>", subject: "Re: something private" }),
+      ],
+      bodies: { 20: "Yes, call me on Monday", 21: "PRIVATE thread" },
+    };
+
+    expect(await sync()).toEqual({ ok: true, replies: 1, bounces: 0, ignored: 1 });
+
+    // The reply belongs to the prospect the answered email was sent to (p2, contact k2).
+    expect(inboundRows()).toHaveLength(1);
+    expect(inboundRows()[0]).toMatchObject({ workspace_id: W, prospect_id: "p2", contact_id: "k2" });
+    expect(String(inboundRows()[0]!.content)).toContain("Yes, call me on Monday");
+    expect(enrollments().map((row) => [row.id, row.status])).toEqual([["e1", "active"], ["e2", "replied"]]);
+    // The message that answers someone else's thread stays unread and unstored.
+    expect(texts).toEqual([20]);
+    expect(JSON.stringify([db.rows("messages"), db.rows("conversations")])).not.toMatch(/PRIVATE|something private|stranger@/);
+  });
+
+  it("opts out both addresses when such a reply asks to unsubscribe", async () => {
+    inbox = { envelopes: [envelope(20, "owner.personal@elsewhere.example", { inReplyTo: "<out2@acme>" })], bodies: { 20: "Please stop emailing us" } };
+    h.classifyReply.mockImplementation(async (id: string) => ({ id, classification: "unsubscribe" }));
+    await sync();
+    expect(h.recordUnsubscribe.mock.calls.map((call) => call[1]).sort()).toEqual([emailHash("gone@prospect.example"), emailHash("owner.personal@elsewhere.example")].sort());
+  });
+
   it("stores the same reply once however often the mailbox is read", async () => {
     inbox = { envelopes: [envelope(11, "buyer@prospect.example")], bodies: { 11: "Tell me more" } };
     await sync();
