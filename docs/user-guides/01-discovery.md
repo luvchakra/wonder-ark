@@ -1,10 +1,10 @@
-# Discovery: Customer Acquisition, Marketing & Funding
+# Discovery: Acquisition, Marketing & Funding
 
 Discovery is where a business finds its customers, markets to them and raises
 money to grow. It has three working areas that share the same business,
 offerings and data:
 
-- **Customer Acquisition** — who to sell each offering to, finding them, and
+- **Acquisition** — who to sell each offering to, finding them, and
   handing qualified opportunities to your sales process.
 - **Marketing** — strategy, campaigns, content, assets, website & SEO and
   analytics.
@@ -21,8 +21,8 @@ Discovery's menu in the sidebar is four links, with nothing to unfold:
 | Item | What it opens |
 |---|---|
 | **Overview** | The Discovery dashboard (below) |
-| **Customer Acquisition** | The offering you last worked in. Its tabs — Setup, Find, Prospects, Results — are across the top of the page |
-| **Marketing** | The Marketing dashboard. Strategy, Campaigns, Content, Assets, Website & SEO and Analytics are tabs across the top |
+| **Acquisition** | The offering you last worked in. Its tabs — Setup, Find, Prospects, Results — are across the top of the page |
+| **Marketing** | The Marketing overview. Overview, Campaigns, Content and Website & SEO are tabs across the top |
 | **Funding** | The Funding dashboard. Funding Profile, Investor Readiness, Fundraising, Investors, Investor Outreach, Data Room, Due Diligence and Analytics are tabs across the top |
 
 **Business** is not in Discovery's menu. It is a row of its own at the top of the sidebar,
@@ -33,8 +33,8 @@ holds your business profile and the list of your offerings; open an offering fro
 header of every offering page has an **Offering** selector. Switching keeps
 you on the same section — from Ideal customer to the other offering's Ideal customer,
 from Prospects to its Prospects. The sidebar also remembers the offering you last
-worked in, so going to Marketing and back to Customer Acquisition returns to
-it rather than to the first offering. With no offering yet, Customer Acquisition opens
+worked in, so going to Marketing and back to Acquisition returns to
+it rather than to the first offering. With no offering yet, Acquisition opens
 the Business page, where you add one.
 
 ## Before you start: business offerings
@@ -589,13 +589,20 @@ failed.
 ## Marketing
 
 Marketing works across the whole business, not per offering, and uses the
-same customers, offerings and prospects as the rest of Discovery.
+same customers, offerings and prospects as the rest of Discovery. It has four tabs:
+**Overview**, **Campaigns**, **Content** and **Website & SEO**. As on Acquisition,
+each tab is one page, and anything beyond its main content is a section with a title, a
+one-line summary and a chevron; click it to open it. Strategy, Analytics and Assets, once
+tabs of their own, are sections now; their old addresses still open them on their own.
 
-- **Dashboard** — campaign performance, content in flight, and a list of
-  what needs attention (content awaiting approval, campaigns ending soon,
-  metrics to update).
-- **Strategy** — your positioning, audiences, channels and goals. Saving keeps a version
-  history; **Activate** makes a version the live one.
+- **Overview** — four headline figures (active campaigns, leads, customers influenced,
+  revenue influenced), with **Filters** (period and offering) folded above them. Then
+  sections: **Needs attention** (content awaiting approval, campaigns ending soon, metrics to
+  update; open when there is something), **Campaign performance**, **All figures** (the rest
+  of the figures and the funnel), **Strategy** and **Analytics**.
+  - **Strategy** — your positioning, audiences, channels and goals. Saving keeps a version
+    history; **Activate** makes a version the live one.
+  - **Analytics** — channel and campaign figures in one place.
 - **Campaigns** — plan a campaign with its channels, budget and dates, track its metrics
   (on the campaign's page, **Import from a CSV export** of your ad or analytics tool — up to
   1,000 rows with a `date` column; rows that can't be read are listed, not dropped), and see
@@ -606,11 +613,12 @@ same customers, offerings and prospects as the rest of Discovery.
   the `marketing.approve` permission, and editing approved content sends it back to Draft.
   **Mark as published** records that you published it — WonderArk doesn't post to any
   channel. Published content can't be edited; duplicate it to write a new version. A
-  **calendar** view shows what's scheduled when.
-- **Assets** — upload images and files (up to 4 MB each) to reuse.
-- **Website & SEO** — a summary of your crawled website, plus SEO opportunities and AI-search
-  observations you record yourself. It doesn't track rankings or keywords.
-- **Analytics** — channel and campaign figures in one place.
+  **calendar** view shows what's scheduled when. The list's **Filters** are folded until
+  you use them. The **Assets** section below the list uploads images and files (up to 4 MB
+  each) to reuse.
+- **Website & SEO** — sections for **Website** (a summary of your crawled website, open
+  first), **SEO opportunities** and **AI search visibility** (observations you record
+  yourself). It doesn't track rankings or keywords.
 
 Nothing is ever published or sent automatically: AI drafts, a person approves.
 

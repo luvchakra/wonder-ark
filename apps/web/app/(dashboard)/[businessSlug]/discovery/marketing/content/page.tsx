@@ -19,6 +19,9 @@ import { UrlSelect } from "@cofounderai/module-discovery/components/marketing/ur
 import { ContentStatusBadge } from "@cofounderai/module-discovery/components/marketing/status";
 import { ContentCalendar } from "@cofounderai/module-discovery/components/marketing/content-calendar";
 import { marketingContext } from "../context";
+import { Fold } from "@cofounderai/core/ui/fold";
+import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
+import AssetsPage from "../assets/page";
 
 /** MKT-08/MKT-10 — Content: a list, or a month calendar (§15), chosen with `?view=`. */
 export default async function ContentPage({
@@ -34,6 +37,7 @@ export default async function ContentPage({
   const status = (CONTENT_STATUSES as readonly string[]).includes(String(sp.status)) ? (sp.status as ContentStatus) : "all";
   const contentType = (CONTENT_TYPES as readonly string[]).includes(String(sp.type)) ? (sp.type as ContentType) : "all";
   const campaignId = typeof sp.campaign === "string" && sp.campaign ? sp.campaign : undefined;
+  const activeFilters = [status !== "all", contentType !== "all", Boolean(campaignId)].filter(Boolean).length;
 
   const campaigns = await listCampaigns(businessId, { status: "all" });
   const viewHref = (v: string) => {
@@ -110,12 +114,20 @@ export default async function ContentPage({
             </Button>
           </div>
         </div>
+        <Fold label="Filters" count={activeFilters} defaultOpen={activeFilters > 0}>
+          <Fold label="Filters" count={activeFilters} defaultOpen={activeFilters > 0}>
         <Filters status={status} contentType={contentType} campaignId={campaignId} campaigns={campaigns} />
+      </Fold>
+        </Fold>
         <Card>
           <CardContent className="pt-6">
             <ContentCalendar month={win.month} items={items} root={root} />
           </CardContent>
         </Card>
+        {/* DISC-NAV-P0-01.5: Assets is a section of Content, folded below it. */}
+        <SectionFold id="assets" title="Assets" hint="Images, documents and brand files for your content">
+          <AssetsPage params={params} />
+        </SectionFold>
       </>
     );
   }
@@ -125,7 +137,9 @@ export default async function ContentPage({
     <>
       {header}
       {toggle}
-      <Filters status={status} contentType={contentType} campaignId={campaignId} campaigns={campaigns} />
+      <Fold label="Filters" count={activeFilters} defaultOpen={activeFilters > 0}>
+        <Filters status={status} contentType={contentType} campaignId={campaignId} campaigns={campaigns} />
+      </Fold>
       <Card>
         <CardContent className="pt-6">
           {content.length === 0 ? (
@@ -154,6 +168,10 @@ export default async function ContentPage({
           )}
         </CardContent>
       </Card>
+      {/* DISC-NAV-P0-01.5: Assets is a section of Content, folded below it. */}
+      <SectionFold id="assets" title="Assets" hint="Images, documents and brand files for your content">
+        <AssetsPage params={params} />
+      </SectionFold>
     </>
   );
 }

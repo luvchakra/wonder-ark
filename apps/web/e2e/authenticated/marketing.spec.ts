@@ -27,7 +27,7 @@ test.describe("Discovery › Marketing", () => {
     await expect(page).toHaveURL(new RegExp(`/${slug}/discovery/marketing$`));
     await expectNoAppCrash(page);
     const tabs = page.locator('nav[aria-label="Section"]');
-    for (const label of ["Strategy", "Campaigns", "Content", "Assets", "Website & SEO"]) {
+    for (const label of ["Overview", "Campaigns", "Content", "Website & SEO"]) {
       await expect(tabs.getByRole("link", { name: label, exact: true })).toBeVisible();
     }
   });

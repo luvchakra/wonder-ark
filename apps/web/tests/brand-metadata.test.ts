@@ -68,7 +68,7 @@ describe("WonderArk browser metadata", () => {
     for (const [dir, title] of [
       ["discovery", "Discovery"],
       ["discovery/marketing", "Marketing"],
-      ["discovery/offerings", "Customer Acquisition"],
+      ["discovery/offerings", "Acquisition"],
       ["discovery/funding", "Funding"],
       ["inventory", "Inventory"],
       ["service", "Service"],

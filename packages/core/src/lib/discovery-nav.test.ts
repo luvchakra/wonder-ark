@@ -21,7 +21,7 @@ describe("buildDiscoveryNav", () => {
     const links = buildDiscoveryNav(BASE, PRODUCTS, "/acme/discovery/dashboard");
     expect(links.map((l) => [l.label, l.href])).toEqual([
       ["Overview", "/acme/discovery/dashboard"],
-      ["Customer Acquisition", "/acme/discovery/offerings/p1"],
+      ["Acquisition", "/acme/discovery/offerings/p1"],
       ["Marketing", "/acme/discovery/marketing"],
       ["Funding", "/acme/discovery/funding"],
     ]);
@@ -38,7 +38,7 @@ describe("buildDiscoveryNav", () => {
     expect(activeIds(buildDiscoveryNav(BASE, PRODUCTS, "/acme/discovery/funding/data-room"))).toEqual(["funding"]);
   });
 
-  it("highlights Customer Acquisition on every page of an offering, and opens that offering", () => {
+  it("highlights Acquisition on every page of an offering, and opens that offering", () => {
     for (const path of ["", "/icp", "/prospects/discover", "/prospects/x9", "/campaigns/c1", "/usage"]) {
       const links = buildDiscoveryNav(BASE, PRODUCTS, `/acme/discovery/offerings/p2${path}`);
       expect(activeIds(links), path).toEqual(["customer-acquisition"]);
@@ -50,7 +50,7 @@ describe("buildDiscoveryNav", () => {
     expect(activeIds(buildDiscoveryNav(BASE, PRODUCTS, "/acme/business"))).toEqual([]);
   });
 
-  it("opens the Business page from Customer Acquisition when there is no offering yet", () => {
+  it("opens the Business page from Acquisition when there is no offering yet", () => {
     const links = buildDiscoveryNav(BASE, [], "/acme/discovery/dashboard");
     expect(link(links, "customer-acquisition").href).toBe("/acme/business");
     expect(links).toHaveLength(4);
@@ -71,7 +71,7 @@ describe("remembered offering focus", () => {
   const acquisitionHref = (path: string, remembered?: string) =>
     link(buildDiscoveryNav(BASE, PRODUCTS, path, remembered), "customer-acquisition").href;
 
-  it("keeps Customer Acquisition on the offering last worked in when the URL names none", () => {
+  it("keeps Acquisition on the offering last worked in when the URL names none", () => {
     expect(acquisitionHref("/acme/discovery/marketing", "p2")).toBe("/acme/discovery/offerings/p2");
   });
 

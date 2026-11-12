@@ -7,7 +7,7 @@ import { buildDiscoveryNav, businessNavLink } from "@cofounderai/core/lib/discov
 // DISC-NAV-01..05. Same idea as menu-routes.test.ts, for Discovery's own tree (which the
 // registry test skips because its offerings are live data): every link the sidebar can
 // render must land on a page that exists. Uses a placeholder offering id so the
-// offering-scoped Customer Acquisition links resolve to their [productId] routes.
+// offering-scoped Acquisition links resolve to their [productId] routes.
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(__dirname, "..", "app", "(dashboard)", "[businessSlug]");
 

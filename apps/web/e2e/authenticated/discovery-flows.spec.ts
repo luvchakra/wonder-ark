@@ -50,7 +50,7 @@ test.describe("Marketing flows", () => {
   let campaignUrl = "";
   let contentUrl = "";
 
-  test("an offering exists, so Customer Acquisition has somewhere to point", async ({ page }) => {
+  test("an offering exists, so Acquisition has somewhere to point", async ({ page }) => {
     await page.goto(`/${slug}/business`);
     if (await page.getByText(/^Alarm Monitoring /).count()) return;
     await page.getByRole("button", { name: "New offering" }).click();
@@ -464,11 +464,11 @@ test.describe("Funding flows", () => {
     await expect(page.getByRole("cell", { name: "Founder network" })).toBeVisible();
   });
 
-  test("the sidebar's Customer Acquisition opens the offering, whose tabs are on the page", async ({ page }) => {
+  test("the sidebar's Acquisition opens the offering, whose tabs are on the page", async ({ page }) => {
     await page.goto(`/${slug}/discovery/dashboard`);
     await openSidebar(page);
     // PLATFORM-NAV-P0-03.1: one link in the sidebar; the offering's four tabs are on its page.
-    const acquisition = page.locator('nav[aria-label="Main"]').getByRole("link", { name: "Customer Acquisition", exact: true });
+    const acquisition = page.locator('nav[aria-label="Main"]').getByRole("link", { name: "Acquisition", exact: true });
     await expect(acquisition).toHaveAttribute("href", new RegExp(`/${slug}/discovery/offerings/[0-9a-f-]{36}$`));
     await acquisition.click();
     await expect(page).toHaveURL(new RegExp(`/${slug}/discovery/offerings/[0-9a-f-]{36}$`));
