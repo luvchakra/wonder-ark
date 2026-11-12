@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { expectNoAppCrash } from "../support/assertions";
 import { getTestBusinessSlug } from "../support/business";
-import { expandNavGroup, openSidebar } from "../support/sidebar";
+import { openSidebar } from "../support/sidebar";
 
 // FND-03..14 / DISC-NAV-05. Every Funding page renders for real, and the sidebar reaches them.
 const PAGES = ["", "/profile", "/readiness", "/rounds", "/investors", "/outreach", "/outreach/new", "/data-room", "/due-diligence", "/analytics"];
@@ -16,14 +16,18 @@ test.describe("Discovery › Funding", () => {
     });
   }
 
-  test("the sidebar lists Funding's pages under Discovery", async ({ page }) => {
+  // PLATFORM-NAV-P0-03.1: Funding is one link in the sidebar; its pages are the tabs on
+  // the page it opens.
+  test("the sidebar opens Funding, whose pages are tabs on the page", async ({ page }) => {
     const slug = await getTestBusinessSlug(page);
     await page.goto(`/${slug}/discovery/dashboard`);
     await openSidebar(page);
-    await expandNavGroup(page, "Funding");
-    const nav = page.locator('nav[aria-label="Main"]');
+    await page.locator('nav[aria-label="Main"]').getByRole("link", { name: "Funding", exact: true }).click();
+    await expect(page).toHaveURL(new RegExp(`/${slug}/discovery/funding$`));
+    await expectNoAppCrash(page);
+    const tabs = page.locator('nav[aria-label="Section"]');
     for (const label of ["Funding Profile", "Investor Readiness", "Fundraising", "Data Room", "Due Diligence"]) {
-      await expect(nav.getByRole("link", { name: label, exact: true })).toBeVisible();
+      await expect(tabs.getByRole("link", { name: label, exact: true })).toBeVisible();
     }
   });
 

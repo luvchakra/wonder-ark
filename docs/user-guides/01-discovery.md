@@ -16,33 +16,33 @@ Last updated: 2026-11-12
 
 ## How Discovery is organised
 
-The Discovery sidebar is always the same shape:
+Discovery's menu in the sidebar is four links, with nothing to unfold:
 
-| Item | What it is |
+| Item | What it opens |
 |---|---|
 | **Overview** | The Discovery dashboard (below) |
-| **Business** | Your business profile and its offerings |
-| **Business Offerings** | One entry per offering you've created |
-| **Marketing** | Dashboard, Strategy, Campaigns, Content, Assets, Website & SEO, Analytics |
-| **Customer Acquisition** | Setup, Find, Prospects, Results — for one offering at a time |
-| **Funding** | Dashboard, Funding Profile, Investor Readiness, Fundraising, Investors, Investor Outreach, Data Room, Due Diligence, Analytics |
+| **Customer Acquisition** | The offering you last worked in. Its tabs — Setup, Find, Prospects, Results — are across the top of the page |
+| **Marketing** | The Marketing dashboard. Strategy, Campaigns, Content, Assets, Website & SEO and Analytics are tabs across the top |
+| **Funding** | The Funding dashboard. Funding Profile, Investor Readiness, Fundraising, Investors, Investor Outreach, Data Room, Due Diligence and Analytics are tabs across the top |
 
-The four Customer Acquisition items are the offering's own four tabs, described under
-"Working an offering" below. Each opens the first page of its tab.
+**Business** is not in Discovery's menu. It is a row of its own at the top of the sidebar,
+above the modules, because it describes the business whichever module you are in. Its page
+holds your business profile and the list of your offerings; open an offering from there.
 
 **Switching offering.** When a business has more than one offering, the
 header of every offering page has an **Offering** selector. Switching keeps
 you on the same section — from Ideal customer to the other offering's Ideal customer,
 from Prospects to its Prospects. The sidebar also remembers the offering you last
 worked in, so going to Marketing and back to Customer Acquisition returns to
-it rather than to the first offering.
+it rather than to the first offering. With no offering yet, Customer Acquisition opens
+the Business page, where you add one.
 
 ## Before you start: business offerings
 
 Discovery works **per offering** — each product or service line you market
 gets its own ideal customer profile, prospect list, and AI usage allowance.
-Set up your business's offerings first, from the **Business** page (linked from the
-Discovery sidebar):
+Set up your business's offerings first, from the **Business** page (at the top of the
+sidebar):
 
 1. Enter your business name, website and a short description.
 2. Add offerings one of three ways:

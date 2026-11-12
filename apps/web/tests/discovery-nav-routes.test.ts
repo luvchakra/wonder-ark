@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { buildDiscoveryNav } from "@cofounderai/core/lib/discovery-nav";
+import { buildDiscoveryNav, businessNavLink } from "@cofounderai/core/lib/discovery-nav";
 
 // DISC-NAV-01..05. Same idea as menu-routes.test.ts, for Discovery's own tree (which the
 // registry test skips because its offerings are live data): every link the sidebar can
@@ -19,8 +19,10 @@ function pagePath(href: string): string {
 }
 
 describe("every Discovery sidebar link resolves to a real page", () => {
-  const tree = buildDiscoveryNav("/acme", [{ id: "p1", name: "Offering" }], "/acme/discovery/dashboard");
-  const links = [...tree.top, ...tree.groups.flatMap((g) => g.items)];
+  const links = [
+    ...buildDiscoveryNav("/acme", [{ id: "p1", name: "Offering" }], "/acme/discovery/dashboard"),
+    { label: "Business", href: businessNavLink("/acme", null).href },
+  ];
   for (const link of links) {
     it(`${link.label} → ${link.href}`, () => {
       expect(existsSync(pagePath(link.href)), `Expected ${pagePath(link.href)}`).toBe(true);

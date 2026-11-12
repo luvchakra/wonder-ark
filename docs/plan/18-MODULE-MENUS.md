@@ -26,8 +26,38 @@ Everyday pages:
 - **CRM**: Inbox, Dashboard, Leads, Sales Opportunities, Follow-ups.
 - **Finance**: Dashboard, Invoices, Bills, Expenses, Banking, GST Filing.
 
-Discovery's own menu (four tabs per offering and a Today list) is in
-`17-DISCOVERY-DATA-AND-CONSUMER.md`, package B6.
+Discovery's offering pages (four tabs per offering and a Today list) are in
+`17-DISCOVERY-DATA-AND-CONSUMER.md`, package B6. Its sidebar menu is the next section.
+
+## Discovery: four links, and Business above the modules
+
+Owner, 2026-11-12, with a screenshot of the open Discovery menu: "re evaluate the menu as
+shown and keep only required items, some may make more sense outside all modules, think and
+try to minimize the menu and submenus".
+
+Discovery's menu was two links and four folding sections: Overview, Business, Business
+Offerings (one row per offering), Marketing (7 pages), Customer Acquisition (4) and Funding
+(9). Every one of those sub-pages is also a tab across the top of its own page, so the
+sidebar listed each page twice.
+
+| | Before | After |
+| --- | --- | --- |
+| Rows in Discovery's menu, folded | 6 | 4 |
+| Rows with every section open (one offering) | 27 | 4 |
+| Sections to unfold | 4 | 0 |
+
+- **Discovery** is now Overview, Customer Acquisition, Marketing, Funding. Each is a plain
+  link to the section's first page; the tabs on the page reach the rest. Customer
+  Acquisition opens the offering last worked in (the Business page when there is none).
+- **Business** left Discovery. It is the business's profile and its offerings, which every
+  module relies on, so it is one row above the modules, under Executive Dashboard.
+- **Business Offerings** is gone from the sidebar. The Business page lists the offerings,
+  and an offering's pages have a switcher in their header.
+
+No route, permission or licence check changed, and every page is still reachable. What
+takes one click more: a Marketing or Funding page other than the dashboard (open the
+section, then its tab), and a second offering (the switcher on the offering's page, or the
+Business page). Code: `packages/core/src/lib/discovery-nav.ts`.
 
 ## Not in the menu change
 
@@ -96,3 +126,5 @@ Banking (4).
 ### PLATFORM-NAV-P0-02.2 — Inventory pages: dashboard, Products, Purchase Orders, Sales Orders
 ### PLATFORM-NAV-P0-02.3 — CRM pages: Inbox, Leads, Sales Opportunities, Follow-ups
 ### PLATFORM-NAV-P0-02.4 — Finance pages: dashboard, GST Filing
+### PLATFORM-NAV-P0-03.1 — Discovery menu: four plain links, no folding sections
+### PLATFORM-NAV-P0-03.2 — Business: one row above the modules, outside Discovery

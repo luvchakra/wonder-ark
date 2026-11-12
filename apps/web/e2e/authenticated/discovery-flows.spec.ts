@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectNoAppCrash } from "../support/assertions";
 import { getTestBusinessSlug } from "../support/business";
+import { openSidebar } from "../support/sidebar";
 
 /**
  * End-to-end flows for Discovery's Marketing and Funding (MKT-03..16, FND-03..17): every
@@ -463,13 +464,16 @@ test.describe("Funding flows", () => {
     await expect(page.getByRole("cell", { name: "Founder network" })).toBeVisible();
   });
 
-  test("the sidebar's Customer Acquisition points at the offering's existing pages", async ({ page }) => {
+  test("the sidebar's Customer Acquisition opens the offering, whose tabs are on the page", async ({ page }) => {
     await page.goto(`/${slug}/discovery/dashboard`);
-    await page.getByRole("button", { name: /^Customer Acquisition/ }).click();
-    // DISC-NAV-P0-01.1: Customer Acquisition lists the offering's four tabs.
-    const find = page.locator('nav[aria-label="Main"]').getByRole("link", { name: "Find", exact: true });
-    await expect(find).toHaveAttribute("href", new RegExp(`/${slug}/discovery/offerings/[0-9a-f-]{36}/prospects/discover$`));
-    await find.click();
+    await openSidebar(page);
+    // PLATFORM-NAV-P0-03.1: one link in the sidebar; the offering's four tabs are on its page.
+    const acquisition = page.locator('nav[aria-label="Main"]').getByRole("link", { name: "Customer Acquisition", exact: true });
+    await expect(acquisition).toHaveAttribute("href", new RegExp(`/${slug}/discovery/offerings/[0-9a-f-]{36}$`));
+    await acquisition.click();
+    await expect(page).toHaveURL(new RegExp(`/${slug}/discovery/offerings/[0-9a-f-]{36}$`));
     await expectNoAppCrash(page);
+    // The offering's own navigation: its four tabs once set up, its setup steps before.
+    await expect(page.locator('nav[aria-label="Offering sections"], nav[aria-label="Product sections"]').first()).toBeVisible();
   });
 });
