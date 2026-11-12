@@ -40,6 +40,22 @@ export const DISCOVERY_OUTCOME_STAGE_LABEL: Record<DiscoveryOutcomeStage, string
   nurture: "Nurture",
 };
 
+/**
+ * DISC-CONS-P0-02.2 (B5.2.5): a channel's pipeline reuses the same stages and outcome;
+ * only the word changes. A channel that is "won" is one the offering is live on (a post
+ * up, a feature or a sponsorship agreed), so it reads "Live".
+ */
+export function outcomeStageLabel(stage: DiscoveryOutcomeStage, kind?: string | null): string {
+  if (stage === "won" && kind === "channel") return "Live";
+  return DISCOVERY_OUTCOME_STAGE_LABEL[stage];
+}
+
+/** The word for a prospect's own outcome value ("won" or "lost"), for its kind. */
+export function prospectOutcomeLabel(outcome: "won" | "lost", kind?: string | null): string {
+  if (outcome === "won") return kind === "channel" ? "Live" : "Won";
+  return "Lost";
+}
+
 export type DiscoveryOutcomeStageInput = {
   hasResearch: boolean;
   prospectStatus: ProspectStatus;

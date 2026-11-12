@@ -9,6 +9,24 @@ import { cn } from "@cofounderai/core/lib/utils";
 import type { ProspectWithPipeline } from "../../lib/prospects/queries";
 import { NEXT_ACTION_ANCHOR, PROSPECT_STAGE_LABEL, PROSPECT_STAGES } from "../../lib/prospects/pipeline";
 import { ScoreRagDot } from "./rag-badge";
+import { channelTypeLabel, formatAudience } from "../../lib/data-sources/channels";
+
+/** DISC-CONS-P0-05.1: the three middle columns, for a company or a channel. A channel
+ * shows its type and audience where a company shows its industry and size. */
+function middleColumns(p: ProspectWithPipeline): [string, string | null][] {
+  if (p.kind === "channel") {
+    return [
+      ["Type", channelTypeLabel(p.channel_type)],
+      ["Audience", formatAudience(p.audience_size)],
+      ["Location", p.location],
+    ];
+  }
+  return [
+    ["Industry", p.industry],
+    ["Size", p.company_size],
+    ["Location", p.location],
+  ];
+}
 
 /**
  * Each card/row is a "stretched link" (a transparent, absolutely-positioned Link
@@ -35,9 +53,12 @@ export function ProspectsCards({
   basePath,
   bulkResearchAction,
   bulkScoreAction,
+  channels = false,
 }: {
   prospects: ProspectWithPipeline[];
   basePath: string;
+  /** DISC-CONS-P0-05.1: the list holds channels, so the headings name their columns. */
+  channels?: boolean;
   bulkResearchAction: (formData: FormData) => void | Promise<void>;
   bulkScoreAction: (formData: FormData) => void | Promise<void>;
 }) {
@@ -121,9 +142,9 @@ export function ProspectsCards({
                   <TableHead className="w-10">
                     <span className="sr-only">Select</span>
                   </TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Industry</TableHead>
-                  <TableHead>Size</TableHead>
+                  <TableHead>{channels ? "Channel" : "Company"}</TableHead>
+                  <TableHead>{channels ? "Type" : "Industry"}</TableHead>
+                  <TableHead>{channels ? "Audience" : "Size"}</TableHead>
                   <TableHead>Location</TableHead>
                   <TableHead>Fit</TableHead>
                   <TableHead>Status</TableHead>
@@ -148,9 +169,11 @@ export function ProspectsCards({
                       <Link href={`${basePath}/${p.id}`} className="absolute inset-0 z-0" aria-label={p.company_name} />
                       <span className="relative">{p.company_name}</span>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">{p.industry || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{p.company_size || "—"}</TableCell>
-                    <TableCell className="text-muted-foreground">{p.location || "—"}</TableCell>
+                    {middleColumns(p).map(([label, value]) => (
+                      <TableCell key={label} className="text-muted-foreground">
+                        {value || "—"}
+                      </TableCell>
+                    ))}
                     <TableCell className="text-muted-foreground">
                       <span className="inline-flex items-center gap-1.5">
                         <ScoreRagDot score={p.fit_score} />
@@ -231,11 +254,7 @@ function ProspectCard({
   selected: boolean;
   onToggle: () => void;
 }) {
-  const attributes: [string, string][] = [
-    ["Industry", p.industry],
-    ["Size", p.company_size],
-    ["Location", p.location],
-  ].filter((entry): entry is [string, string] => Boolean(entry[1]));
+  const attributes = middleColumns(p).filter((entry): entry is [string, string] => Boolean(entry[1]));
 
   return (
     <li className="relative flex min-w-0 flex-col gap-2 rounded-lg border p-3 text-sm transition-colors hover:border-primary hover:bg-accent/40">

@@ -1,5 +1,5 @@
 import { createClient } from "../../db/server";
-import type { Prospect, ProspectStatus, ProspectSuggestion } from "./types";
+import type { Prospect, ProspectKind, ProspectStatus, ProspectSuggestion } from "./types";
 import {
   deriveProspectPipelineState,
   isFollowUpDue,
@@ -22,6 +22,8 @@ export type ProspectFilters = {
   stage?: ProspectStage;
   /** DISC-NAV-P0-01.2: only prospects whose follow-up is due (`isFollowUpDue`). */
   followUpDue?: boolean;
+  /** DISC-CONS-P0-05.1: only companies or only channels. Left out, both. */
+  kind?: ProspectKind;
 };
 
 export type ProspectSort = "recent" | "stage" | "priority";
@@ -109,6 +111,7 @@ export async function listProspects(
   if (filters.status) query = query.eq("status", filters.status);
   if (filters.industry) query = query.eq("industry", filters.industry);
   if (filters.search) query = query.ilike("company_name", `%${filters.search}%`);
+  if (filters.kind) query = query.eq("kind", filters.kind);
 
   const { data, error } = await query.order("created_at", { ascending: false });
   if (error) throw error;

@@ -29,6 +29,8 @@ export function ProspectsBoard({
   hasActiveFilters,
   bulkResearchAction,
   bulkScoreAction,
+  channels = false,
+  list,
 }: {
   prospects: ProspectWithPipeline[];
   basePath: string;
@@ -42,6 +44,10 @@ export function ProspectsBoard({
   hasActiveFilters: boolean;
   bulkResearchAction: (formData: FormData) => void | Promise<void>;
   bulkScoreAction: (formData: FormData) => void | Promise<void>;
+  /** DISC-CONS-P0-05.1: the list is the offering's channels. */
+  channels?: boolean;
+  /** The list's name in the URL, kept by the filters. */
+  list?: string;
 }) {
   const [query, setQuery] = useState(initialSearch);
   const [advancedOpen, setAdvancedOpen] = useState(defaultAdvancedOpen);
@@ -64,7 +70,7 @@ export function ProspectsBoard({
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search by company name..."
+            placeholder={channels ? "Search by channel name..." : "Search by company name..."}
             className="pl-8"
           />
         </div>
@@ -93,11 +99,16 @@ export function ProspectsBoard({
         industries={industries}
         open={advancedOpen}
         hasActiveFilters={hasActiveFilters}
+        list={list}
       />
 
       {filtered.length === 0 ? (
         <p className="rounded-md border p-4 text-sm text-muted-foreground">
-          {query || hasActiveFilters ? "No prospects match these filters." : "No prospects yet."}
+          {query || hasActiveFilters
+            ? `No ${channels ? "channels" : "prospects"} match these filters.`
+            : channels
+              ? "No channels yet. Find them on the Find tab."
+              : "No prospects yet."}
         </p>
       ) : (
         <ProspectsCards
@@ -105,6 +116,7 @@ export function ProspectsBoard({
           basePath={basePath}
           bulkResearchAction={bulkResearchAction}
           bulkScoreAction={bulkScoreAction}
+          channels={channels}
         />
       )}
     </div>

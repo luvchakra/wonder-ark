@@ -23,11 +23,14 @@ import {
   gatewayFailureMessage,
   type DataSource,
   type FindOutcome,
+  type FindTarget,
 } from "./types";
+import { toChannelSuggestionRow } from "./channels";
 import {
   hiringSignals,
   searchProspects,
   type BusinessItem,
+  type ChannelItem,
   type GatewayFailure,
   type GatewayLocationInput,
   type GatewayUsage,
@@ -56,9 +59,13 @@ export const FIND_PAGE_SIZE = 25;
 /** How far back a hiring signal looks, in days. */
 export const HIRING_SIGNAL_WINDOW_DAYS = 30;
 
+export { FIND_TARGETS, findTargetOf, type FindTarget } from "./types";
+
 export type FindInput = {
   /** A `DataSource.id` from `listDataSources`. */
   sourceId: string;
+  /** DISC-CONS-P0-02.1: left out, companies. */
+  target?: FindTarget;
   /** Keywords or categories. For a hiring signal, the keywords to match job titles on. */
   what: string;
   /** A place, or several separated by semicolons. Blank means no place filter. */
@@ -136,8 +143,9 @@ export async function stageGatewayResults(
   items: BusinessItem[],
   matchReason: (item: BusinessItem) => string,
   client?: SupabaseClient,
+  options: { icpPreFilter?: boolean } = {},
 ): Promise<{ added: number; skipped: Omit<Extract<FindOutcome, { status: "completed" }>["skipped"], "unreadable">; unstageable: number }> {
-  const criteria = await approvedIcpCriteria(workspaceId, client);
+  const criteria = options.icpPreFilter === false ? null : await approvedIcpCriteria(workspaceId, client);
   const icpReasons = new Map<string, number>();
   let icp = 0;
   let alreadyInReview = 0;
@@ -201,6 +209,62 @@ export async function stageGatewayResults(
   };
 }
 
+/**
+ * DISC-CONS-P0-02.1: stages the gateway's channel records as suggestions. The ICP
+ * pre-filter judges companies (industry, size, exclusions) and is not applied; the
+ * duplicate check is, by name, and the suggestions' unique key makes a repeated search
+ * add nothing.
+ */
+export async function stageGatewayChannels(
+  workspaceId: string,
+  items: ChannelItem[],
+  what: string,
+  where: string,
+  client?: SupabaseClient,
+): Promise<{ added: number; skipped: Omit<Extract<FindOutcome, { status: "completed" }>["skipped"], "unreadable">; unstageable: number }> {
+  let alreadyInReview = 0;
+  let unstageable = 0;
+  const seen = new Set<string>();
+  const candidates = [];
+  for (const item of items) {
+    const row = toChannelSuggestionRow(workspaceId, item, what, where);
+    if (!row) {
+      unstageable += 1;
+      continue;
+    }
+    const key = `${row.source}\u0000${row.external_id}`;
+    if (seen.has(key)) {
+      alreadyInReview += 1;
+      continue;
+    }
+    seen.add(key);
+    candidates.push(row);
+  }
+
+  const duplicates = await Promise.all(
+    candidates.map((row) => findDuplicateProspect(workspaceId, { companyName: row.company_name, website: null }, client)),
+  );
+  const fresh = candidates.filter((_, index) => !duplicates[index]);
+  const alreadyProspect = candidates.length - fresh.length;
+
+  let added = 0;
+  if (fresh.length > 0) {
+    const supabase = client ?? (await createClient());
+    const { data, error } = await supabase
+      .from("prospect_suggestions")
+      .upsert(fresh, { onConflict: "workspace_id,source,external_id", ignoreDuplicates: true })
+      .select("id");
+    if (error) throw error;
+    added = data?.length ?? 0;
+    alreadyInReview += fresh.length - added;
+  }
+  return { added, skipped: { alreadyProspect, alreadyInReview, icp: 0, icpReasons: [] }, unstageable };
+}
+
+function isChannel(item: ProspectItem): item is ChannelItem {
+  return item.kind === "channel";
+}
+
 function isBusiness(item: ProspectItem): item is BusinessItem {
   return item.kind === "business";
 }
@@ -209,6 +273,8 @@ type GatewayRun = {
   operation: DataSourceOperation;
   request: SearchRequest | SignalsRequest;
   results: BusinessItem[];
+  /** DISC-CONS-P0-02.1: what a channel search returned; empty otherwise. */
+  channels: ChannelItem[];
   unreadable: number;
   usage: GatewayUsage | null;
   providerIssues: Extract<FindOutcome, { status: "completed" }>["providerIssues"];
@@ -238,6 +304,7 @@ async function callGateway(
         operation: "gateway_signals",
         request,
         results: result.data.results,
+        channels: [],
         unreadable: result.data.unreadable,
         usage: result.data.usage ?? null,
         providerIssues: issuesOf(result.data.metadata?.providers ?? []),
@@ -245,17 +312,19 @@ async function callGateway(
     };
   }
 
+  const target = input.target ?? "companies";
   const request: SearchRequest = {
-    kind: "business",
+    kind: target === "channels" ? "channel" : "business",
     query: cleanText(input.what, 300) ?? "",
     filters: {
       categories: [],
       industries: [],
-      employeeRanges: splitList(input.companySize, /[,;\n]/),
-      ...(input.hasWebsite ? { hasWebsite: true } : {}),
+      employeeRanges: target === "companies" ? splitList(input.companySize, /[,;\n]/) : [],
+      ...(input.hasWebsite && target !== "channels" ? { hasWebsite: true } : {}),
       channelTypes: [],
       minAudience: null,
       languages: [],
+      ...(target === "places" ? { categoryGroup: "gathering_places" as const } : {}),
     },
     locations: locationsOf(input.where),
     providers: [source.provider],
@@ -264,15 +333,17 @@ async function callGateway(
   };
   const result = await searchProspects(caller, request);
   if (!result.ok) return { run: { operation: "gateway_search", request }, failure: result };
-  const business = result.data.results.filter(isBusiness);
+  const business = target === "channels" ? [] : result.data.results.filter(isBusiness);
+  const channels = target === "channels" ? result.data.results.filter(isChannel) : [];
   return {
     failure: null,
     run: {
       operation: "gateway_search",
       request,
       results: business,
-      // A channel in answer to a search for businesses is not what was asked for.
-      unreadable: result.data.unreadable + (result.data.results.length - business.length),
+      channels,
+      // A record of the other kind than was asked for is not what was asked for.
+      unreadable: result.data.unreadable + (result.data.results.length - business.length - channels.length),
       usage: result.data.usage,
       providerIssues: issuesOf(result.data.metadata.providers),
     },
@@ -336,6 +407,8 @@ export async function runFind(workspaceId: string, input: FindInput, unattended?
 
   // The AI web search does not depend on the gateway, so it never waits on it.
   if (input.sourceId === WEB_SEARCH_SOURCE_ID) {
+    // DISC-CONS-P0-02.1: the AI web search looks for companies only.
+    if ((input.target ?? "companies") !== "companies") return failed("invalid", "Choose a source that lists channels or places.");
     // It spends AI budget and needs a person's session; it never runs on a schedule.
     if (unattended) return failed("invalid", "Web search (AI) can't run on a schedule.");
     return findWithWebSearch(workspaceId, input, WEB_SEARCH_SOURCE_LABEL);
@@ -344,6 +417,15 @@ export async function runFind(workspaceId: string, input: FindInput, unattended?
   const list = await listDataSources(workspaceId, client);
   const source = list.sources.find((entry) => entry.id === input.sourceId && entry.action !== "import");
   if (!source) return failed("invalid", "Choose a source to search.");
+  // DISC-CONS-P0-02.1: channels come only from a source that lists channels, and only a
+  // search (not a hiring signal) can look for them or for gathering places.
+  const target = input.target ?? "companies";
+  if (target === "channels" && (source.action !== "search" || !source.kinds.includes("channel"))) {
+    return failed("invalid", "Choose a source that lists channels.");
+  }
+  if (target === "places" && (source.action !== "search" || !source.kinds.includes("business"))) {
+    return failed("invalid", "Choose a source that lists places.");
+  }
 
   if (source.origin !== "gateway" || !source.provider) return failed("invalid", "Choose a source to search.");
   if (source.status !== "active") {
@@ -403,24 +485,30 @@ export async function runFind(workspaceId: string, input: FindInput, unattended?
     client,
   });
 
-  const staged = await stageGatewayResults(
-    workspaceId,
-    run.results,
-    source.action === "signals" ? hiringMatchReason : () => searchMatchReason(input.what, input.where),
-    client,
-  );
+  const staged =
+    target === "channels"
+      ? await stageGatewayChannels(workspaceId, run.channels, input.what, input.where, client)
+      : await stageGatewayResults(
+          workspaceId,
+          run.results,
+          source.action === "signals" ? hiringMatchReason : () => searchMatchReason(input.what, input.where),
+          client,
+          // A gathering place is not a company the ICP describes, so its pre-filter does not apply.
+          { icpPreFilter: target === "companies" },
+        );
 
   return {
     status: "completed",
     sourceLabel: source.label,
-    found: run.results.length + run.unreadable,
+    found: run.results.length + run.channels.length + run.unreadable,
     added: staged.added,
     skipped: { ...staged.skipped, unreadable: run.unreadable + staged.unstageable },
     unitsSpent: run.usage?.unitsSpent ?? null,
     providerIssues: run.providerIssues,
     // DISC-DATA-P0-05.1: only a free source may be saved to run weekly. The save action
     // checks this again against the gateway's list; this only decides whether to offer it.
-    ...(source.paid
+    // A weekly search is for companies in this version.
+    ...(source.paid || target !== "companies"
       ? {}
       : {
           weekly: {

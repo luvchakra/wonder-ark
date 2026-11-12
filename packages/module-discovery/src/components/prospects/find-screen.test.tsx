@@ -213,3 +213,57 @@ describe("the review list", () => {
     expect(rows).not.toMatch(/<a\b/);
   });
 });
+
+// DISC-CONS-P0-02.1: Find for an offering sold to consumers.
+describe("Find for consumers", () => {
+  const channelSource: DataSource = { ...stored, id: "youtube", provider: "youtube", label: "YouTube", kinds: ["channel"] };
+
+  it("a business offering's form is unchanged: no choice of what to look for", () => {
+    const html = form();
+    expect(html).not.toContain('aria-label="Look for"');
+    expect(html).toContain('name="target" value="companies"');
+  });
+
+  it("a consumer offering looks for channels first, prefilled with the Ideal user's topics", () => {
+    const html = form({
+      sources: [stored, channelSource, webSearch],
+      targets: ["channels", "places"],
+      defaults: { ...defaults, channelTopics: "decluttering, home organisation", places: "playschools" },
+    });
+    expect(html).toContain('aria-label="Look for"');
+    expect(html).toContain('name="target" value="channels"');
+    expect(html).toContain('value="decluttering, home organisation"');
+    // Only sources that list channels are offered; the AI web search is not.
+    expect(html).toContain(">YouTube<");
+    expect(html).not.toContain("Web search (AI)");
+  });
+
+  it("says Needs setup when no source lists channels yet, and Find cannot be pressed", () => {
+    const html = form({ sources: [stored, webSearch], targets: ["channels", "places"] });
+    expect(html).toContain("Needs setup: no source that lists channels");
+    expect(html).toMatch(/<button[^>]*type="submit"[^>]*disabled/);
+  });
+
+  it("shows a channel suggestion's type, audience with its date, and topics", () => {
+    const html = list([
+      {
+        ...suggestion,
+        id: "c1",
+        kind: "channel",
+        company_name: "Example Home Organising",
+        website: null,
+        source: "youtube",
+        source_name: "YouTube Data API",
+        payload: {
+          kind: "channel",
+          channelType: "youtube_channel",
+          audience: { value: 120000, unit: "subscribers", asOf: "2026-11-10" },
+          topics: ["home organisation"],
+        },
+      },
+    ]);
+    expect(html).toContain("YouTube channel · 1,20,000 subscribers (10 Nov 2026)");
+    expect(html).toContain("Topics: home organisation");
+    expect(html).toContain("YouTube Data API");
+  });
+});

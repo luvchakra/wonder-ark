@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { computeDiscoveryOutcomeStage, type DiscoveryOutcomeStageInput } from "./outcome";
+import {
+  computeDiscoveryOutcomeStage,
+  outcomeStageLabel,
+  prospectOutcomeLabel,
+  type DiscoveryOutcomeStageInput,
+} from "./outcome";
 
 const BASE: DiscoveryOutcomeStageInput = {
   hasResearch: false,
@@ -53,5 +58,17 @@ describe("computeDiscoveryOutcomeStage", () => {
 
   it("treats any other CRM lead status (new/contacted/opportunity/unresponsive/disqualified) as no reportable downstream outcome yet", () => {
     expect(computeDiscoveryOutcomeStage({ ...BASE, handedOffToCrm: true, downstreamLeadStatus: "opportunity" })).toBe("crm_handoff");
+  });
+});
+
+// DISC-CONS-P0-02.2 (B5.2.5): a channel reuses the stages and outcome; "won" reads "Live".
+describe("outcome words for a channel", () => {
+  it("labels won as Live for a channel only", () => {
+    expect(outcomeStageLabel("won", "channel")).toBe("Live");
+    expect(outcomeStageLabel("won", "company")).toBe("Won");
+    expect(outcomeStageLabel("won")).toBe("Won");
+    expect(outcomeStageLabel("lost", "channel")).toBe("Lost");
+    expect(prospectOutcomeLabel("won", "channel")).toBe("Live");
+    expect(prospectOutcomeLabel("won", null)).toBe("Won");
   });
 });

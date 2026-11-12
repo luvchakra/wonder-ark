@@ -1,5 +1,6 @@
 import { createClient } from "../../db/server";
 import { detectIcpFieldCorrections } from "../offerings/offering-feedback";
+import { readIdealUser, idealUserContent } from "./audience";
 import type { IcpProfile, IcpProfileVersionSource } from "./types";
 
 type IcpFieldsInput = {
@@ -17,6 +18,10 @@ type IcpFieldsInput = {
   technology: string[];
   growthStage: string[];
   existingTools: string[];
+  /** DISC-CONS-P0-01.2: the Ideal user's fields as the form posted them. Left out by a
+   * form that has none (an offering sold to companies only), which leaves the stored
+   * Ideal user as it is. */
+  audience?: unknown;
 };
 
 function icpFieldsToRow(input: IcpFieldsInput) {
@@ -37,6 +42,8 @@ function icpFieldsToRow(input: IcpFieldsInput) {
     technology: input.technology,
     growth_stage: input.growthStage,
     existing_tools: input.existingTools,
+    // A person's edit is no longer what the AI wrote, so it carries no `generated_from`.
+    ...(input.audience !== undefined ? { audience: idealUserContent(readIdealUser(input.audience)) } : {}),
   };
 }
 
@@ -69,6 +76,7 @@ export async function recordIcpProfileVersion(icp: IcpProfile, source: IcpProfil
     technology: icp.technology,
     growth_stage: icp.growth_stage,
     existing_tools: icp.existing_tools,
+    audience: icp.audience ?? null,
     confidence: icp.confidence,
     evidence: icp.evidence,
     status: icp.status,
@@ -208,6 +216,8 @@ export async function cloneIcpProfileToWorkspace(sourceIcpId: string, targetWork
     technology: source.technology,
     growth_stage: source.growth_stage,
     existing_tools: source.existing_tools,
+    // DISC-CONS-P0-01.2: the Ideal user is cloned with the rest, as a person's copy.
+    audience: idealUserContent(readIdealUser(source.audience)),
     /** DISC-OFFER-P0-13.1: deliberately NOT `source.confidence`/`source.evidence` --
      * those describe how well the *source* ICP is grounded in the *source* offering's
      * own product profile; carrying them onto a different workspace/offering would

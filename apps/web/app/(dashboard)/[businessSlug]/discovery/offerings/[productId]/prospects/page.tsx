@@ -26,6 +26,12 @@ import {
   autoDiscoverOneProspectAction,
 } from "./actions";
 import { markTaskDoneAction } from "../campaigns/actions";
+import Link from "next/link";
+import { audienceTypeOf } from "@cofounderai/module-discovery/lib/icp/audience";
+
+/** DISC-CONS-P0-05.1: the lists the Prospects tab offers, by who buys the offering. */
+const LIST_LABEL = { companies: "Companies", channels: "Channels" } as const;
+type ProspectList = keyof typeof LIST_LABEL;
 
 export default async function ProspectsPage({
   params,
@@ -48,6 +54,7 @@ export default async function ProspectsPage({
     bulkLimit?: string;
     autopopulated?: string;
     aiRestructured?: string;
+    list?: string;
   }>;
 }) {
   const { businessSlug, productId } = await params;
@@ -80,6 +87,14 @@ export default async function ProspectsPage({
 
   const sortMode = sort === "stage" || sort === "priority" ? sort : "recent";
 
+  // DISC-CONS-P0-05.1: a consumer offering's prospects are channels; one sold to both
+  // has companies and channels, one list at a time. A business offering is unchanged.
+  const audienceType = audienceTypeOf(product);
+  const lists: ProspectList[] =
+    audienceType === "consumer" ? ["channels"] : audienceType === "both" ? ["companies", "channels"] : [];
+  const currentList: ProspectList | null = lists.find((entry) => entry === query.list) ?? lists[0] ?? null;
+  const kind = currentList === "channels" ? ("channel" as const) : currentList === "companies" ? ("company" as const) : undefined;
+
   // `search` filters client-side (ProspectsBoard) against this already-fetched list, not
   // the DB query -- the Advanced fields (status/stage/industry/sort) still need a fresh
   // server-side fetch, since sort order and stage are computed server-side.
@@ -94,6 +109,7 @@ export default async function ProspectsPage({
         industry: industry || undefined,
         stage: (stage as ProspectStage) || undefined,
         followUpDue,
+        kind,
       },
       sortMode,
     ),
@@ -127,6 +143,25 @@ export default async function ProspectsPage({
           <ProspectToolbarActions createAction={createProspectAction.bind(null, businessId, productId, workspace.id)} />
         </div>
       </div>
+
+      {lists.length > 1 ? (
+        <nav aria-label="Lists" className="flex gap-1 self-start rounded-md bg-muted p-1">
+          {lists.map((entry) => (
+            <Link
+              key={entry}
+              href={`${basePath}?list=${entry}`}
+              aria-current={entry === currentList ? "page" : undefined}
+              className={
+                entry === currentList
+                  ? "rounded bg-background px-3 py-1 text-sm font-medium shadow-sm"
+                  : "rounded px-3 py-1 text-sm text-muted-foreground hover:text-foreground"
+              }
+            >
+              {LIST_LABEL[entry]}
+            </Link>
+          ))}
+        </nav>
+      ) : null}
 
       <TodayList rows={today} tasks={campaignTasks} taskAction={(enrollmentId) => markTaskDoneAction.bind(null, businessId, productId, enrollmentId)} />
 
@@ -187,6 +222,8 @@ export default async function ProspectsPage({
         hasActiveFilters={hasActiveFilters}
         bulkResearchAction={bulkResearchAction.bind(null, businessId, productId, workspace.id)}
         bulkScoreAction={bulkScoreAction.bind(null, businessId, productId, workspace.id)}
+        channels={currentList === "channels"}
+        list={lists.length > 1 ? (currentList ?? undefined) : undefined}
       />
     </div>
   );

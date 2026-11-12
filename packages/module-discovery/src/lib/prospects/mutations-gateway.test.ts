@@ -7,7 +7,7 @@
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createFakeSupabase, usedOp, writtenRow, type RecordedQuery } from "@cofounderai/core/test-support/fake-supabase";
-import { businessItem } from "../data-sources/__tests__/fixtures/contract";
+import { businessItem, channelItem } from "../data-sources/__tests__/fixtures/contract";
 
 const h = vi.hoisted(() => ({
   createClient: vi.fn(),
@@ -231,5 +231,53 @@ describe("an AI web-search suggestion", () => {
       phone: null,
       field_sources: {},
     });
+  });
+});
+
+// DISC-CONS-P0-02.1: approving a channel creates a prospect with kind 'channel', its
+// type and audience size, each credited to its source.
+describe("approving a channel suggestion", () => {
+  const channelSuggestion = {
+    ...gatewaySuggestion,
+    id: "s3",
+    kind: "channel",
+    company_name: "Example Home Organising",
+    website: null,
+    industry: "home organisation, family routines",
+    location: "India",
+    description: "A channel about tidy homes",
+    source: "youtube",
+    source_name: "YouTube Data API",
+    source_url: "https://www.youtube.com/@example",
+    source_ref: "https://www.youtube.com/@example",
+    external_id: "channels_81bc...",
+    payload: channelItem,
+  };
+
+  it("creates a channel prospect with its type, audience size and their sources", async () => {
+    const supabase = mockApproval([channelSuggestion]);
+
+    await expect(approveProspectSuggestionsDetailed(WORKSPACE, ["s3"])).resolves.toEqual({ added: 1, duplicates: 0 });
+
+    const [row] = insertedProspects(supabase);
+    expect(row).toMatchObject({
+      kind: "channel",
+      company_name: "Example Home Organising",
+      website: null,
+      channel_type: "youtube_channel",
+      audience_size: 120000,
+      source: "youtube",
+      source_ref: "https://www.youtube.com/@example",
+      phone: null,
+    });
+    expect((row!.field_sources as Record<string, { name: string }>).audience_size!.name).toBe("YouTube Data API");
+  });
+
+  it("refuses a channel already a prospect", async () => {
+    h.findDuplicateProspect.mockResolvedValue({ id: "existing" });
+    const supabase = mockApproval([channelSuggestion]);
+
+    await expect(approveProspectSuggestionsDetailed(WORKSPACE, ["s3"])).resolves.toEqual({ added: 0, duplicates: 1 });
+    expect(insertedProspects(supabase)).toEqual([]);
   });
 });

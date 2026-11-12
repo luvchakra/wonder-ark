@@ -1,5 +1,6 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { detectIcpFieldCorrections, type IcpContentFields } from "./offering-feedback";
+import { detectIcpFieldCorrections, ICP_CONTENT_FIELDS, type IcpContentFields } from "./offering-feedback";
 
 function baseFields(overrides: Partial<IcpContentFields> = {}): IcpContentFields {
   return {
@@ -63,5 +64,39 @@ describe("detectIcpFieldCorrections", () => {
   it("ignores an emptied-then-refilled field that lands back on the same value", () => {
     const fields = baseFields({ exclusions: [] });
     expect(detectIcpFieldCorrections(fields, { ...fields, exclusions: [] })).toEqual([]);
+  });
+});
+
+// DISC-CONS-P0-01.2: the Ideal user's fields are corrections too, and the closed list in
+// code is the one the database checks.
+describe("Ideal user feedback", () => {
+  const user = { who: "Parents of toddlers", goals: ["Sleep"], triggers: [], current_solutions: [], interests: [], online_places: [], offline_places: [], words: [] };
+
+  it("records each Ideal user field a person changed, prefixed audience_", () => {
+    const ai = baseFields({ audience: { ...user, generated_from: { input_hash: "h", prompt_version: "v" } } });
+    const edited = baseFields({ audience: { ...user, goals: ["Sleep", "Calm evenings"] } });
+    expect(detectIcpFieldCorrections(ai, edited)).toEqual([
+      { field: "audience_goals", aiValue: ["Sleep"], userValue: ["Sleep", "Calm evenings"] },
+    ]);
+  });
+
+  it("ignores where a draft came from: an unchanged Ideal user is no correction", () => {
+    const ai = baseFields({ audience: { ...user, generated_from: { input_hash: "h", prompt_version: "v" } } });
+    expect(detectIcpFieldCorrections(ai, baseFields({ audience: user }))).toEqual([]);
+  });
+
+  it("an offering with no Ideal user on either side records nothing for it", () => {
+    expect(detectIcpFieldCorrections(baseFields(), baseFields())).toEqual([]);
+  });
+
+  it("lists exactly the field names the migration's check allows", () => {
+    const sql = readFileSync(
+      new URL("../../../../../supabase/migrations/20261112160000_discovery_consumer_channels.sql", import.meta.url),
+      "utf8",
+    );
+    const check = sql.slice(sql.indexOf("add constraint offering_feedback_field_name_check"));
+    const inList = check.slice(check.indexOf("field_name in ("), check.indexOf(")\n  );"));
+    const names = [...inList.matchAll(/'([a-z_]+)'/g)].map((match) => match[1]);
+    expect(names).toEqual([...ICP_CONTENT_FIELDS]);
   });
 });

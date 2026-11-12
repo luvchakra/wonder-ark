@@ -5,6 +5,8 @@ import { FREE_TIER_MONTHLY_COST_LIMIT_USD } from "./limits";
 export const OPERATION_LABEL: Record<string, string> = {
   understand_product: "Offering profile",
   generate_icp: "ICP generation",
+  // DISC-CONS-P0-01.2
+  generate_consumer_icp: "Ideal user generation",
   research_prospect: "Prospect research",
   discover_prospects: "Prospect discovery",
   generate_outreach_strategy: "Outreach strategy",

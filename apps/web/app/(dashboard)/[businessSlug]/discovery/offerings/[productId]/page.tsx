@@ -22,6 +22,8 @@ import { getBuyerIntelligenceForProspect } from "@cofounderai/module-discovery/l
 import { computeBuyerFitScores } from "@cofounderai/module-discovery/lib/buyer-intelligence/scoring";
 import { classifyExistingRelationship } from "@cofounderai/module-crm/contract/index";
 import { getAiApprovalMode } from "@cofounderai/module-discovery/lib/ai-approval/queries";
+import { AudienceTypeForm } from "@cofounderai/module-discovery/components/offerings/audience-type-form";
+import { audienceTypeOf, suggestAudienceType } from "@cofounderai/module-discovery/lib/icp/audience";
 import {
   addFileSourceAction,
   addTextSourceAction,
@@ -35,6 +37,7 @@ import {
   updateRediscoveryIntervalAction,
   updateDiscoveryCriteriaAction,
   regenerateIcpFromOverviewAction,
+  setAudienceTypeAction,
 } from "./actions";
 
 function icpPath(businessSlug: string, productId: string) {
@@ -106,6 +109,18 @@ export default async function ProductPage({
       })()
     : null;
 
+  // DISC-CONS-P0-01.1: "Who buys this?" leads the page until a person has answered it,
+  // then lives with the rest of the setup. One form either way.
+  const audienceConfirmed = Boolean(product.audience_confirmed_at);
+  const audienceForm = (
+    <AudienceTypeForm
+      action={setAudienceTypeAction.bind(null, businessId, productId)}
+      current={audienceTypeOf(product)}
+      confirmed={audienceConfirmed}
+      suggested={suggestAudienceType(product)}
+    />
+  );
+
   return (
     // DISC-OFFER-P1-05.4 "Offering Overview UX Polish" -- hierarchy planned per
     // docs/design/claude-ui-design-rules.md before touching markup: the most urgent,
@@ -120,6 +135,7 @@ export default async function ProductPage({
     // renders for a brand-new offering (no profile yet): the gated Top Opportunity/
     // Overview cards are still both null then, and the setup card still defaults open.
     <div className="flex flex-col gap-8">
+      {audienceConfirmed ? null : audienceForm}
       {topGateRow && topGateContext ? (
         <TopOpportunityGate
           businessId={businessId}
@@ -172,6 +188,7 @@ export default async function ProductPage({
       </section>
 
       <CollapsibleCard label="Offering setup & sources" defaultOpen={!product.product_profile}>
+        {audienceConfirmed ? <div className="mb-4">{audienceForm}</div> : null}
         <ProductOverviewShell
           product={product}
           sources={sources}

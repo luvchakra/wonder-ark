@@ -165,6 +165,15 @@ Recently Funded, Rapid Growth, Hiring Relevant Roles, New Executive,
 Technology Migration, Competitor Customers, Regulatory Pressure, Negative
 Reviews, Expansion and Multiple Buying Signals — which you can then edit.
 
+### Who buys this: companies, consumers or both
+
+**Who buys this?** asks whether an offering is sold to **Companies**, **Consumers** or
+**Both**. Until you answer, it sits at the top of the offering's **Overview**, with the
+answer your offering profile suggests already chosen; press **Confirm** to keep it or pick
+another. Afterwards you can change it under **Offering setup & sources**. The answer
+decides what the rest of the offering offers: an **Ideal user** on the ideal customer page,
+channels on **Find**, and a **Channels** list on **Prospects**.
+
 ### ICP & Buyer Personas
 
 **Setup → Ideal customer** is where you generate (or regenerate, clone, or approve) an
@@ -175,6 +184,14 @@ existing tools. The ICP has one overall **Confidence** percentage and an **Evide
 It needs an offering profile first. **Save changes** only saves; **Save & Run Downstream**
 also re-runs prospecting and scoring. Earlier versions are under **Version history**. Buyer
 Personas are managed on the same page, whether or not an ICP exists yet.
+
+For an offering sold to consumers (or to both), the page also has an **Ideal user**: who
+they are, what they are trying to get done, what triggers the need, what they use today,
+their interests, where they spend time online and offline, and the words they use.
+**Regenerate** writes it with AI from your offering profile, marked **AI-generated** until
+you edit it; regenerating with nothing changed reuses the last draft instead of asking the AI
+again. It is saved, versioned and approved with the rest of the page. For an offering sold
+only to consumers the company fields are folded under **Company fields**.
 
 ### Finding prospects
 
@@ -207,6 +224,17 @@ Everything that brings companies in is under the **Find** tab.
   found (or that it failed, and why), and when it runs next. **Pause** stops it until you
   press **Resume**. Searches are checked once a day, so a run can start up to a day after
   it falls due.
+- **Channels and places they gather.** For an offering sold to consumers, Find looks for
+  **Channels** (YouTube channels, podcasts, communities, newsletters, forums and other
+  public outlets) or **Places they gather** (schools, colleges, coaching centres, gyms,
+  clubs, community centres and coworking spaces). For an offering sold to both, a switch
+  above the form chooses **Companies**, **Channels** or **Places they gather**. **What** is
+  filled in from your approved Ideal user's interests and online places (or, for places,
+  its offline places). Only sources that list channels or places are offered; if none is
+  available yet, the form says **Needs setup**. A channel waiting under **To review** shows
+  its type, its audience with the date the source measured it, its topics, why it fits and
+  its source. Approving it adds it to your prospects as a channel. Channels are never
+  people's own profiles.
 - **Import** loads a list from CSV, Excel or PDF, or pasted CSV. `company_name` is
   required; a file in another layout is restructured by AI for you to check before import.
 - **Add**, on the **Prospects** tab, creates one prospect by hand.
@@ -273,6 +301,25 @@ your business's do-not-contact list, so no later email from your business is sen
 contact lookups. If the request to WorksLake can't be passed on, the address is still
 blocked for your business, the contact is not deleted, and the page says why, so you can
 try again.
+
+### Channels: drafts, posts and Live
+
+For an offering sold to consumers, **Prospects** lists your channels, with each one's type,
+audience and location. An offering sold to both has a switch between **Companies** and
+**Channels**. A channel's page shows its type, its audience (with the date the source
+measured it), its topics and its source.
+
+**Drafts for this channel** writes one draft at a time with AI: a **Partnership pitch to
+the owner**, a **Sponsorship or listing enquiry**, or a **Community post**. The two emails
+are saved as drafts under **Messages**. The community post is saved as marketing content,
+marked **AI-generated**, and listed under the drafts with **Copy**. WonderArk never posts
+to a community, group or channel, and never sends these drafts by itself: you copy the post
+and publish it yourself. Then open **Mark as posted**, paste the link to your post and
+press **Save**; the post then shows the date and the link. A draft with a link, an email
+address or a placeholder in it is not saved.
+
+A channel uses the same stages as a company. Closing a conversation as won shows the
+channel as **Live**.
 
 ### Campaigns
 

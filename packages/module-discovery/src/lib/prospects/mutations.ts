@@ -4,6 +4,7 @@ import { publish } from "@cofounderai/core/events/mutations";
 import { getBusinessIdForWorkspace, getProduct, getWorkspace } from "../tenancy/queries";
 import { backfillCustomerContactsForWonProspect, ensureProspectParty, markProspectPartyWon } from "./party-sync";
 import { cleanText, fieldSourcesFor } from "../data-sources/suggestions";
+import { channelProspectFields } from "../data-sources/channels";
 import { WEB_SEARCH_SOURCE_ID } from "../data-sources/types";
 import { findDuplicateProspect } from "./duplicates";
 import type { Prospect, ProspectOutcome, ProspectStatus, ProspectSuggestion } from "./types";
@@ -358,6 +359,28 @@ export async function approveProspectSuggestionsWithProspects(
       .from("prospects")
       .insert(
         accepted.map((s) => {
+          // DISC-CONS-P0-02.1: a channel takes its type and audience size, with their
+          // sources; it has no organisation contact points.
+          if (s.kind === "channel") {
+            const channel = channelProspectFields(s);
+            return {
+              workspace_id: workspaceId,
+              ...toRow({
+                companyName: s.company_name,
+                industry: s.industry ?? undefined,
+                location: s.location ?? undefined,
+                description: s.description ?? undefined,
+              }),
+              kind: "channel" as const,
+              source: s.source ?? null,
+              source_name: s.source_name ?? null,
+              source_ref: s.source_url ?? s.source_ref ?? null,
+              phone: null,
+              channel_type: channel.channel_type,
+              audience_size: channel.audience_size,
+              field_sources: channel.field_sources,
+            };
+          }
           const fromGateway = isGatewaySuggestion(s);
           const contact = fromGateway ? gatewayContactPoints(s.payload) : { phone: null, email: null };
           const row = toRow({

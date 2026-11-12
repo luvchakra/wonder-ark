@@ -11,7 +11,10 @@ import { SubmitButton } from "@cofounderai/core/ui/submit-button";
 import { AiErrorOptions } from "../errors/ai-error-options";
 import {
   DATA_SOURCE_STATUS_LABEL,
+  FIND_TARGET_LABEL,
+  sourcesForTarget,
   WEB_SEARCH_SOURCE_ID,
+  type FindTarget,
   type DataSource,
   type DataSourceQuota,
   type FindOutcome,
@@ -34,7 +37,8 @@ import { RunWeeklyButton } from "./weekly-search";
  */
 export function FindForm({
   action,
-  sources,
+  sources: allSources,
+  targets = [],
   defaultSourceId,
   quota,
   note,
@@ -45,11 +49,14 @@ export function FindForm({
 }: {
   action: (prevState: FindState, formData: FormData) => Promise<FindState>;
   sources: DataSource[];
+  /** DISC-CONS-P0-02.1: what this offering can look for, the first being the default.
+   * Empty for an offering sold to companies: the form looks for companies, as before. */
+  targets?: FindTarget[];
   defaultSourceId: string;
   quota: DataSourceQuota | null;
   /** One line under the form: the quota, or why the gateway can't be searched. */
   note: string | null;
-  defaults: { what: string; where: string; hiringKeywords: string };
+  defaults: { what: string; where: string; hiringKeywords: string; channelTopics?: string; places?: string };
   /** Find is the page's primary action unless suggestions are waiting for review. */
   primary: boolean;
   /** DISC-DATA-P0-05.1: saves the search that just ran, to run weekly. */
@@ -58,9 +65,32 @@ export function FindForm({
   weekly?: SavedSearchSummary | null;
 }) {
   const [state, formAction] = useActionState<FindState, FormData>(action, null);
-  const [sourceId, setSourceId] = useState(defaultSourceId);
-  const [what, setWhat] = useState(defaults.what);
+  const [target, setTarget] = useState<FindTarget>(targets[0] ?? "companies");
+  const sources = sourcesForTarget(allSources, target);
+  const whatFor = (nextTarget: FindTarget, source: DataSource | undefined) =>
+    nextTarget === "channels"
+      ? (defaults.channelTopics ?? "")
+      : nextTarget === "places"
+        ? (defaults.places ?? "")
+        : source?.action === "signals"
+          ? defaults.hiringKeywords
+          : defaults.what;
+  const firstUsable = (list: DataSource[]) => list.find((entry) => entry.status === "active") ?? list[0];
+  const initialTarget: FindTarget = targets[0] ?? "companies";
+  const [sourceId, setSourceId] = useState(
+    initialTarget !== "companies" ? (firstUsable(sourcesForTarget(allSources, initialTarget))?.id ?? "") : defaultSourceId,
+  );
+  const [what, setWhat] = useState(() => whatFor(targets[0] ?? "companies", allSources.find((entry) => entry.id === defaultSourceId)));
   const [whatEdited, setWhatEdited] = useState(false);
+
+  function chooseTarget(next: FindTarget) {
+    setTarget(next);
+    const list = sourcesForTarget(allSources, next);
+    const nextSource = next === "companies" ? (list.find((entry) => entry.id === defaultSourceId) ?? firstUsable(list)) : firstUsable(list);
+    setSourceId(nextSource?.id ?? "");
+    setWhat(whatFor(next, nextSource));
+    setWhatEdited(false);
+  }
 
   const source = sources.find((entry) => entry.id === sourceId) ?? null;
   const signals = source?.action === "signals";
@@ -72,12 +102,33 @@ export function FindForm({
     setSourceId(nextId);
     if (whatEdited) return;
     const next = sources.find((entry) => entry.id === nextId);
-    setWhat(next?.action === "signals" ? defaults.hiringKeywords : defaults.what);
+    setWhat(whatFor(target, next));
   }
 
   return (
     <div className="flex flex-col gap-3">
       <form action={formAction} className="flex flex-col gap-4 rounded-lg border bg-card p-4">
+        <input type="hidden" name="target" value={target} />
+        {targets.length > 1 ? (
+          <div role="radiogroup" aria-label="Look for" className="flex flex-wrap gap-1 self-start rounded-md bg-muted p-1">
+            {targets.map((entry) => (
+              <button
+                key={entry}
+                type="button"
+                role="radio"
+                aria-checked={entry === target}
+                onClick={() => chooseTarget(entry)}
+                className={
+                  entry === target
+                    ? "rounded px-3 py-1 text-sm font-medium bg-background shadow-sm"
+                    : "rounded px-3 py-1 text-sm text-muted-foreground hover:text-foreground"
+                }
+              >
+                {FIND_TARGET_LABEL[entry]}
+              </button>
+            ))}
+          </div>
+        ) : null}
         <div className="grid gap-3 md:grid-cols-[minmax(0,2fr)_minmax(0,1.5fr)_minmax(0,1.5fr)_auto] md:items-end">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="find-what">{signals ? "Hiring for" : "What"}</Label>
@@ -89,7 +140,7 @@ export function FindForm({
                 setWhat(event.target.value);
                 setWhatEdited(true);
               }}
-              placeholder={signals ? "Job title keywords" : "Keywords or categories"}
+              placeholder={signals ? "Job title keywords" : target === "channels" ? "Topics" : target === "places" ? "Kinds of places" : "Keywords or categories"}
               autoComplete="off"
             />
           </div>
@@ -129,6 +180,12 @@ export function FindForm({
           </SubmitButton>
         </div>
 
+        {sources.length === 0 ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            Needs setup: no source that lists {target === "channels" ? "channels" : "places"} is available for this workspace yet.
+          </p>
+        ) : null}
+
         <Collapsible>
           <CollapsibleTrigger className="group flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">
             More filters
@@ -136,7 +193,7 @@ export function FindForm({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="grid gap-3 pt-3 sm:grid-cols-2">
-              {signals ? null : (
+              {signals || target !== "companies" ? null : (
                 <div className="flex flex-col gap-1.5">
                   <Label htmlFor="find-company-size">Company size</Label>
                   <Input id="find-company-size" name="companySize" placeholder="e.g. 11-50" autoComplete="off" />
@@ -148,13 +205,13 @@ export function FindForm({
                   <Input id="find-also" name="alsoLookFor" placeholder="e.g. recently raised funding" autoComplete="off" />
                 </div>
               ) : null}
-              {!webSearch && !signals ? (
+              {!webSearch && !signals && target !== "channels" ? (
                 <label className="flex items-center gap-2 self-end pb-2 text-sm">
                   <input type="checkbox" name="hasWebsite" className="size-4" />
                   Only with a website
                 </label>
               ) : null}
-              {signals ? (
+              {signals || target === "channels" ? (
                 <p className="text-sm text-muted-foreground">No extra filters for this source.</p>
               ) : null}
             </div>

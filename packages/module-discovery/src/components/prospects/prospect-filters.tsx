@@ -25,6 +25,7 @@ export function ProspectFilters({
   industries,
   open,
   hasActiveFilters,
+  list,
 }: {
   basePath: string;
   status: string;
@@ -34,12 +35,15 @@ export function ProspectFilters({
   industries: string[];
   open: boolean;
   hasActiveFilters: boolean;
+  /** DISC-CONS-P0-05.1: the list being filtered (companies or channels), kept on submit. */
+  list?: string;
 }) {
   return (
     <form
       method="get"
       className={cn("flex flex-wrap items-end gap-3 rounded-md border p-3", !open && "hidden")}
     >
+      {list ? <input type="hidden" name="list" value={list} /> : null}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="status">Status</Label>
         <NativeSelect id="status" name="status" defaultValue={status}>
