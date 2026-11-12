@@ -4,6 +4,7 @@ import { businessPath } from "@/lib/business-path";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createProspect } from "@cofounderai/module-discovery/lib/prospects/mutations";
+import { saveSignupPage } from "@cofounderai/module-discovery/lib/audience/pages";
 import { findDuplicateProspect } from "@cofounderai/module-discovery/lib/prospects/duplicates";
 import {
   bulkResearchProspects,
@@ -90,4 +91,16 @@ export async function bulkScoreAction(
   const result = await bulkScoreProspects(workspaceId, ids);
   revalidatePath(await prospectsPath(businessId, productId));
   redirect(`${await prospectsPath(businessId, productId)}?${bulkResultQuery("score", result)}`);
+}
+
+/** DISC-CONS-P0-03.2: the offering's sign-up page settings. `saveSignupPage` checks the
+ * licence; RLS keeps it to the member's own workspace. */
+export async function saveSignupPageAction(businessId: string, productId: string, workspaceId: string, formData: FormData) {
+  await saveSignupPage(workspaceId, {
+    enabled: formData.get("enabled") !== null,
+    valueLine: formData.get("valueLine"),
+    questions: [formData.get("question_0"), formData.get("question_1")],
+    consentText: formData.get("consentText"),
+  });
+  revalidatePath(await prospectsPath(businessId, productId));
 }

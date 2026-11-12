@@ -64,6 +64,9 @@ describe("activeOfferingNav", () => {
     expect(active("/performance")).toBe("results:performance");
     expect(active("/conversions")).toBe("results:conversions");
     expect(active("/usage")).toBe("results:usage");
+    expect(active("/people-say")).toBe("results:people-say");
+    // DISC-CONS-P0-05.2: a person who opted in sits under the Prospects page's People list.
+    expect(active("/prospects/people/l1")).toBe("prospects:prospects");
   });
 
   it("keeps a single prospect, run or opportunity under its list's tab", () => {

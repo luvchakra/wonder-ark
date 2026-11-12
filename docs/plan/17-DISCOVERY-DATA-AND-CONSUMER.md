@@ -625,6 +625,14 @@ adds its stories here when it is built.
 ### DISC-CONS-P0-02.1 — Find channels and places they gather (B5.2)
 ### DISC-CONS-P0-02.2 — Channel drafts, Mark as posted, Live (B5.2)
 ### DISC-CONS-P0-05.1 — Channels list on Prospects (B5.5)
+### DISC-CONS-P0-03.1 — People who opted in: audience_leads (B5.3)
+### DISC-CONS-P0-03.2 — Public sign-up page and its abuse controls (B5.3)
+### DISC-CONS-P0-03.3 — Confirmation email, referral links, unsubscribe (B5.3)
+### DISC-CONS-P0-03.4 — Import a people list with confirmed consent (B5.3)
+### DISC-CONS-P0-04.1 — Feedback: Log a conversation, Send questions (B5.4)
+### DISC-CONS-P0-04.2 — What people say: AI themes with links (B5.4)
+### DISC-CONS-P0-04.3 — Suggested Ideal-user edit, accepted or rejected (B5.4)
+### DISC-CONS-P0-05.2 — People list on Prospects, messaging with consent (B5.5)
 
 ## Part B implementation notes (wonder-ark)
 
@@ -685,4 +693,16 @@ B5, part 1 (the channel side), as built:
 - **"Live"**: `outcomeStageLabel` and `prospectOutcomeLabel` show `won` as "Live" for a channel; the stored value stays `won`.
 - **Prospects**: a consumer offering lists channels; an offering sold to both switches between Companies and Channels (`?list=`). People arrive with part 2.
 - **Channels are synced to `core.parties` on approval like any prospect** (unchanged `linkPartiesForProspects`), as a `company` party with the prospect role. Left as is: a channel that goes Live is an outlet the business works with.
+
+B5, part 2 (the people side), as built:
+
+- **One migration** (`20261112170000_discovery_audience_leads.sql`), four tables plus a counter: `audience_signup_pages` (one per offering: token, on/off, value line, up to two questions, consent line), `audience_leads` (the spec's columns plus `referral_code`, a private `lead_token` for unsubscribe and answering, `confirmation_sent_at` as the send claim, and `survey` for questions sent and not yet answered), `audience_feedback` (append-only), `audience_themes` (the cached summary) and `audience_signup_attempts` with `take_signup_attempt()` (service role only). Members cannot read `lead_token` (column privileges). A composite key keeps a referrer and a lead's feedback in the same workspace, and a trigger does the same for a prospect's feedback. A member cannot move a person out of "unsubscribed" or give them consent again; only a new sign-up (the service role) can. `scripts/test-discovery-consumer-rls.mjs` covers isolation, licence gating (grace and expired), anon, the token column, cross-workspace writes by the public page, append-only feedback and the counter.
+- **Story numbering**: B5.3 is 03.1 to 03.4 (table; page and abuse controls; confirmation, referrals, unsubscribe; import), B5.4 is 04.1 to 04.3, the People half of B5.5 is 05.2. "Party sync on first contact" is part of 03.1's code (`ensureLeadParty`): a `person` party with role `lead`, made when a member first logs a conversation with, sends questions to or emails the person, not at sign-up.
+- **The public page** is `/p/w/<token>` (`?ref=` for a referral link, `utm_*` kept); answers are at `/p/s/<lead token>`; unsubscribe is `/api/audience/unsubscribe?t=<lead token>` (GET shows a button, POST records it, as `/api/unsubscribe`). Unsubscribing sets the person's status and also adds the address to `core.communication_suppressions`, which every outreach send already checks.
+- **Rate limits**: 30 sign-ups a minute per page, 3 attempts an hour per page and address (the address is hashed in the key). The honeypot, a repeat address and a race on the unique key all answer "joined", so the page never reveals who is on the list.
+- **The send path** is the existing one (`sendViaPlatform` with an idempotency key, or the workspace's verified mailbox; `prepareOutreachEmail` first), with the person's own unsubscribe link in the footer and List-Unsubscribe headers, and an audit row without the address. A send is refused unless `consent_at` is set and the status is not `unsubscribed`; a person found on the opt-out list is marked unsubscribed.
+- **Import** reads CSV or Excel with an `email` column. A PDF or a file without that column is refused, not restructured by AI: it is a list of people.
+- **Themes** use a new operation, `summarize_audience_feedback`, over the newest 100 entries, each fenced and named E1, E2... so ids never reach the model; code maps references back to ids and drops any it did not give, and keeps a suggestion only for a known Ideal-user list field. Cached by input hash in `audience_themes`. Accepting a suggestion adds its items (never removes) through `updateIcpProfile`, so it is a `user_edit` version and the ICP returns to draft.
+- **Navigation**: People is `?list=people` on the Prospects page (the four-tab nav has no room for a fifth Prospects page), a person's page is `prospects/people/<id>`, and "What people say" is a fifth page under Results. Today gains "new sign-ups not contacted yet".
+- **Not built**: `audience_feedback.prospect_id` has no form yet (the table and its workspace check exist; a channel prospect's feedback can be added later). People are not in a CSV export; the module has no people export yet.
 

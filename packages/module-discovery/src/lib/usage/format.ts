@@ -7,6 +7,8 @@ export const OPERATION_LABEL: Record<string, string> = {
   generate_icp: "ICP generation",
   // DISC-CONS-P0-01.2
   generate_consumer_icp: "Ideal user generation",
+  // DISC-CONS-P0-04.2
+  summarize_audience_feedback: "What people say",
   research_prospect: "Prospect research",
   discover_prospects: "Prospect discovery",
   generate_outreach_strategy: "Outreach strategy",

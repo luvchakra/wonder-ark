@@ -321,6 +321,41 @@ address or a placeholder in it is not saved.
 A channel uses the same stages as a company. Closing a conversation as won shows the
 channel as **Live**.
 
+### People: sign-ups, conversations and what people say
+
+An offering sold to consumers (or to both) has a **People** list on **Prospects**: the
+people who chose to hear from you. WonderArk never builds lists of private individuals;
+everyone here signed up on your page or was on a list you imported and confirmed.
+
+- **Sign-up page.** Open **Sign-up page** above the People list to create it: one line
+  about the offering, up to two questions, and the consent line people agree to (you can
+  edit it). **Copy link** copies its address. The page shows the offering's name, asks for
+  an email and an optional name, names your business as the one collecting the details,
+  and says "Powered by WonderArk". Joining records the person with the consent line they
+  saw and sends them a confirmation email with an unsubscribe link and their own referral
+  link. Someone who signs up through a referral link is credited to the person who shared
+  it; the People list shows each person's referrals. The page shows the same thank-you
+  whether or not the address was already on the list, and limits how often it can be used.
+- **Import people.** Under **Find**, **Import**, an offering sold to consumers imports a
+  CSV or Excel list with an `email` column (and optionally `name` and `tags`). You must
+  tick **These people agreed to hear from me**; that sentence is saved as each person's
+  consent. An address already on the list is skipped. Nobody is emailed.
+- **A person's page** shows their status, source, consent, referrals and answers.
+  **Log a conversation** saves what they told you, with tags. **Send questions** emails them
+  up to two questions with a link to answer; their answers appear under **What they said**.
+  **Send an email** sends one message. Both sends go only to someone who agreed to hear
+  from you and hasn't unsubscribed; otherwise the page says why. Unsubscribing, from the
+  link in any of these emails, stops every later email to them, and only they can undo it
+  by signing up again. The first time you contact someone they are added to your business's
+  contacts as a person.
+- **What people say**, under **Results**, summarises your feedback into themes with AI.
+  **Summarise** writes it, marked **AI-generated**; summarising the same feedback again
+  reuses the last summary. Each theme links to the entries behind it. When a theme suggests
+  something your Ideal user is missing, **Update Ideal user** opens the ideal customer page
+  with the suggestion: **Accept** adds it as your edit (the ideal customer goes back to
+  draft for you to approve), **Reject** changes nothing.
+- **Today** shows how many new sign-ups haven't been contacted yet.
+
 ### Campaigns
 
 **Prospects → Campaigns** sends a short sequence of emails to your prospects from your own

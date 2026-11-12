@@ -265,7 +265,7 @@ const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
  * its reason, as before; a request that threw says nothing about what the provider did
  * with it, so that is "unknown".
  */
-async function sendViaPlatform(apiKey: string, idempotencyKey: string, payload: Record<string, unknown>): Promise<SendResult> {
+export async function sendViaPlatform(apiKey: string, idempotencyKey: string, payload: Record<string, unknown>): Promise<SendResult> {
   const resend = new Resend(apiKey);
   try {
     const result = await resend.emails.send(payload as unknown as Parameters<typeof resend.emails.send>[0], { idempotencyKey });

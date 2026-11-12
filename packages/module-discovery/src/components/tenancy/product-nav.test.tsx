@@ -51,13 +51,14 @@ describe("ProductNav, once the offering has a profile", () => {
   });
 
   it("shows fewer links than the nine tabs on every page", () => {
-    for (const path of ["", "/icp", "/prospects/discover", "/prospects/import", "/history", "/discovery", "/prospects", "/opportunities", "/watchlist", "/campaigns", "/campaigns/abc", "/performance", "/conversions", "/usage", "/prospects/abc"]) {
+    for (const path of ["", "/icp", "/prospects/discover", "/prospects/import", "/history", "/discovery", "/prospects", "/opportunities", "/watchlist", "/campaigns", "/campaigns/abc", "/performance", "/conversions", "/usage", "/people-say", "/prospects/abc"]) {
       expect(nav(path).length, path).toBeLessThan(NINE_TABS);
     }
     expect(nav("").length).toBe(6);
     expect(nav("/prospects/discover").length).toBe(8);
     expect(nav("/prospects").length).toBe(8);
-    expect(nav("/performance").length).toBe(7);
+    // DISC-CONS-P0-04.2 added "What people say" to Results: 8, still under nine.
+    expect(nav("/performance").length).toBe(8);
   });
 
   it("marks the page in view, and its tab", () => {

@@ -10,6 +10,16 @@
  * field names and still refuses any other; a channel's community post (marketing
  * content) can be tied only to a prospect of the content's own business, whoever writes
  * it, the service role included; each tenant reads only its own channel posts.
+ *
+ * DISC-CONS-P0-03.1/03.2/04.1/04.2/05.2 (20261112170000_discovery_audience_leads.sql), the
+ * people side: each tenant reads and writes only its own sign-up page, people, feedback
+ * and themes; an expired licence hides them (kept) and grace reads without writing; a
+ * member cannot read a person's private token; anon can touch none of it; the public
+ * page (the service role) cannot write a person into another workspace through a
+ * referral, nor feedback across workspaces; one address once per offering, whatever its
+ * case; consent is required for sign-ups and imports; feedback and themes are
+ * append-only; a member cannot move a person out of "unsubscribed"; only the service
+ * role may count sign-up attempts, and the count stops at its limit.
  */
 import { join } from "node:path";
 import { withTestDatabase } from "./lib/rls-test-harness.mjs";
@@ -32,7 +42,6 @@ async function main() {
       psql(`
         insert into auth.users (id, email) values ('${ALICE}', 'e2e-qa-alice-consumer@example.com'), ('${BOB}', 'e2e-qa-bob-consumer@example.com');
         grant usage on schema discovery to authenticated;
-        grant select, insert, update, delete on all tables in schema discovery to authenticated;
         grant usage on schema core to authenticated;
         grant select, insert, update, delete on all tables in schema core to authenticated;
         do $$
@@ -116,7 +125,113 @@ async function main() {
       psql(`update core.licenses set status = 'active' where business_id = '${aliceBusiness}' and module_key = 'discovery'`);
       assertEqual(psqlAs(ALICE, `select count(*) from discovery.icp_profiles`), "1", "reactivated: Alice's ICP is back");
 
-      console.log("\nAll consumer discovery channel-side checks passed.");
+      // -----------------------------------------------------------------------------
+      // Part 2: the people side (20261112170000)
+      // -----------------------------------------------------------------------------
+      const workspaceOf = (name) =>
+        psql(`select w.id from discovery.workspaces w join discovery.products p on p.id = w.product_id join core.businesses b on b.id = p.business_id where b.name = '${name}'`);
+      const aliceWs = workspaceOf("Alice Co");
+      const bobWs = workspaceOf("Bob Co");
+      const hex = (c, n) => c.repeat(n);
+      const lead = (ws, email, code, token, extra = "") =>
+        `insert into discovery.audience_leads (workspace_id, email, source, consent_text, consent_at, referral_code, lead_token${extra ? ", referrer_lead_id" : ""}) values ('${ws}', '${email}', 'waitlist', 'I agree', now(), '${code}', '${token}'${extra ? `, ${extra}` : ""})`;
+
+      console.log("Verifying the public page writes only into its own workspace (DISC-CONS-P0-03.2)...");
+      psql(lead(aliceWs, "e2e-qa-asha@example.com", hex("a", 16), hex("a", 48)));
+      psql(lead(bobWs, "e2e-qa-bharat@example.com", hex("b", 16), hex("b", 48)));
+      const aliceLead = psql(`select id from discovery.audience_leads where workspace_id = '${aliceWs}'`);
+      const bobLead = psql(`select id from discovery.audience_leads where workspace_id = '${bobWs}'`);
+      assertThrows(
+        () => psql(lead(aliceWs, "e2e-qa-cross@example.com", hex("c", 16), hex("c", 48), `'${bobLead}'`)),
+        "even the service role cannot sign someone up in Alice's list through a referral from Bob's",
+      );
+      psql(lead(aliceWs, "e2e-qa-friend@example.com", hex("d", 16), hex("d", 48), `'${aliceLead}'`));
+      assertEqual(psql(`select count(*) from discovery.audience_leads where referrer_lead_id = '${aliceLead}'`), "1", "a referral within the same list is recorded");
+      assertThrows(() => psql(lead(aliceWs, "E2E-QA-ASHA@example.com", hex("e", 16), hex("e", 48))), "the same address in another case is the same person on one list");
+      psql(lead(bobWs, "e2e-qa-asha@example.com", hex("f", 16), hex("f", 48)));
+      assertThrows(
+        () => psql(`insert into discovery.audience_leads (workspace_id, email, source, referral_code, lead_token) values ('${aliceWs}', 'e2e-qa-noconsent@example.com', 'waitlist', '${hex("1", 16)}', '${hex("1", 48)}')`),
+        "a sign-up without consent is refused",
+      );
+      assertThrows(
+        () => psql(`insert into discovery.audience_leads (workspace_id, email, source, referral_code, lead_token) values ('${aliceWs}', 'e2e-qa-imp@example.com', 'import', '${hex("2", 16)}', '${hex("2", 48)}')`),
+        "an import without consent is refused",
+      );
+      psql(`insert into discovery.audience_leads (workspace_id, email, source, referral_code, lead_token) values ('${aliceWs}', 'e2e-qa-manual@example.com', 'manual', '${hex("3", 16)}', '${hex("3", 48)}')`);
+      assertThrows(() => psql(`insert into discovery.audience_leads (workspace_id, email, source, consent_text, consent_at, referral_code, lead_token) values ('${aliceWs}', 'not-an-address', 'manual', null, null, '${hex("4", 16)}', '${hex("4", 48)}')`), "an address without an @ is refused");
+
+      console.log("Verifying anon has no access and a member never reads a private token...");
+      const asAnon = (sql) => psql(`set local role anon; ${sql}`);
+      assertThrows(() => asAnon(`select count(*) from discovery.audience_leads`), "anon cannot read people");
+      assertThrows(() => asAnon(lead(aliceWs, "e2e-qa-anon@example.com", hex("5", 16), hex("5", 48))), "anon cannot write a person");
+      assertThrows(() => asAnon(`select discovery.take_signup_attempt('k', 60, 3)`), "anon cannot count sign-up attempts");
+      assertThrows(() => psqlAs(ALICE, `select discovery.take_signup_attempt('k', 60, 3)`), "a member cannot count sign-up attempts");
+      assertThrows(() => psqlAs(ALICE, `select lead_token from discovery.audience_leads`), "a member cannot read a person's private token");
+      assertThrows(() => psqlAs(ALICE, `select * from discovery.audience_leads`), "a member's select * is refused rather than returning the token");
+      assertEqual(psql(`select string_agg(discovery.take_signup_attempt('page:e2e-qa', 60, 2)::text, ',') from generate_series(1, 3)`), "true,true,false", "the attempt count stops at its limit");
+
+      console.log("Verifying each tenant reads and writes only its own people...");
+      const COLS = "id, email, status";
+      assertEqual(psqlAs(ALICE, `select count(*) from (select ${COLS} from discovery.audience_leads) l`), "3", "Alice reads only her own people");
+      assertEqual(psqlAs(BOB, `select count(*) from (select ${COLS} from discovery.audience_leads) l`), "2", "Bob reads only his own people");
+      assertThrows(() => psqlAs(ALICE, lead(bobWs, "e2e-qa-planted@example.com", hex("6", 16), hex("6", 48))), "Alice cannot add a person to Bob's list");
+      psqlAs(ALICE, `update discovery.audience_leads set tags = '{planted}' where id = '${bobLead}'`);
+      assertEqual(psql(`select tags::text from discovery.audience_leads where id = '${bobLead}'`), "{}", "Alice's update to Bob's person changes nothing");
+      psqlAs(ALICE, `delete from discovery.audience_leads where id = '${bobLead}'`);
+      assertEqual(psql(`select count(*) from discovery.audience_leads where id = '${bobLead}'`), "1", "Alice's delete of Bob's person removes nothing");
+      psqlAs(ALICE, `update discovery.audience_leads set tags = '{parent}' where id = '${aliceLead}'`);
+      assertEqual(psql(`select tags::text from discovery.audience_leads where id = '${aliceLead}'`), "{parent}", "Alice tags her own person");
+
+      console.log("Verifying unsubscribing is final for the business (DISC-CONS-P0-03.5)...");
+      psqlAs(ALICE, `update discovery.audience_leads set status = 'unsubscribed' where id = '${aliceLead}'`);
+      assertThrows(() => psqlAs(ALICE, `update discovery.audience_leads set status = 'active' where id = '${aliceLead}'`), "a member cannot move a person out of unsubscribed");
+      assertThrows(() => psqlAs(ALICE, `update discovery.audience_leads set consent_at = now() where id = '${aliceLead}'`), "nor give them consent again");
+      psql(`update discovery.audience_leads set status = 'new', consent_at = now() where id = '${aliceLead}'`);
+      assertEqual(psql(`select status from discovery.audience_leads where id = '${aliceLead}'`), "new", "the person signing up again (service role) can");
+
+      console.log("Verifying feedback stays in its workspace and is append-only (DISC-CONS-P0-04.1)...");
+      psqlAs(ALICE, `insert into discovery.audience_feedback (workspace_id, lead_id, kind, body) values ('${aliceWs}', '${aliceLead}', 'interview', 'Weekends are hard')`);
+      assertThrows(
+        () => psql(`insert into discovery.audience_feedback (workspace_id, lead_id, kind, body) values ('${aliceWs}', '${bobLead}', 'survey', 'Planted')`),
+        "not even the service role can file Bob's person's answers under Alice's workspace",
+      );
+      const bobProspectNow = psql(`select pr.id from discovery.prospects pr where pr.workspace_id = '${bobWs}'`);
+      assertThrows(
+        () => psql(`insert into discovery.audience_feedback (workspace_id, prospect_id, kind, body) values ('${aliceWs}', '${bobProspectNow}', 'comment', 'Planted')`),
+        "nor feedback on Bob's prospect under Alice's workspace",
+      );
+      assertThrows(() => psqlAs(ALICE, `insert into discovery.audience_feedback (workspace_id, kind, body) values ('${aliceWs}', 'comment', 'Nobody')`), "feedback must be about a person or a prospect");
+      assertThrows(() => psqlAs(ALICE, `insert into discovery.audience_feedback (workspace_id, lead_id, kind, body) values ('${bobWs}', '${bobLead}', 'comment', 'x')`), "Alice cannot write feedback into Bob's workspace");
+      assertThrows(() => psqlAs(ALICE, `update discovery.audience_feedback set body = 'rewritten'`), "feedback cannot be edited");
+      assertThrows(() => psqlAs(ALICE, `delete from discovery.audience_feedback`), "feedback cannot be deleted");
+      assertEqual(psqlAs(BOB, `select count(*) from discovery.audience_feedback`), "0", "Bob cannot read Alice's feedback");
+
+      console.log("Verifying themes and sign-up pages are per tenant (DISC-CONS-P0-03.2/04.2)...");
+      psqlAs(ALICE, `insert into discovery.audience_themes (workspace_id, input_hash, prompt_version, themes, entry_count) values ('${aliceWs}', 'h1', 'summarize_feedback_v1', '[]', 1)`);
+      assertThrows(() => psqlAs(ALICE, `insert into discovery.audience_themes (workspace_id, input_hash, prompt_version, themes, entry_count) values ('${aliceWs}', 'h1', 'v', '[]', 1)`), "the same input is summarised once");
+      assertThrows(() => psqlAs(ALICE, `insert into discovery.audience_themes (workspace_id, input_hash, prompt_version, themes, entry_count) values ('${bobWs}', 'h2', 'v', '[]', 1)`), "Alice cannot write a summary into Bob's workspace");
+      assertThrows(() => psqlAs(ALICE, `update discovery.audience_themes set entry_count = 9`), "a summary cannot be edited");
+      assertEqual(psqlAs(BOB, `select count(*) from discovery.audience_themes`), "0", "Bob cannot read Alice's summary");
+      psqlAs(ALICE, `insert into discovery.audience_signup_pages (workspace_id, token, consent_text) values ('${aliceWs}', '${hex("9", 32)}', 'I agree')`);
+      assertThrows(() => psqlAs(ALICE, `insert into discovery.audience_signup_pages (workspace_id, token, consent_text) values ('${bobWs}', '${hex("8", 32)}', 'I agree')`), "Alice cannot make a sign-up page for Bob's offering");
+      assertThrows(() => psqlAs(ALICE, `update discovery.audience_signup_pages set questions = '["a","b","c"]'`), "a page has at most two questions");
+      assertEqual(psqlAs(BOB, `select count(*) from discovery.audience_signup_pages`), "0", "Bob cannot read Alice's sign-up page");
+
+      console.log("Verifying grace reads without writing, and an expired licence hides people without deleting them...");
+      psql(`update core.licenses set status = 'grace', grace_ends_at = now() + interval '30 days' where business_id = '${aliceBusiness}' and module_key = 'discovery'`);
+      assertEqual(psqlAs(ALICE, `select count(*) from (select ${COLS} from discovery.audience_leads) l`), "3", "grace: Alice still reads her people");
+      assertThrows(() => psqlAs(ALICE, `insert into discovery.audience_feedback (workspace_id, lead_id, kind, body) values ('${aliceWs}', '${aliceLead}', 'comment', 'x')`), "grace: Alice cannot add feedback");
+      psqlAs(ALICE, `update discovery.audience_leads set tags = '{grace}' where id = '${aliceLead}'`);
+      assertEqual(psql(`select tags::text from discovery.audience_leads where id = '${aliceLead}'`), "{parent}", "grace: Alice's update changes nothing");
+      psql(`update core.licenses set status = 'expired' where business_id = '${aliceBusiness}' and module_key = 'discovery'`);
+      for (const [table, cols] of [["audience_leads", COLS], ["audience_feedback", "id"], ["audience_themes", "id"], ["audience_signup_pages", "id"]]) {
+        assertEqual(psqlAs(ALICE, `select count(*) from (select ${cols} from discovery.${table}) t`), "0", `expired licence: Alice reads no ${table}`);
+      }
+      assertEqual(psql(`select count(*) from discovery.audience_leads where workspace_id = '${aliceWs}'`), "3", "the people are still there (never deleted)");
+      psql(`update core.licenses set status = 'active', grace_ends_at = null where business_id = '${aliceBusiness}' and module_key = 'discovery'`);
+      assertEqual(psqlAs(ALICE, `select count(*) from (select ${COLS} from discovery.audience_leads) l`), "3", "reactivated: Alice's people are back");
+
+      console.log("\nAll consumer discovery checks passed.");
     },
   });
 }

@@ -27,12 +27,18 @@ const pages = pageSlugs(OFFERING_ROOT).sort();
 const navSlugs = new Set(buildOfferingNav(BASE).flatMap((tab) => tab.pages.map((page) => page.slug)));
 const isDetail = (slug: string) => slug.includes("[");
 /** `prospects/[prospectId]` -> `prospects`: the list a detail page opens from. */
-const listOf = (slug: string) => slug.slice(0, slug.indexOf("/["));
+const listOf = (slug: string) => {
+  const list = slug.slice(0, slug.indexOf("/["));
+  // DISC-CONS-P0-05.2: a person opens from the People list, which is the Prospects page
+  // with ?list=people, not a page of its own.
+  return list === "prospects/people" ? "prospects" : list;
+};
 
 describe("every offering page opens from a link in the four-tab nav", () => {
-  // 15 when the tabs were regrouped; DISC-CAMP-P0-05.1 added Campaigns and one campaign.
-  it("covers the 17 offering pages", () => {
-    expect(pages).toHaveLength(17);
+  // 15 when the tabs were regrouped; DISC-CAMP-P0-05.1 added Campaigns and one campaign;
+  // DISC-CONS-P0-04.2/05.2 added What people say and one person.
+  it("covers the 19 offering pages", () => {
+    expect(pages).toHaveLength(19);
   });
 
   for (const slug of pages) {

@@ -71,6 +71,8 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; pages: 
       { slug: "performance", label: "Performance" },
       { slug: "conversions", label: "Conversions" },
       { slug: "usage", label: "Usage" },
+      // DISC-CONS-P0-04.2: themes across what people who opted in have said.
+      { slug: "people-say", label: "What people say" },
     ],
   },
 ];

@@ -17,6 +17,7 @@ import { runAiAction, type AiActionState } from "@cofounderai/core/actions/ai-ac
 import { createBuyerPersona, updateBuyerPersona, deleteBuyerPersona } from "@cofounderai/module-discovery/lib/personas/mutations";
 import type { PersonaPriority, PersonaRole } from "@cofounderai/module-discovery/lib/personas/types";
 import { IDEAL_USER_LIST_FIELDS } from "@cofounderai/module-discovery/lib/icp/audience";
+import { acceptThemeSuggestion } from "@cofounderai/module-discovery/lib/audience/themes";
 
 /** DISC-CONS-P0-01.2: the Ideal user's fields, when the form carries them (it marks
  * that with `audience_present`). A form without them leaves the stored one alone. */
@@ -192,4 +193,15 @@ export async function deletePersonaAction(
   }
   revalidatePath(await icpPath(businessId, productId));
   return { success: true };
+}
+
+/** DISC-CONS-P0-04.3: a person accepts the Ideal-user edit a "What people say" theme
+ * suggested. It is saved as their edit (a new draft version). Rejecting writes nothing. */
+export async function acceptThemeSuggestionAction(businessId: string, productId: string, summaryId: string, index: number) {
+  const workspace = await getWorkspaceForProduct(productId);
+  if (!workspace) throw new Error("Workspace not found for this offering.");
+  await acceptThemeSuggestion(workspace.id, summaryId, index);
+  const path = await icpPath(businessId, productId);
+  revalidatePath(path);
+  redirect(path);
 }

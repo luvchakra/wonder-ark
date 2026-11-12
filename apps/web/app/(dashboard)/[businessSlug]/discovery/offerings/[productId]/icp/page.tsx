@@ -26,12 +26,15 @@ import {
   IDEAL_USER_LIST_FIELDS,
   readIdealUser,
 } from "@cofounderai/module-discovery/lib/icp/audience";
+import { getThemeSuggestion } from "@cofounderai/module-discovery/lib/audience/themes";
+import Link from "next/link";
 import {
   generateIcpAction,
   updateIcpAction,
   updateIcpAndRunDownstreamAction,
   approveIcpAction,
   cloneIcpAction,
+  acceptThemeSuggestionAction,
   autoPopulateIcpAction,
   createPersonaAction,
   updatePersonaAction,
@@ -44,10 +47,13 @@ function toLines(items: string[]) {
 
 export default async function IcpPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ businessSlug: string; productId: string }>;
+  searchParams: Promise<{ suggest?: string }>;
 }) {
   const { businessSlug, productId } = await params;
+  const { suggest } = await searchParams;
   const businessId = await resolveBusinessIdBySlug(businessSlug);
   if (!businessId) notFound();
   const product = await getProduct(productId);
@@ -150,9 +156,37 @@ export default async function IcpPage({
     </div>
   );
 
+  // DISC-CONS-P0-04.3: a theme's suggested edit, opened from "What people say". It is
+  // shown for a person to accept or reject; nothing changes until they accept.
+  const [suggestId, suggestIndex] = (suggest ?? "").split(".");
+  const suggestion =
+    suggestId && /^[0-9a-f-]{36}$/.test(suggestId) && /^\d$/.test(suggestIndex ?? "")
+      ? await getThemeSuggestion(workspace.id, suggestId, Number(suggestIndex))
+      : null;
+  const icpHref = `/${businessSlug}/discovery/offerings/${productId}/icp`;
+
   return (
     <div className="flex flex-col gap-6">
       {autoPopulateBanner}
+      {suggestion && suggestId ? (
+        <div className="flex flex-col gap-3 rounded-md border bg-muted/40 p-4 text-sm">
+          <p>
+            <span className="font-medium">Suggested from what people say ({suggestion.theme.title}):</span> add to{" "}
+            {IDEAL_USER_FIELD_LABEL[suggestion.suggestion.field].toLowerCase()}: {suggestion.suggestion.items.join("; ")}.
+          </p>
+          <p className="text-xs text-muted-foreground">AI-generated suggestion. Accepting saves it as your edit, back to draft for approval.</p>
+          <div className="flex flex-wrap gap-2">
+            <form action={acceptThemeSuggestionAction.bind(null, businessId, productId, suggestId, Number(suggestIndex))}>
+              <SubmitButton size="sm" pendingText="Saving...">
+                Accept
+              </SubmitButton>
+            </form>
+            <Link href={icpHref} className="inline-flex items-center rounded-md border px-3 text-sm hover:bg-accent">
+              Reject
+            </Link>
+          </div>
+        </div>
+      ) : null}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span
