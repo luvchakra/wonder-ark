@@ -1,14 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
 import { after } from "next/server";
 import { runAiAction, type AiActionState } from "@cofounderai/core/actions/ai-action-state";
 import { businessPath } from "@/lib/business-path";
 import {
+  activateCampaign,
+  confirmCampaignPreview,
   createCampaign,
   finishCampaign,
-  launchCampaign,
   pauseCampaign,
   replaceCampaignSteps,
   resumeCampaign,
@@ -16,6 +17,7 @@ import {
   updateCampaignSettings,
 } from "@cofounderai/module-discovery/lib/campaigns/campaigns";
 import { saveSenderMailbox, sendMailboxTest } from "@cofounderai/module-discovery/lib/campaigns/mailbox";
+import { sendCampaignTest } from "@cofounderai/module-discovery/lib/campaigns/preview";
 import { runCampaignTick } from "@cofounderai/module-discovery/lib/campaigns/tick";
 import { MAX_STEPS } from "@cofounderai/module-discovery/lib/campaigns/types";
 import { writeCampaignMessages } from "@cofounderai/module-discovery/lib/campaigns/write-messages";
@@ -31,7 +33,7 @@ async function campaignsPath(businessId: string, productId: string) {
   return `${await businessPath(businessId)}/discovery/offerings/${productId}/campaigns`;
 }
 
-/** How many emails go out straight after Launch; the rest wait for the scheduled check. */
+/** How many emails go out straight after Activate; the rest wait for the scheduled check. */
 const FIRST_BATCH = 5;
 
 export async function createCampaignAction(businessId: string, productId: string, workspaceId: string) {
@@ -68,48 +70,89 @@ export async function saveTemplateAction(
   });
 }
 
-/** The folded "Options" form: who is enrolled, when emails go out, and the steps. */
-export async function saveOptionsAction(
-  businessId: string,
-  productId: string,
-  campaignId: string,
-  draft: boolean,
-  _prevState: AiActionState,
-  formData: FormData,
-): Promise<AiActionState> {
+const numberField = (formData: FormData, name: string) => {
+  const raw = String(formData.get(name) ?? "").trim();
+  return raw === "" ? null : Number(raw);
+};
+
+/** The folded "Audience" form: the campaign's name and who it enrols. */
+export async function saveAudienceAction(businessId: string, productId: string, campaignId: string, _prevState: AiActionState, formData: FormData): Promise<AiActionState> {
   return runAiAction(async () => {
-    const number = (name: string) => {
-      const raw = String(formData.get(name) ?? "").trim();
-      return raw === "" ? null : Number(raw);
-    };
-    const settings = await updateCampaignSettings(campaignId, {
+    const outcome = await updateCampaignSettings(campaignId, {
       name: String(formData.get("name") ?? ""),
       audience: {
         onlyQualified: formData.get("onlyQualified") !== null,
-        minFitScore: number("minFitScore"),
+        minFitScore: numberField(formData, "minFitScore"),
         linesOfWork: String(formData.get("linesOfWork") ?? "").split(/[,;\n]/),
       },
-      sendDays: formData.getAll("sendDays").map(Number),
-      sendFromHour: number("sendFromHour") ?? undefined,
-      sendToHour: number("sendToHour") ?? undefined,
       autoEnroll: formData.get("autoEnroll") !== null,
       includeUnverified: formData.get("includeUnverified") !== null,
     });
-    if (settings.status === "refused") throw new Error(settings.message);
-
-    if (draft) {
-      // Step 1 is always there; a later step exists when its days field is filled.
-      const steps = [{ channel: "email" as const, delayDays: 0 }];
-      for (let position = 2; position <= MAX_STEPS; position += 1) {
-        const days = number(`delayDays${position}`);
-        if (days === null) break;
-        steps.push({ channel: "email" as const, delayDays: days });
-      }
-      const changed = await replaceCampaignSteps(campaignId, steps);
-      if (changed.status === "refused") throw new Error(changed.message);
-    }
+    if (outcome.status === "refused") throw new Error(outcome.message);
     revalidatePath(`${await campaignsPath(businessId, productId)}/${campaignId}`);
   });
+}
+
+/**
+ * DISC-CAMP-P0-05.4: the folded "Schedule" form: emails a day for this campaign, the
+ * days and hours, and how many emails the sequence has with the days between them.
+ * Saving it clears the preview's confirmation (the database does that), so the page
+ * asks for the preview again.
+ */
+export async function saveScheduleAction(businessId: string, productId: string, campaignId: string, _prevState: AiActionState, formData: FormData): Promise<AiActionState> {
+  return runAiAction(async () => {
+    const settings = await updateCampaignSettings(campaignId, {
+      dailyLimit: numberField(formData, "dailyLimit"),
+      sendDays: formData.getAll("sendDays").map(Number),
+      sendFromHour: numberField(formData, "sendFromHour") ?? undefined,
+      sendToHour: numberField(formData, "sendToHour") ?? undefined,
+    });
+    if (settings.status === "refused") throw new Error(settings.message);
+
+    // Step 1 is always there; a later step exists when its days field is filled.
+    const steps = [{ channel: "email" as const, delayDays: 0 }];
+    for (let position = 2; position <= MAX_STEPS; position += 1) {
+      const days = numberField(formData, `delayDays${position}`);
+      if (days === null) break;
+      steps.push({ channel: "email" as const, delayDays: days });
+    }
+    const changed = await replaceCampaignSteps(campaignId, steps);
+    revalidatePath(`${await campaignsPath(businessId, productId)}/${campaignId}`);
+    if (changed.status === "refused") throw new Error(changed.message);
+  });
+}
+
+/**
+ * DISC-CAMP-P0-05.3: "This looks right", at the bottom of the preview. Records the
+ * confirmation and returns to the campaign, where Activate (or Resume) now shows.
+ */
+export async function confirmPreviewAction(businessId: string, productId: string, campaignId: string): Promise<AiActionState> {
+  return runAiAction(async () => {
+    const outcome = await confirmCampaignPreview(campaignId);
+    if (outcome.status !== "saved") throw new Error(outcome.message);
+    const path = `${await campaignsPath(businessId, productId)}/${campaignId}`;
+    revalidatePath(path);
+    redirect(path);
+  });
+}
+
+export type TestSendState = { status: "sent" | "failed"; message: string } | null;
+
+/**
+ * "Send me a test": sends the previewed email of one line of work to the mailbox's own
+ * address. Which email is named by where it is in the preview; there is no address to
+ * post. What comes back says whether it was sent, failed, or has an unknown outcome.
+ */
+export async function sendTestAction(campaignId: string, segment: string, step: number, index: number): Promise<TestSendState> {
+  try {
+    const outcome = await sendCampaignTest(campaignId, { segment, step, index });
+    return outcome.status === "sent"
+      ? { status: "sent", message: `Sent to ${outcome.to}. Check that mailbox.` }
+      : { status: "failed", message: outcome.status === "refused" ? outcome.message : `Not confirmed as sent. ${outcome.message}` };
+  } catch (error) {
+    unstable_rethrow(error);
+    return { status: "failed", message: error instanceof Error ? error.message : "The test could not be sent." };
+  }
 }
 
 /**
@@ -150,16 +193,17 @@ export async function testMailboxAction(
 }
 
 /**
- * Launch: the opt-in. The library refuses it without a verified mailbox, without text
- * for every email step, or with nobody to enrol. Once launched, a first small batch is
+ * Activate: the opt-in. The library refuses it without a confirmed preview, a verified
+ * mailbox, text for every email step, or anybody to enrol; the database refuses it
+ * without the confirmation and the mailbox too. Once activated, a first small batch is
  * sent straight after the response, through the same tick as every later send; the
  * rest go at the scheduled check.
  */
-export async function launchCampaignAction(businessId: string, productId: string, campaignId: string): Promise<AiActionState> {
+export async function activateCampaignAction(businessId: string, productId: string, campaignId: string): Promise<AiActionState> {
   return runAiAction(async () => {
-    const outcome = await launchCampaign(campaignId);
+    const outcome = await activateCampaign(campaignId);
     revalidatePath(`${await campaignsPath(businessId, productId)}/${campaignId}`);
-    if (outcome.status !== "launched") throw new Error(outcome.message);
+    if (outcome.status !== "activated") throw new Error(outcome.message);
     after(async () => {
       try {
         await runCampaignTick({ campaignId, maxSends: FIRST_BATCH });

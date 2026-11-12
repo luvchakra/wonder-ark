@@ -36,6 +36,12 @@ export type Campaign = {
   last_enrollment: EnrollmentSummary | null;
   launched_at: string | null;
   created_at: string;
+  /** DISC-CAMP-P0-05.3: when a person confirmed the preview. The database clears it when
+   * anything the preview showed changes, and refuses activation without it. */
+  preview_confirmed_at?: string | null;
+  /** DISC-CAMP-P0-05.4: emails a day for this campaign; null uses the mailbox's limit. */
+  daily_limit?: number | null;
+  test_sent_at?: string[];
 };
 
 export type CampaignStep = {
@@ -95,8 +101,8 @@ export type OutreachSend = {
 export const TASK_STEPS_AVAILABLE = false;
 
 export const MAX_STEPS = 5;
-export const MIN_FOLLOW_UP_DAYS = 2;
-export const MAX_FOLLOW_UP_DAYS = 60;
+export const MIN_FOLLOW_UP_DAYS = 1;
+export const MAX_FOLLOW_UP_DAYS = 30;
 
 /**
  * The shape a new campaign starts with: three emails. It is structure only (which

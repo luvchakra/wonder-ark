@@ -6,7 +6,7 @@ import { requirePermission } from "@cofounderai/core/rbac/require-permission";
 import { createClient } from "../../db/server";
 import { getBusinessIdForWorkspace, getProduct, getWorkspace } from "../tenancy/queries";
 import { lineOfWorkOf, segmentsFor, selectAudience, type AudienceContact, type AudienceProspect, type Enrolee } from "./audience";
-import { getSenderMailbox } from "./mailbox";
+import { MAILBOX_DAILY_LIMIT_MAX, getSenderMailbox } from "./mailbox";
 import { templateProblem } from "./render";
 import {
   GENERAL_SEGMENT,
@@ -32,7 +32,7 @@ import {
  * What this code decides:
  *  - every action is a licensed member with discovery.manage (checked here; RLS and the
  *    table triggers check again on the write);
- *  - Launch is the opt-in. It is refused without a verified mailbox ("Needs setup"),
+ *  - Activate is the opt-in. It is refused without a confirmed preview, a verified mailbox ("Needs setup"),
  *    without text for every email step, or with nobody to write to. The database
  *    refuses it too without a verified mailbox;
  *  - enrolment is `selectAudience`: deterministic, with a counted reason for everyone
@@ -148,6 +148,8 @@ export type CampaignSettingsInput = {
   sendDays?: number[];
   sendFromHour?: number;
   sendToHour?: number;
+  /** DISC-CAMP-P0-05.4: emails a day for this campaign. Null uses the mailbox's limit. */
+  dailyLimit?: number | null;
   autoEnroll?: boolean;
   includeUnverified?: boolean;
   personalOpening?: boolean;
@@ -165,6 +167,13 @@ async function loadForChange(campaignId: string): Promise<CampaignDetail> {
 export async function updateCampaignSettings(campaignId: string, input: CampaignSettingsInput): Promise<CampaignChange> {
   const { campaign } = await loadForChange(campaignId);
   if (campaign.status === "completed") return { status: "refused", message: "A finished campaign can't be changed." };
+  // DISC-CAMP-P0-05.4: who is enrolled and when emails go out change only while nothing
+  // is being sent. (Each such change also clears the preview's confirmation, in the
+  // database.) The name is not part of what is sent and can change at any time.
+  const beyondName = Object.entries(input).some(([key, value]) => key !== "name" && value !== undefined);
+  if (campaign.status === "active" && beyondName) {
+    return { status: "refused", message: "Pause the campaign to change who is enrolled or when emails go out." };
+  }
 
   const patch: Record<string, unknown> = {};
   if (input.name !== undefined) {
@@ -194,6 +203,18 @@ export async function updateCampaignSettings(campaignId: string, input: Campaign
     patch.send_from_hour = from;
     patch.send_to_hour = to;
   }
+  if (input.dailyLimit !== undefined) {
+    if (input.dailyLimit === null) {
+      patch.daily_limit = null;
+    } else {
+      const mailbox = await getSenderMailbox(campaign.workspace_id);
+      const most = mailbox?.dailyLimit ?? MAILBOX_DAILY_LIMIT_MAX;
+      if (!Number.isInteger(input.dailyLimit) || input.dailyLimit < 1 || input.dailyLimit > most) {
+        return { status: "refused", message: `Emails a day for this campaign is between 1 and ${most}, the mailbox's limit. Leave it blank to use the mailbox's limit.` };
+      }
+      patch.daily_limit = input.dailyLimit;
+    }
+  }
   if (input.autoEnroll !== undefined) patch.auto_enroll = input.autoEnroll;
   if (input.includeUnverified !== undefined) patch.include_unverified = input.includeUnverified;
   if (input.personalOpening !== undefined) patch.personal_opening = input.personalOpening;
@@ -211,13 +232,22 @@ const PURPOSE_OF = (channel: StepChannel, index: number, total: number): StepPur
   channel === "call" ? "call" : index === 0 ? "intro" : index === total - 1 && total > 2 ? "last_note" : "follow_up";
 
 /**
- * Replaces a draft campaign's steps. Only while it is a draft: once launched, the
- * sequence people were enrolled into does not change under them. Text written for a
- * step that is removed goes with it.
+ * DISC-CAMP-P0-05.4: sets how many emails the sequence has (1 to 5) and the days between
+ * them (1 to 30). Only while the campaign is a draft or paused: nothing changes under a
+ * campaign that is sending. A step keeps its text when it stays; a new step has none, so
+ * its message must be written before the campaign can be previewed.
+ *
+ * The rule for removing a step, chosen for being the simple safe one: a step that has
+ * already been sent to anyone cannot be removed. Its send records would go with it, and
+ * people who received it would have no trace of it. Steps nobody has reached yet can be
+ * removed or added freely while paused; a prospect who had finished the sequence is not
+ * reopened by a step added afterwards.
  */
 export async function replaceCampaignSteps(campaignId: string, steps: StepInput[]): Promise<CampaignChange> {
   const { campaign, steps: existing } = await loadForChange(campaignId);
-  if (campaign.status !== "draft") return { status: "refused", message: "The steps can only be changed before the campaign is launched." };
+  if (campaign.status !== "draft" && campaign.status !== "paused") {
+    return { status: "refused", message: campaign.status === "active" ? "Pause the campaign to change its steps." : "A finished campaign can't be changed." };
+  }
   if (steps.length < 1 || steps.length > MAX_STEPS) return { status: "refused", message: `A campaign has between 1 and ${MAX_STEPS} steps.` };
   if (steps[0]!.channel !== "email") return { status: "refused", message: "The first step is an email." };
   // DISC-CAMP-P0-06.1 is not built: a call, WhatsApp or LinkedIn step would wait for a
@@ -245,12 +275,19 @@ export async function replaceCampaignSteps(campaignId: string, steps: StepInput[
     return !next || next.channel !== step.channel;
   });
   if (removed.length > 0) {
+    const { data: sent, error: sentError } = await supabase.from("outreach_sends").select("step_id").in("step_id", removed.map((step) => step.id)).limit(1);
+    if (sentError) throw sentError;
+    if ((sent ?? []).length > 0) {
+      const step = removed.find((entry) => entry.id === (sent![0] as { step_id: string }).step_id) ?? removed[0]!;
+      return { status: "refused", message: `Step ${step.position} has already been sent to someone, so it can't be removed.` };
+    }
     const { error } = await supabase.from("outreach_campaign_steps").delete().in("id", removed.map((step) => step.id));
     if (error) throw error;
   }
   for (const entry of wanted) {
     const current = keep.get(entry.position);
     if (current && current.channel === entry.channel) {
+      if (current.delay_days === entry.delay_days && current.purpose === entry.purpose) continue;
       const { error } = await supabase.from("outreach_campaign_steps").update({ delay_days: entry.delay_days, purpose: entry.purpose }).eq("id", current.id);
       if (error) throw error;
     } else {
@@ -269,6 +306,13 @@ export async function saveCampaignTemplate(templateId: string, input: { subject:
   if (error) throw error;
   if (!template) throw new Error("Message not found.");
   await authoriseCampaigns((template as CampaignTemplate).workspace_id);
+  // A running campaign sends the text people previewed. To change it, pause first; the
+  // change then needs a new preview before the campaign can resume.
+  const { data: owner, error: ownerError } = await supabase.from("outreach_campaigns").select("status").eq("id", (template as CampaignTemplate).campaign_id).maybeSingle();
+  if (ownerError) throw ownerError;
+  if (owner?.status !== "draft" && owner?.status !== "paused") {
+    return { status: "refused", message: owner?.status === "active" ? "Pause the campaign to change its messages." : "A finished campaign can't be changed." };
+  }
 
   const subject = input.subject.replace(/\s+/g, " ").trim().slice(0, 200);
   const body = input.body.trim().slice(0, 5000);
@@ -322,6 +366,14 @@ export async function previewAudience(
   return { ...selection, segments: segmentsFor(selection.enrol) };
 }
 
+/** The lines of work the campaign has its own first-step text for. A prospect in one of
+ * them gets that text; everyone else gets the general one. Used at enrolment and by the
+ * preview, so both put a prospect in the same segment. */
+export function writtenSegments(detail: Pick<CampaignDetail, "steps" | "templates">): Set<string> {
+  const firstStep = detail.steps.find((step) => step.position === 1);
+  return new Set(detail.templates.filter((template) => template.step_id === firstStep?.id).map((template) => template.segment));
+}
+
 /**
  * Enrols everyone `previewAudience` selects, due at once for the first step, and records
  * on the campaign how many were enrolled and why the rest were left out. A prospect's
@@ -333,12 +385,11 @@ export async function enrolAudience(
   clients?: { discovery: SupabaseClient; core: SupabaseClient; businessId: string },
   now: Date = new Date(),
 ): Promise<EnrollmentSummary> {
-  const { campaign, steps, templates } = detail;
+  const { campaign } = detail;
   const supabase = clients?.discovery ?? (await createClient());
   const preview = await previewAudience(campaign, clients);
 
-  const firstStep = steps.find((step) => step.position === 1);
-  const written = new Set(templates.filter((template) => template.step_id === firstStep?.id).map((template) => template.segment));
+  const written = writtenSegments(detail);
   const rows = preview.enrol.map((enrolee) => ({
     campaign_id: campaign.id,
     workspace_id: campaign.workspace_id,
@@ -368,15 +419,21 @@ export async function enrolAudience(
   return summary;
 }
 
-export type LaunchOutcome =
-  | { status: "launched"; enrolled: number; leftOut: Partial<Record<LeftOutReason, number>> }
+export type ActivateOutcome =
+  | { status: "activated"; enrolled: number; leftOut: Partial<Record<LeftOutReason, number>> }
   | { status: "needs_setup"; message: string }
+  | { status: "needs_preview"; message: string }
   | { status: "refused"; message: string };
 
-/** What must be true before Launch, in the page's words, or null when it may launch. */
-export function launchBlocker(detail: CampaignDetail, mailboxVerified: boolean): { status: "needs_setup" | "refused"; message: string } | null {
-  if (detail.campaign.status !== "draft") return { status: "refused", message: "This campaign was already launched." };
-  if (!mailboxVerified) return { status: "needs_setup", message: "Needs setup: connect a mailbox" };
+export const NEEDS_MAILBOX = "Needs setup: connect a mailbox";
+export const NEEDS_PREVIEW = "Preview the campaign and confirm it looks right before activating it.";
+
+/** Why a campaign cannot be previewed yet, in the page's words, or null when it can. */
+export function previewBlocker(detail: CampaignDetail, mailboxVerified: boolean): { status: "needs_setup" | "refused"; message: string } | null {
+  if (detail.campaign.status !== "draft" && detail.campaign.status !== "paused") {
+    return { status: "refused", message: detail.campaign.status === "active" ? "This campaign is already running." : "This campaign is finished." };
+  }
+  if (!mailboxVerified) return { status: "needs_setup", message: NEEDS_MAILBOX };
   const emailSteps = detail.steps.filter((step) => step.channel === "email");
   if (emailSteps.length === 0) return { status: "refused", message: "A campaign needs at least one email step." };
   const unwritten = emailSteps.filter((step) => !detail.templates.some((template) => template.step_id === step.id && template.segment === GENERAL_SEGMENT));
@@ -387,25 +444,67 @@ export function launchBlocker(detail: CampaignDetail, mailboxVerified: boolean):
 }
 
 /**
- * Launch: the one act that lets a campaign send. Enrols the audience, then makes the
- * campaign active. With nobody to write to it stays a draft, unless it is set to add
- * new prospects automatically.
+ * What must be true before Activate, or null when it may be pressed: everything a
+ * preview needs, and a preview that a person confirmed and that still describes the
+ * campaign. The database holds the same rule (`enforce_outreach_campaign_rules`).
  */
-export async function launchCampaign(campaignId: string): Promise<LaunchOutcome> {
+export function activationBlocker(
+  detail: CampaignDetail,
+  mailboxVerified: boolean,
+): { status: "needs_setup" | "needs_preview" | "refused"; message: string } | null {
+  if (detail.campaign.status !== "draft") return { status: "refused", message: "This campaign was already activated." };
+  const blocker = previewBlocker(detail, mailboxVerified);
+  if (blocker) return blocker;
+  if (!detail.campaign.preview_confirmed_at) return { status: "needs_preview", message: NEEDS_PREVIEW };
+  return null;
+}
+
+/**
+ * DISC-CAMP-P0-05.3: "This looks right". Records that a person looked at the preview
+ * and confirmed it, which is what lets the campaign be activated or resumed. Refused
+ * when there is nothing complete to have previewed. The database dates it and names the
+ * person itself, and clears it again when anything the preview showed changes.
+ */
+export async function confirmCampaignPreview(campaignId: string): Promise<CampaignChange | { status: "needs_setup"; message: string }> {
   const detail = await loadForChange(campaignId);
   const mailbox = await getSenderMailbox(detail.campaign.workspace_id);
-  const blocker = launchBlocker(detail, mailbox?.status === "verified");
+  const blocker = previewBlocker(detail, mailbox?.status === "verified");
+  if (blocker) return blocker;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { data, error } = await supabase
+    .from("outreach_campaigns")
+    .update({ preview_confirmed_at: new Date().toISOString(), preview_confirmed_by: user?.id ?? null })
+    .eq("id", campaignId)
+    .in("status", ["draft", "paused"])
+    .select("id");
+  if (error) throw error;
+  return (data ?? []).length > 0 ? { status: "saved" } : { status: "refused", message: "The campaign's status has changed. Refresh the page." };
+}
+
+/**
+ * Activate: the one act that lets a campaign send. It needs a confirmed preview, a
+ * verified mailbox and text for every email step. It enrols the audience, then makes
+ * the campaign active. With nobody to write to it stays a draft, unless it is set to
+ * add new prospects automatically.
+ */
+export async function activateCampaign(campaignId: string): Promise<ActivateOutcome> {
+  const detail = await loadForChange(campaignId);
+  const mailbox = await getSenderMailbox(detail.campaign.workspace_id);
+  const blocker = activationBlocker(detail, mailbox?.status === "verified");
   if (blocker) return blocker;
 
   const summary = await enrolAudience(detail);
   if (summary.enrolled === 0 && !detail.campaign.auto_enroll) {
-    return { status: "refused", message: "Nobody could be enrolled, so the campaign wasn't launched. The reasons are listed under Audience." };
+    return { status: "refused", message: "Nobody could be enrolled, so the campaign wasn't activated. The reasons are listed under Audience." };
   }
   const supabase = await createClient();
   const { data, error } = await supabase.from("outreach_campaigns").update({ status: "active" }).eq("id", campaignId).eq("status", "draft").select("id");
   if (error) throw error;
-  if ((data ?? []).length === 0) return { status: "refused", message: "This campaign was already launched." };
-  return { status: "launched", enrolled: summary.enrolled, leftOut: summary.leftOut };
+  if ((data ?? []).length === 0) return { status: "refused", message: "This campaign was already activated." };
+  return { status: "activated", enrolled: summary.enrolled, leftOut: summary.leftOut };
 }
 
 async function setStatus(campaignId: string, from: Campaign["status"][], patch: Record<string, unknown>): Promise<CampaignChange> {
@@ -420,10 +519,15 @@ async function setStatus(campaignId: string, from: Campaign["status"][], patch: 
  * re-reads the campaign's status under the claim's lock. */
 export const pauseCampaign = (campaignId: string) => setStatus(campaignId, ["active"], { status: "paused", pause_reason: "Paused by a person" });
 
-export async function resumeCampaign(campaignId: string): Promise<CampaignChange | { status: "needs_setup"; message: string }> {
+/** Resume. A campaign that was changed while it was paused needs its preview confirmed
+ * again first: the change cleared the confirmation. One that was only paused does not. */
+export async function resumeCampaign(campaignId: string): Promise<CampaignChange | { status: "needs_setup" | "needs_preview"; message: string }> {
   const detail = await loadForChange(campaignId);
   const mailbox = await getSenderMailbox(detail.campaign.workspace_id);
-  if (mailbox?.status !== "verified") return { status: "needs_setup", message: "Needs setup: connect a mailbox" };
+  if (mailbox?.status !== "verified") return { status: "needs_setup", message: NEEDS_MAILBOX };
+  if (detail.campaign.status === "paused" && !detail.campaign.preview_confirmed_at) {
+    return { status: "needs_preview", message: "This campaign was changed while it was paused. Preview it and confirm it looks right before resuming." };
+  }
   return setStatus(campaignId, ["paused"], { status: "active" });
 }
 

@@ -275,9 +275,13 @@ try again.
 mailbox. Nothing is written or sent until you ask for it.
 
 - **New campaign** makes a draft with a starting structure of three emails (an introduction,
-  a follow-up 3 days later and a last note 5 days after that). It holds no text yet. Under
-  **Options** you can rename it, change who is enrolled, the days and hours emails go out,
-  and the steps (up to five, each at least 2 days after the one before).
+  a follow-up 3 days later and a last note 5 days after that). It holds no text yet.
+- **Schedule** sets how often the campaign sends: how many emails a day this campaign may
+  send (blank uses the mailbox's limit), the days and hours emails go out, and how many
+  emails the sequence has (one to five) with the days between each (1 to 30). A follow-up
+  you add needs its message written before the preview; one that has already been sent to
+  someone can't be removed. **Audience** renames the campaign and sets who is enrolled.
+  Both can be changed only while the campaign is a draft or paused.
 - **Audience** shows how many prospects would be enrolled now and why the rest are left
   out, with a count for each reason: no email address, an address marked invalid, already
   in a campaign, asked not to be emailed, and so on. A contact that **Find contacts** found
@@ -301,11 +305,22 @@ mailbox. Nothing is written or sent until you ask for it.
   from, and how many emails a day may go out (30 unless you change it, 200 at most). The
   password is stored encrypted and is never shown again. Your mail provider's own terms
   apply to what you send from the mailbox.
-- **Launch** is shown once every step has text and the mailbox is verified; until then its
-  place says **Needs setup: connect a mailbox**. Its confirmation says how many prospects
-  are enrolled, how many emails a day go out at most and when, and what stops follow-ups.
-  After you confirm, emails are sent without you approving each one: a few straight away
-  if it is within the campaign's hours, the rest at the daily check.
+- **Preview** is shown once every step has text and the mailbox is verified; until then its
+  place says **Needs setup: connect a mailbox**. The preview shows what activating would
+  do: how many prospects would be enrolled and why the rest are left out, the schedule in
+  words, and the actual email for a real prospect in each line of work, with the From
+  line, the subject, the text with that prospect's own details and the unsubscribe footer.
+  The step links and **Previous prospect** / **Next prospect** show the later emails and a
+  few more prospects. A prospect whose email would be skipped is shown as skipped, with the
+  reason. **Send me a test** sends the email you are looking at to your mailbox's own
+  address, marked "[Test]"; it is never sent to the prospect, and you can send five an
+  hour. At the bottom, **This looks right** confirms the preview.
+- **Activate** appears only after you confirm the preview. Its confirmation says how many
+  prospects are enrolled, how many emails a day go out at most and when, and what stops
+  follow-ups. After you confirm, emails are sent without you approving each one: a few
+  straight away if it is within the campaign's hours, the rest at the daily check. If you
+  change the audience, the schedule, a step or a message after confirming, the preview
+  must be confirmed again before the campaign can be activated or resumed.
 - **The daily limit** is the mailbox's, shared by all the offering's campaigns. What is
   over it waits for the next day.
 - **What stops follow-ups to a prospect:** a reply, a bounce, an unsubscribe, a complaint,
@@ -318,7 +333,8 @@ mailbox. Nothing is written or sent until you ask for it.
   read, nothing is sent until it can, and the page says why. Without an incoming mail
   server, replies are not detected automatically: log the reply on the prospect's page and
   its follow-ups stop.
-- **Pause** stops all sending at once; **Resume** starts it again. A campaign pauses itself
+- **Pause** stops all sending at once; **Resume** starts it again. To change a running
+  campaign's messages, schedule or audience, pause it first. A campaign pauses itself
   and says why if more than 8% of at least 20 sent emails bounce, or if your mailbox can't
   be signed in to. **Finish campaign** ends it for good.
 - **Results** counts enrolled, sent, bounced, replied, interested and won, and lists each
@@ -378,7 +394,7 @@ page. If Service isn't licensed, the button says so and offers **Go to licenses*
 ## Outreach, replies and unsubscribes
 
 Every outreach message written for one prospect is drafted by AI and sent only when a
-person sends it. (A [campaign](#working-an-offering) is the one exception: once you launch it, its
+person sends it. (A [campaign](#working-an-offering) is the one exception: once you activate it, its
 emails go out without you approving each one.) With
 [AI approvals](#ai-approvals) set to **Approve automatically**, **Let AI Auto-Populate Info**
 approves the outreach strategy for the one prospect it adds so it can draft a message; with

@@ -8,18 +8,19 @@ import { NativeSelect } from "@cofounderai/core/ui/native-select";
 import { Textarea } from "@cofounderai/core/ui/textarea";
 import { AiActionForm } from "../ai/ai-action-form";
 import type { CampaignResults } from "../../lib/campaigns/campaigns";
+import { scheduleLines } from "../../lib/campaigns/compose";
 import type { SenderMailboxView } from "../../lib/campaigns/mailbox";
 import { MERGE_FIELDS } from "../../lib/campaigns/render";
 import {
   CAMPAIGN_STATUS_LABEL,
   GENERAL_SEGMENT,
   LEFT_OUT_LABEL,
+  MAX_FOLLOW_UP_DAYS,
   MAX_STEPS,
   MIN_FOLLOW_UP_DAYS,
   STEP_PURPOSE_LABEL,
   TEMPLATE_ORIGIN_LABEL,
   WEEKDAY_LABEL,
-  dailyCheckIn,
   type Campaign,
   type CampaignStep,
   type CampaignTemplate,
@@ -100,7 +101,9 @@ export function StepList({ steps }: { steps: CampaignStep[] }) {
           <span className="font-medium">
             {step.position}. {STEP_PURPOSE_LABEL[step.purpose]} email
           </span>
-          <span className="text-muted-foreground">{step.position === 1 ? ", sent first" : `, ${step.delay_days} days after step ${step.position - 1}`}</span>
+          <span className="text-muted-foreground">
+            {step.position === 1 ? ", sent first" : `, ${step.delay_days} ${step.delay_days === 1 ? "day" : "days"} after step ${step.position - 1}`}
+          </span>
         </li>
       ))}
     </ol>
@@ -177,17 +180,14 @@ function Field({ label, name, ...props }: { label: string; name: string } & Reac
   );
 }
 
-/** The folded options: the name, who is enrolled, when emails go out and, before launch,
- * the steps. One form, one Save. */
-export function OptionsForm({ campaign, steps, action }: { campaign: Campaign; steps: CampaignStep[]; action: FormAction }) {
-  const draft = campaign.status === "draft";
+/** The folded "Audience" form: the campaign's name and who it enrols. One form, one Save. */
+export function AudienceForm({ campaign, action }: { campaign: Campaign; action: FormAction }) {
   return (
-    <AiActionForm action={action} buttonLabel="Save options" pendingText="Saving..." formClassName="flex flex-col gap-4" buttonProps={{ variant: "outline", className: "self-start" }}>
+    <AiActionForm action={action} buttonLabel="Save audience" pendingText="Saving..." formClassName="flex flex-col gap-4" buttonProps={{ variant: "outline", className: "self-start" }}>
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="campaign-name">Name</Label>
         <Input id="campaign-name" name="name" defaultValue={campaign.name} maxLength={120} />
       </div>
-
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-medium">Who is enrolled</legend>
         <label className="flex items-center gap-2 text-sm">
@@ -213,9 +213,27 @@ export function OptionsForm({ campaign, steps, action }: { campaign: Campaign; s
           </div>
         </div>
       </fieldset>
+    </AiActionForm>
+  );
+}
+
+/**
+ * DISC-CAMP-P0-05.4: the folded "Schedule" form: how many emails a day this campaign
+ * sends, on which days and hours, and how many emails the sequence has with the days
+ * between them. Every field arrives filled from the campaign as it stands, so nobody
+ * has to open it. One form, one Save; saving asks for the preview again.
+ */
+export function ScheduleForm({ campaign, steps, mailboxLimit, action }: { campaign: Campaign; steps: CampaignStep[]; mailboxLimit: number | null; action: FormAction }) {
+  return (
+    <AiActionForm action={action} buttonLabel="Save schedule" pendingText="Saving..." formClassName="flex flex-col gap-4" buttonProps={{ variant: "outline", className: "self-start" }}>
+      <p className="text-xs text-muted-foreground">Changing the schedule means previewing the campaign again before it can send.</p>
+      <div className="flex max-w-xs flex-col gap-1.5">
+        <Label htmlFor="campaign-daily">Emails a day for this campaign{mailboxLimit ? ` (blank for the mailbox's ${mailboxLimit})` : ""}</Label>
+        <Input id="campaign-daily" name="dailyLimit" type="number" min={1} max={mailboxLimit ?? 200} defaultValue={campaign.daily_limit ?? ""} />
+      </div>
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-sm font-medium">When emails go out ({campaign.timezone})</legend>
+        <legend className="text-sm font-medium">Days and hours ({campaign.timezone})</legend>
         <div className="flex flex-wrap gap-3">
           {WEEKDAY_LABEL.map((label, index) => (
             <label key={label} className="flex items-center gap-1.5 text-sm">
@@ -236,29 +254,28 @@ export function OptionsForm({ campaign, steps, action }: { campaign: Campaign; s
         </div>
       </fieldset>
 
-      {draft ? (
-        <fieldset className="flex flex-col gap-2">
-          <legend className="text-sm font-medium">Steps</legend>
-          <p className="text-xs text-muted-foreground">
-            Step 1 is sent first. For each later step, enter how many days after the one before it is sent (at least {MIN_FOLLOW_UP_DAYS}); leave it blank to end the sequence
-            there. Changing a step keeps its text.
-          </p>
-          <div className="grid max-w-md grid-cols-2 gap-3 sm:grid-cols-4">
-            {Array.from({ length: MAX_STEPS - 1 }, (_, index) => index + 2).map((position) => (
-              <div key={position} className="flex flex-col gap-1.5">
-                <Label htmlFor={`campaign-step-${position}`}>Step {position}: days</Label>
-                <Input
-                  id={`campaign-step-${position}`}
-                  name={`delayDays${position}`}
-                  type="number"
-                  min={MIN_FOLLOW_UP_DAYS}
-                  defaultValue={steps.find((step) => step.position === position)?.delay_days ?? ""}
-                />
-              </div>
-            ))}
-          </div>
-        </fieldset>
-      ) : null}
+      <fieldset className="flex flex-col gap-2">
+        <legend className="text-sm font-medium">Follow-ups</legend>
+        <p className="text-xs text-muted-foreground">
+          The first email is sent first. For each follow-up, enter how many days after the email before it is sent ({MIN_FOLLOW_UP_DAYS} to {MAX_FOLLOW_UP_DAYS}); leave it blank to
+          end the sequence there. A new follow-up needs its message written before the preview. One that has already been sent to someone can&apos;t be removed.
+        </p>
+        <div className="grid max-w-md grid-cols-2 gap-3 sm:grid-cols-4">
+          {Array.from({ length: MAX_STEPS - 1 }, (_, index) => index + 2).map((position) => (
+            <div key={position} className="flex flex-col gap-1.5">
+              <Label htmlFor={`campaign-step-${position}`}>Email {position}: days</Label>
+              <Input
+                id={`campaign-step-${position}`}
+                name={`delayDays${position}`}
+                type="number"
+                min={MIN_FOLLOW_UP_DAYS}
+                max={MAX_FOLLOW_UP_DAYS}
+                defaultValue={steps.find((step) => step.position === position)?.delay_days ?? ""}
+              />
+            </div>
+          ))}
+        </div>
+      </fieldset>
     </AiActionForm>
   );
 }
@@ -405,15 +422,17 @@ export function CampaignResultsView({ results, prospectsPath }: { results: Campa
   );
 }
 
-/** What launching does, in this campaign's own numbers. Built on the server from rows. */
-export function launchLines(input: { campaign: Campaign; wouldEnrol: number; mailbox: SenderMailboxView; steps: CampaignStep[] }): string[] {
+/**
+ * What activating does, in this campaign's own numbers. Built on the server from rows;
+ * the schedule lines are the ones the preview showed (`scheduleLines`).
+ */
+export function activateLines(input: { campaign: Campaign; wouldEnrol: number; mailbox: SenderMailboxView; steps: CampaignStep[] }): string[] {
   const { campaign, wouldEnrol, mailbox, steps } = input;
-  const days = campaign.send_days.map((value) => WEEKDAY_LABEL[value - 1]).join(", ");
-  const check = dailyCheckIn(campaign);
   return [
     `${wouldEnrol} ${wouldEnrol === 1 ? "prospect is" : "prospects are"} enrolled now${campaign.auto_enroll ? ", and new prospects that fit are added as they appear" : ""}.`,
-    `Each gets up to ${steps.length} ${steps.length === 1 ? "email" : "emails"}, from ${mailbox.fromEmail}, with the text shown on this page. Nobody approves each email first.`,
-    `At most ${mailbox.dailyLimit} emails a day go out, on ${days}, between ${campaign.send_from_hour}:00 and ${campaign.send_to_hour}:00 (${campaign.timezone}). A few go straight away if that is now; the rest at the daily check, ${check.time}.`,
+    `Each gets the ${steps.length === 1 ? "email" : `${steps.length} emails`} you previewed, from ${mailbox.fromEmail}. Nobody approves each email first.`,
+    ...scheduleLines({ campaign, steps, mailboxDailyLimit: mailbox.dailyLimit }),
+    "A few go straight away if it is within those hours now; the rest at the daily check.",
     "Follow-ups to a prospect stop when it replies, its email bounces, it unsubscribes, or you mark it won or lost.",
     "You can pause the campaign at any time, and nothing more is sent while it is paused.",
   ];

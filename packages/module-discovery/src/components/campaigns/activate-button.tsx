@@ -16,12 +16,13 @@ import { Button } from "@cofounderai/core/ui/button";
 import { SubmitButton } from "@cofounderai/core/ui/submit-button";
 
 /**
- * DISC-CAMP-P0-05.1: Launch. One button; pressing it opens a dialog that says exactly
- * what launching does, in the numbers of this campaign, and only the dialog's own
- * button launches. The lines are built by the server from the campaign's rows, so the
- * dialog cannot promise something the code does not do.
+ * DISC-CAMP-P0-05.1 / 05.3: Activate. Shown only once the preview has been confirmed.
+ * One button; pressing it opens a dialog that says exactly what activating does, in the
+ * numbers of this campaign, and only the dialog's own button activates. The lines are
+ * built by the server from the campaign's rows, so the dialog cannot promise something
+ * the code does not do.
  */
-export function LaunchButton({ action, lines }: { action: () => Promise<AiActionState>; lines: string[] }) {
+export function ActivateButton({ action, lines }: { action: () => Promise<AiActionState>; lines: string[] }) {
   const [state, formAction] = useActionState<AiActionState, FormData>(async () => action(), null);
   const [open, setOpen] = useState(false);
 
@@ -29,11 +30,11 @@ export function LaunchButton({ action, lines }: { action: () => Promise<AiAction
     <div className="flex flex-col items-start gap-2">
       <AlertDialog open={open} onOpenChange={setOpen}>
         <AlertDialogTrigger asChild>
-          <Button size="sm">Launch</Button>
+          <Button size="sm">Activate</Button>
         </AlertDialogTrigger>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Launch this campaign?</AlertDialogTitle>
+            <AlertDialogTitle>Activate this campaign?</AlertDialogTitle>
             <AlertDialogDescription asChild>
               <ul className="flex list-disc flex-col gap-1.5 pl-5 text-left text-sm text-muted-foreground">
                 {lines.map((line) => (
@@ -50,7 +51,7 @@ export function LaunchButton({ action, lines }: { action: () => Promise<AiAction
                 formAction(formData);
               }}
             >
-              <SubmitButton pendingText="Launching...">Launch</SubmitButton>
+              <SubmitButton pendingText="Activating...">Activate</SubmitButton>
             </form>
           </AlertDialogFooter>
         </AlertDialogContent>

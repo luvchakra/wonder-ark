@@ -162,6 +162,21 @@ describe("writeCampaignMessages", () => {
     expect(outcome).toMatchObject({ kept: ["general"], written: ["plumber"], modelCalls: 1 });
   });
 
+  it("writes a follow-up added while paused, for the lines of work the campaign already has text for", async () => {
+    campaign({ status: "paused" }, [
+      { step_id: "s1", segment: "general", origin: "ai_generated" },
+      { step_id: "s1", segment: "plumber", origin: "user_modified" },
+    ]);
+    h.previewAudience.mockClear();
+
+    const outcome = await writeCampaignMessages("c1");
+
+    expect(outcome).toMatchObject({ status: "completed", written: ["general", "plumber"], modelCalls: 2 });
+    // Only the step that had no text is stored; the existing text is left alone.
+    expect(templates().map((row) => [row.segment, row.step_id])).toEqual([["general", "s2"], ["plumber", "s2"]]);
+    expect(h.previewAudience).not.toHaveBeenCalled();
+  });
+
   it.each([
     ["a link", (m: ReturnType<typeof good>) => ({ ...m, body: `${m.body}\nSee https://evil.example` })],
     ["a bare domain", (m: ReturnType<typeof good>) => ({ ...m, body: `${m.body} Visit evil-site.com today.` })],
@@ -217,6 +232,8 @@ describe("writeCampaignMessages", () => {
     await expect(writeCampaignMessages("c1")).rejects.toThrow("discovery.manage");
 
     campaign({ status: "active" });
+    expect(await writeCampaignMessages("c1")).toMatchObject({ status: "refused" });
+    campaign({ status: "completed" });
     expect(await writeCampaignMessages("c1")).toMatchObject({ status: "refused" });
     campaign();
     h.getProduct.mockResolvedValueOnce({ id: "prod-1", name: "FieldDesk", business_id: "b1", product_profile: null });

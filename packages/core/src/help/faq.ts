@@ -244,9 +244,17 @@ export const FAQ: FaqEntry[] = [
   },
   {
     category: "Day to day",
-    question: "What does launching a campaign do, and how do I stop it?",
+    question: "What does activating a campaign do, and how do I stop it?",
     answer:
-      "Under an offering's Prospects tab, Campaigns sends a short sequence of emails to your prospects from a mailbox you connect under Sending from. Launch enrols the prospects listed under Audience and then sends without you approving each email, at most the mailbox's daily limit (30 a day unless you change it), within the days and hours under Options. Follow-ups to a prospect stop when it replies, its email bounces, it unsubscribes, or you mark it won or lost. Pause stops all sending at once and Resume starts it again. Campaigns send email only; calls and WhatsApp or LinkedIn messages are yours to make.",
+      "Under an offering's Prospects tab, Campaigns sends a short sequence of emails to your prospects from a mailbox you connect under Sending from. First open Preview: it shows who would be enrolled, the schedule, and the actual email for a real prospect in each line of work, and Send me a test sends that email to your own mailbox. Press This looks right, and Activate appears. Activate enrols those prospects and then sends without you approving each email, at most the daily limit (the mailbox's 30 a day unless you change it, or fewer if you set one for the campaign under Schedule), within the days and hours under Schedule. Follow-ups to a prospect stop when it replies, its email bounces, it unsubscribes, or you mark it won or lost. Pause stops all sending at once and Resume starts it again. Campaigns send email only; calls and WhatsApp or LinkedIn messages are yours to make.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
+    question: "How do I change how often a campaign sends?",
+    answer:
+      "Open Schedule on the campaign. You can set how many emails a day this campaign may send (leave it blank to use the mailbox's limit), the days and hours emails go out, and how many emails the sequence has with the days between each (1 to 30). The schedule can be changed while the campaign is a draft or paused; pause a running campaign first. After a change, open Preview and confirm it again before the campaign can send.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },
