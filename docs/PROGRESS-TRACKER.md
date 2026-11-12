@@ -1299,7 +1299,7 @@ Source: [`docs/plan/18-MODULE-MENUS.md`](./plan/18-MODULE-MENUS.md)
 | `PLATFORM-NAV-P0-02.2` | Inventory pages | ✅ Done | `packages/module-inventory/src/components/dashboard/dashboard-view.tsx` +6 |
 | `PLATFORM-NAV-P0-02.3` | CRM pages | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/crm/follow-ups/page.tsx` +5 |
 | `PLATFORM-NAV-P0-02.4` | Finance pages | ✅ Done | `packages/module-gst/src/components/dashboard/compliance-dashboard-view.tsx` +2 |
-| `PLATFORM-NAV-P0-03.1` | Discovery menu | ✅ Done | `apps/web/e2e/authenticated/discovery-flows.spec.ts` +6 |
+| `PLATFORM-NAV-P0-03.1` | Discovery menu | ✅ Done | `apps/web/e2e/authenticated/discovery-flows.spec.ts` +7 |
 | `PLATFORM-NAV-P0-03.2` | Business | ✅ Done | `packages/core/src/components/shell/app-sidebar.test.ts` +2 |
 
 ## Discovery — outreach campaigns
