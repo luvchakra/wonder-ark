@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Badge } from "@cofounderai/core/ui/badge";
-import { buttonVariants } from "@cofounderai/core/ui/button";
+import { buttonVariants } from "@cofounderai/core/ui/button-variants";
 import { AiActionForm } from "../ai/ai-action-form";
 import type { AiActionState } from "@cofounderai/core/actions/ai-action-state";
 import { OFFERING_STATUS_LABEL, OFFERING_TYPE_LABEL } from "../../lib/offerings/types";

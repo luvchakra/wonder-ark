@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@cofounderai/core/db/server";
 import Link from "next/link";
-import { buttonVariants } from "@cofounderai/core/ui/button";
+import { buttonVariants } from "@cofounderai/core/ui/button-variants";
 import { ProfileCard } from "@/components/settings/profile-card";
 import { CONTACT_EMAIL } from "@/lib/legal";
 import { updateAvatarAction, updateProfileAction } from "./actions";
