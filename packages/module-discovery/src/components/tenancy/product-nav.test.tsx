@@ -45,16 +45,18 @@ describe("ProductNav, once the offering has a profile", () => {
       "All",
       "Opportunities",
       "Watchlist",
+      // DISC-CAMP-P0-05.1
+      "Campaigns",
     ]);
   });
 
   it("shows fewer links than the nine tabs on every page", () => {
-    for (const path of ["", "/icp", "/prospects/discover", "/prospects/import", "/history", "/discovery", "/prospects", "/opportunities", "/watchlist", "/performance", "/conversions", "/usage", "/prospects/abc"]) {
+    for (const path of ["", "/icp", "/prospects/discover", "/prospects/import", "/history", "/discovery", "/prospects", "/opportunities", "/watchlist", "/campaigns", "/campaigns/abc", "/performance", "/conversions", "/usage", "/prospects/abc"]) {
       expect(nav(path).length, path).toBeLessThan(NINE_TABS);
     }
     expect(nav("").length).toBe(6);
     expect(nav("/prospects/discover").length).toBe(8);
-    expect(nav("/prospects").length).toBe(7);
+    expect(nav("/prospects").length).toBe(8);
     expect(nav("/performance").length).toBe(7);
   });
 

@@ -30,7 +30,12 @@ export async function POST(request: Request) {
 
   const subject = typeof body.subject === "string" ? body.subject : null;
 
-  const result = await ingestInboundEmail({ from: body.from, subject, text: body.text });
+  // DISC-CAMP-P0-04.2: the email's own Message-ID, when the provider passes it on, lets
+  // a redelivered reply be recognised exactly. Without it the reply's sender, text and
+  // day stand in for it.
+  const messageId = typeof body.messageId === "string" ? body.messageId : typeof body.message_id === "string" ? body.message_id : null;
+
+  const result = await ingestInboundEmail({ from: body.from, subject, text: body.text, messageId });
   if (result.matched) {
     return NextResponse.json({ matched: true, messageId: result.message.id });
   }

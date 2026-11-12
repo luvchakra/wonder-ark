@@ -244,6 +244,22 @@ export const FAQ: FaqEntry[] = [
   },
   {
     category: "Day to day",
+    question: "What does launching a campaign do, and how do I stop it?",
+    answer:
+      "Under an offering's Prospects tab, Campaigns sends a short sequence of emails to your prospects from a mailbox you connect under Sending from. Launch enrols the prospects listed under Audience and then sends without you approving each email, at most the mailbox's daily limit (30 a day unless you change it), within the days and hours under Options. Follow-ups to a prospect stop when it replies, its email bounces, it unsubscribes, or you mark it won or lost. Pause stops all sending at once and Resume starts it again. Campaigns send email only; calls and WhatsApp or LinkedIn messages are yours to make.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
+    question: "Why does a campaign say Needs setup: connect a mailbox?",
+    answer:
+      "Campaign emails go out from your own mailbox, not from WonderArk's. Open Sending from on the campaign, enter your mail server (SMTP), username and password or app password, and click Send a test to me. The mailbox is verified when your mail server accepts that test, and Launch then appears. If you change the server, the username, the password or the from address, send the test again.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
     question: "Can a prospect search run again on its own?",
     answer:
       "Yes. Under an offering's Find tab, run a search on a free WorksLake source and click Run this weekly in its result. The search then runs every 7 days using free sources only, never paid lookups, and adds only companies that are new to To review, where you still approve each one. An offering has one weekly search. The line under the search form shows its last run and next run, and Pause stops it until you press Resume.",

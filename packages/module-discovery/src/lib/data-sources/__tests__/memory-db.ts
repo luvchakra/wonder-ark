@@ -27,6 +27,8 @@ export function createMemoryDb(seed: Record<string, Row[]> = {}, unique: Record<
         if (method === "is") return (row[column] ?? null) === value;
         if (method === "in") return (value as unknown[]).includes(row[column]);
         if (method === "lte") return row[column] != null && String(row[column]) <= String(value);
+        if (method === "gte") return row[column] != null && String(row[column]) >= String(value);
+        if (method === "neq") return row[column] !== value;
         if (method === "ilike") return String(row[column] ?? "").toLowerCase() === String(value).toLowerCase();
         return true;
       });

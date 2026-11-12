@@ -30,8 +30,9 @@ const isDetail = (slug: string) => slug.includes("[");
 const listOf = (slug: string) => slug.slice(0, slug.indexOf("/["));
 
 describe("every offering page opens from a link in the four-tab nav", () => {
-  it("covers the 15 offering pages", () => {
-    expect(pages).toHaveLength(15);
+  // 15 when the tabs were regrouped; DISC-CAMP-P0-05.1 added Campaigns and one campaign.
+  it("covers the 17 offering pages", () => {
+    expect(pages).toHaveLength(17);
   });
 
   for (const slug of pages) {

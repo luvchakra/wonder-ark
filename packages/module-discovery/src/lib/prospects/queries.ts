@@ -9,7 +9,11 @@ import {
   type ProspectStage,
 } from "./pipeline";
 
-export type ProspectWithPipeline = Prospect & ProspectPipelineState;
+export type ProspectWithPipeline = Prospect &
+  ProspectPipelineState & {
+    /** DISC-CAMP-P0-04.1: a running campaign is following this prospect up. */
+    inActiveCampaign?: boolean;
+  };
 
 export type ProspectFilters = {
   status?: ProspectStatus;
@@ -37,6 +41,9 @@ type ProspectPipelineRow = Prospect & {
     sent_at: string | null;
   }[];
   conversations: { status: "awaiting_reply" | "replied" | "closed"; last_message_at: string }[];
+  /** DISC-CAMP-P0-04.1: the prospect's campaign enrollments. Absent on a row built
+   * before campaigns existed. */
+  outreach_enrollments?: { status: string }[];
 };
 
 function latestBy<T>(rows: T[], key: keyof T): T | null {
@@ -74,13 +81,15 @@ function deriveRow(row: ProspectPipelineRow): ProspectWithPipeline {
   // Structurally satisfies ProspectWithPipeline (Prospect & ProspectPipelineState) even
   // though the embedded child-table fields ride along at runtime -- nothing downstream
   // reads them.
-  return { ...row, ...state };
+  // DISC-CAMP-P0-04.1: whether a running campaign is following this prospect up.
+  const inActiveCampaign = (row.outreach_enrollments ?? []).some((enrollment) => enrollment.status === "active");
+  return { ...row, ...state, inActiveCampaign };
 }
 
 const PIPELINE_SELECT =
   "*, prospect_research(researched_at), prospect_scores(created_at), " +
   "outreach_strategies(status, updated_at), messages(status, created_at, sent_at), " +
-  "conversations(status, last_message_at)";
+  "conversations(status, last_message_at), outreach_enrollments(status)";
 
 /**
  * Pipeline stage/next-action are computed here, not stored -- no new AI call, just this

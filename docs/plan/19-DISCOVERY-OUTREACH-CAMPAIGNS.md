@@ -223,3 +223,73 @@ messages a business starts.
 ## As built
 
 Where the build differs from the text above. The live repo wins (`CLAUDE.md`).
+
+- **`20261112100000` is applied and frozen.** Later schema changes are new files: `20261112110000` adds
+  `discovery.messages.send_claimed_at` and `send_attempt` for the one-send-per-message claim.
+- **"Failed" needs proof; everything else is "unknown".** The SMTP library labels a socket error or a socket timeout
+  the same way whether it struck while connecting or after the body was written, so those are "Outcome unknown". A
+  send is "failed" only on the server's own rejection code or an error that can only occur before a message is
+  handed over (sign-in, TLS set-up, the set-up timeouts, a refused connection).
+- **A one-at-a-time send that never reported back** (its claim is older than ten minutes) is marked failed with
+  "Outcome unknown" on the next click, which sends nothing; the person may then send it again. On the platform
+  provider's path the attempt number, and so the idempotency key, is kept for that case.
+- **The mailbox is saved through the member's session and verified with the service role.** The database resets a
+  mailbox to unverified when its server, port, username, password or From address changes.
+- **`nodemailer` 10 ships its own types**, so there is no `@types/nodemailer`.
+- **Who is "qualified".** A prospect's status is `new`, `qualified` or `disqualified`, set by a person. A new
+  campaign enrols only qualified prospects when the workspace has any, and otherwise everyone not marked
+  disqualified (`audience.onlyQualified`, set from the workspace's own data and changeable under Audience).
+- **An enrollment writes to a contact or to the prospect's general company email** (`recipient`, migration
+  `20261112120000`). A contact a lookup found is written to automatically only at an organisation's mailbox
+  (`info@`, `sales@` ...); a named person found by a lookup is left out with the reason shown.
+- **One model request per line of work, not per step.** It writes every email step of the sequence, so a campaign
+  costs at most thirteen requests and the follow-ups follow from the first email (development principle 5). The
+  workspace's monthly allowance is 200 runs; one per step would have used up to 65.
+- **The cache is the stored text.** `ai_runs` records what a request cost, not its answer. A request whose
+  `input_hash` and `prompt_version` already succeeded is answered by copying the unedited templates that run
+  produced; if a person has edited them since, the request is made again.
+- **The model may not use `{{first_name}}`**, and its answer is refused if it contains a link, an email address, a
+  phone number, a bracket placeholder or a field outside the list. A person may add `{{first_name}}` when
+  editing; a prospect with no first name is then skipped for that step with the reason.
+- **`{{city}}` is the first part of the prospect's stored location.** Nothing is looked up.
+- **No "delivered" count.** A business's own mailbox reports no delivery, so the funnel is enrolled, sent,
+  bounced, replied, interested, won.
+- **New prospects join on the tick, not at approval.** A prospect approved from a suggestion is `new` and often has
+  no contact yet, so enrolling at that moment would add almost nobody. A campaign with "Add new prospects
+  automatically" on re-runs the same enrolment rule on every tick, so a prospect joins once it is eligible.
+- **A claim in flight is left alone.** A second tick that meets a `requested` send younger than fifteen minutes
+  sends nothing and changes nothing; an older one is closed as "Outcome unknown". The enrollment is stopped in both
+  the unknown case and a definite failure: a step is never retried, and a follow-up to an email that may not have
+  arrived is not sent.
+- **A mailbox that cannot be reached or signed in to pauses the workspace's running campaigns** with the reason,
+  and is marked failed, after the first such failure in a tick. The one enrollment that met it is stopped.
+- **A reply delivered twice is stored once** by a key in `discovery.messages.provider_message_id` for inbound rows
+  (migration `20261112130000`): the email's Message-ID when the webhook passes one (`messageId`), otherwise a hash
+  of the sender, the text and the day. Two identical replies from one person on one day are therefore one row.
+- **A reply with several possible owners and no email sent by any of them is not attributed.** It is reported as
+  unmatched, as an unknown sender is.
+- **Drafting an answer to an interested reply stays a person's click** ("Generate reply" on the conversation): the
+  reply appears on Today under "Replies waiting for your answer". Drafting it on arrival is not built
+  (`generateReply` reads through the person's session).
+- **Email steps only, for now.** `DISC-CAMP-P0-06.1` (call, WhatsApp and LinkedIn steps as Today rows with drafts)
+  is not built, so a campaign's steps can only be emails (`TASK_STEPS_AVAILABLE`). A step nobody has a screen to do
+  would hold every enrollment behind it.
+- **"Send a test to me" saves and tests in one action**, so the "Sending from" block has one button.
+- **The Launch dialog's lines are built on the server** from the campaign's rows (`launchLines`), and a line on the
+  campaign page warns when the daily check falls outside the campaign's sending hours, since nothing would send.
+- **`DISC-CAMP-P0-01.2` is done except the `CLAUDE.md` line**, which is the owner's to add (see "Waiting on the
+  owner").
+- **The mailbox is read at the start of every tick, whatever the hour**, before anything is sent, so someone who
+  replied or bounced is stopped before the next step. If a mailbox that is set to be read cannot be, nothing is
+  sent for that workspace in that tick and the reason is kept on the mailbox (`last_error`) and shown on the
+  campaign page.
+- **Other mail is judged by its envelope only.** A message is kept if its From address is someone the workspace
+  enrolled, or if it looks like a failure notice (a `multipart/report`, or a mail-system sender with a failure
+  subject) and its text names an address the workspace sent to. The body of anything else is never fetched. The
+  inbox is opened read-only, so nothing is marked read.
+- **The first read starts at the workspace's earliest campaign launch**, not at the start of the mailbox; later
+  reads start after `last_seen_uid`, which moves only once everything read has been dealt with. A changed
+  UIDVALIDITY starts again from that date; replies are stored once by Message-ID either way.
+- **A reply read from the mailbox with no Message-ID** is keyed by the mailbox's own id for it.
+- **`imapflow` is the IMAP client**; its log output is switched off, since its debug lines carry mailbox content.
+

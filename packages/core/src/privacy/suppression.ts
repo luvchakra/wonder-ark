@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "../db/server";
 import { createAdminClient } from "../db/admin";
 import { SITE_URL } from "../site";
@@ -6,9 +7,12 @@ import { createUnsubscribeToken, emailHash } from "./unsubscribe-token";
 export type SuppressionReason = "unsubscribe" | "complaint" | "bounce" | "manual";
 
 /** PRIV-1: whether `email` opted out of this business's email. Runs as the signed-in
- * user; `core.is_email_suppressed()` re-checks they belong to the business. */
-export async function isEmailSuppressed(businessId: string, email: string): Promise<boolean> {
-  const supabase = await createClient({ schema: "core" });
+ * user; `core.is_email_suppressed()` re-checks they belong to the business. `client`
+ * (a `core`-schema service-role client) is for a send with no signed-in user, such as a
+ * campaign's scheduled tick (DISC-CAMP-P0-02.2). A failed lookup throws: the caller
+ * must not send. */
+export async function isEmailSuppressed(businessId: string, email: string, client?: SupabaseClient): Promise<boolean> {
+  const supabase = client ?? (await createClient({ schema: "core" }));
   const { data, error } = await supabase.rpc("is_email_suppressed", { p_business_id: businessId, p_email: email });
   if (error) throw error;
   return data === true;
@@ -57,8 +61,8 @@ export type OutreachCompliance =
  * which case it must not be sent), and otherwise the unsubscribe link for the footer and
  * the RFC 8058 headers that let mail clients offer one-click unsubscribe.
  */
-export async function prepareOutreachEmail(businessId: string, to: string): Promise<OutreachCompliance> {
-  if (await isEmailSuppressed(businessId, to)) return { suppressed: true };
+export async function prepareOutreachEmail(businessId: string, to: string, client?: SupabaseClient): Promise<OutreachCompliance> {
+  if (await isEmailSuppressed(businessId, to, client)) return { suppressed: true };
   const unsubscribeUrl = `${SITE_URL}/api/unsubscribe?t=${encodeURIComponent(createUnsubscribeToken(businessId, emailHash(to)))}`;
   return {
     suppressed: false,

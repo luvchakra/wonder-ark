@@ -41,7 +41,7 @@ function plural(count: number, one: string, many: string): string {
 
 export function buildTodayList(input: {
   /** Every prospect of the offering, unfiltered, with its derived stage. */
-  prospects: Pick<ProspectPipelineState, "stage" | "isStuck">[];
+  prospects: (Pick<ProspectPipelineState, "stage" | "isStuck"> & { inActiveCampaign?: boolean })[];
   /** How many suggestions are waiting for review. */
   suggestionCount: number;
   /** The offering's Prospects page, `/<business>/discovery/offerings/<id>/prospects`. */

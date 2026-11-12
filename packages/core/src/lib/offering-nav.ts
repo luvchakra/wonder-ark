@@ -7,7 +7,7 @@
  *
  *   Setup      Overview, Ideal customer (the ICP page, which also holds buyer personas)
  *   Find       Find (with "To review" on the same page), Import, History, Definitions
- *   Prospects  All prospects, Opportunities, Watchlist
+ *   Prospects  All prospects, Opportunities, Watchlist, Campaigns
  *   Results    Performance, Conversions, Usage
  *
  * Pure and framework-free, so the offering's tab bar, the Discovery sidebar
@@ -60,6 +60,8 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; pages: 
       { slug: "prospects", label: "All" },
       { slug: "opportunities", label: "Opportunities" },
       { slug: "watchlist", label: "Watchlist" },
+      // DISC-CAMP-P0-05.1: outreach campaigns to the offering's prospects.
+      { slug: "campaigns", label: "Campaigns" },
     ],
   },
   {

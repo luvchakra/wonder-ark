@@ -221,6 +221,26 @@ async function main() {
       psql(`delete from discovery.prospects where id = (select prospect_id from discovery.outreach_enrollments where id = '${e3}')`);
       assertEqual(psql(`select count(*) from discovery.outreach_enrollments where id = '${e3}'`), "0", "a deleted prospect's enrollment is gone");
 
+      console.log("Verifying who an enrollment writes to (20261112120000)...");
+      assertEqual(psql(`select string_agg(distinct recipient, ',') from discovery.outreach_enrollments`), "contact", "an enrollment writes to a contact by default");
+      assertThrows(() => psql(`update discovery.outreach_enrollments set recipient = 'company_email' where id = '${e1}'`), "an enrollment to the general company email names no contact");
+      psql(`update discovery.outreach_enrollments set recipient = 'company_email', contact_id = null where id = '${e1}'`);
+      assertThrows(() => psql(`update discovery.outreach_enrollments set recipient = 'everyone' where id = '${e1}'`), "an unknown recipient kind is refused");
+
+      console.log("Verifying a message sends once and a reply is stored once (20261112110000, 20261112130000)...");
+      const prospectOf = psql(`select prospect_id from discovery.outreach_enrollments where id = '${e1}'`);
+      psql(`insert into discovery.messages (id, workspace_id, prospect_id, channel, content, status) values ('99999999-0000-0000-0000-000000000001', '${aliceWorkspace}', '${prospectOf}', 'email', 'Hello', 'approved')`);
+      assertEqual(psqlAs(ALICE, `update discovery.messages set send_claimed_at = now() where id = '99999999-0000-0000-0000-000000000001' and status in ('approved', 'failed') and send_claimed_at is null returning 1`), "1", "the first claim of a message succeeds");
+      assertEqual(psqlAs(ALICE, `update discovery.messages set send_claimed_at = now() where id = '99999999-0000-0000-0000-000000000001' and status in ('approved', 'failed') and send_claimed_at is null returning 1`), "", "a second claim of the same message matches nothing");
+      const inbound = (workspace, prospect, key) => `insert into discovery.messages (workspace_id, prospect_id, channel, direction, content, status, provider_message_id) values ('${workspace}', '${prospect}', 'email', 'inbound', 'Tell me more', 'sent', ${key})`;
+      psql(inbound(aliceWorkspace, prospectOf, "'id:<abc@mail.example>'"));
+      assertThrows(() => psql(inbound(aliceWorkspace, prospectOf, "'id:<abc@mail.example>'")), "the same reply delivered twice is refused the second time");
+      psql(inbound(bobWorkspace, bobProspect, "'id:<abc@mail.example>'"));
+      psql(inbound(aliceWorkspace, prospectOf, "null"));
+      psql(inbound(aliceWorkspace, prospectOf, "null"));
+      psql(`insert into discovery.messages (workspace_id, prospect_id, channel, content, status, provider_message_id) values ('${aliceWorkspace}', '${prospectOf}', 'email', 'Out', 'sent', 'same-id'), ('${aliceWorkspace}', '${prospectOf}', 'email', 'Out', 'sent', 'same-id')`);
+      assertEqual(psql(`select count(*) from discovery.messages where workspace_id = '${aliceWorkspace}' and direction = 'inbound'`), "3", "inbound rows without a key, and outbound rows, are not constrained");
+
       console.log("\nAll outreach-campaign checks passed.");
     },
   });
