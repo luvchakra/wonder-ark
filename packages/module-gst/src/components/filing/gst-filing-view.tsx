@@ -138,10 +138,9 @@ export function GstFilingView({
         </TabsList>
 
         <TabsContent value="inward" className="space-y-6">
-          <p className="max-w-3xl rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-            This covers the <span className="font-medium text-foreground">purchase side</span> (inward supplies) — the
-            taxable value and ITC-eligible tax paid on your Purchase Orders, which is what you reconcile against GSTR-2B
-            and enter into GSTR-3B.
+          {/* PLATFORM-NAV-P0-02.4: one line of help per tab, where a boxed paragraph was. */}
+          <p className="text-sm text-muted-foreground">
+            Tax paid on your purchase orders: reconcile it against GSTR-2B and enter it in GSTR-3B.
           </p>
 
           {missingGstProfile ? (
@@ -149,7 +148,7 @@ export function GstFilingView({
               <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               <span>
                 Your business has no GSTIN on file, so purchase orders can&apos;t reliably split CGST/SGST vs. IGST. Set
-                it under GST &gt; GST Profile first.
+                it in Tax &amp; GST → GST Profile first.
               </span>
             </div>
           ) : null}
@@ -165,12 +164,16 @@ export function GstFilingView({
             </div>
           ) : null}
 
-          <div className="flex justify-end">
-            <Button onClick={exportPurchaseRegister} disabled={purchaseRegister.csvRows.length === 0}>
-              <Download className="size-4" aria-hidden="true" />
-              Export purchase register (CSV)
-            </Button>
-          </div>
+          {/* A period with nothing in it has nothing to download, so the button is left
+              out, not shown disabled; the cards below say the period is empty. */}
+          {purchaseRegister.csvRows.length > 0 ? (
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={exportPurchaseRegister}>
+                <Download className="size-4" aria-hidden="true" />
+                Export purchase register (CSV)
+              </Button>
+            </div>
+          ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Taxable value" value={inr.format(purchaseRegister.taxableValue)} />
@@ -263,9 +266,8 @@ export function GstFilingView({
         </TabsContent>
 
         <TabsContent value="outward" className="space-y-6">
-          <p className="max-w-3xl rounded-lg border border-border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
-            This covers the <span className="font-medium text-foreground">sales side</span> (outward supplies) — sales
-            invoices grouped by customer and HSN, split B2B/B2C, ready for GSTR-1.
+          <p className="text-sm text-muted-foreground">
+            Sales invoices by customer and HSN, split B2B and B2C, ready for GSTR-1.
           </p>
 
           {salesRegister.missingGstinCount > 0 || salesRegister.invalidGstinCount > 0 ? (
@@ -284,12 +286,14 @@ export function GstFilingView({
             </div>
           ) : null}
 
-          <div className="flex justify-end">
-            <Button onClick={exportSalesRegister} disabled={salesRegister.invoiceCount === 0}>
-              <Download className="size-4" aria-hidden="true" />
-              Export GSTR-1 outward supply (CSV)
-            </Button>
-          </div>
+          {salesRegister.invoiceCount > 0 ? (
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" onClick={exportSalesRegister}>
+                <Download className="size-4" aria-hidden="true" />
+                Export GSTR-1 outward supply (CSV)
+              </Button>
+            </div>
+          ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Taxable value" value={inr.format(salesRegister.taxableValue)} />
