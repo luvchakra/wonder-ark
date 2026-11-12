@@ -22,6 +22,10 @@
   ],
   "crons": [
     {
+      "path": "/api/cron/run-saved-searches",
+      "schedule": "50 5 * * *"
+    },
+    {
       "path": "/api/cron/drain-events",
       "schedule": "0 6 * * *"
     },

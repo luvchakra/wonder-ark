@@ -7,6 +7,7 @@ import {
 import { listProspectSuggestions } from "@cofounderai/module-discovery/lib/prospects/queries";
 import { getIcpProfile } from "@cofounderai/module-discovery/lib/icp/queries";
 import { listDataSources } from "@cofounderai/module-discovery/lib/data-sources/index";
+import { getSavedSearch, summariseSavedSearch } from "@cofounderai/module-discovery/lib/data-sources/saved-searches";
 import {
   DATA_SOURCE_STATUS_LABEL,
   STORED_SOURCE_ID,
@@ -17,7 +18,14 @@ import {
 } from "@cofounderai/module-discovery/lib/data-sources/types";
 import { FindForm } from "@cofounderai/module-discovery/components/prospects/find-form";
 import { SuggestionReviewList } from "@cofounderai/module-discovery/components/prospects/suggestion-review-list";
-import { approveSuggestionsAction, discardSuggestionsAction, findAction } from "./actions";
+import { WeeklySearchLine } from "@cofounderai/module-discovery/components/prospects/weekly-search";
+import {
+  approveSuggestionsAction,
+  discardSuggestionsAction,
+  findAction,
+  saveWeeklySearchAction,
+  setWeeklySearchEnabledAction,
+} from "./actions";
 
 /** The one line under the form: what is left of this business's lookups, or why the
  * gateway can't be searched. Only what the gateway reported; nothing is estimated. */
@@ -45,6 +53,12 @@ function gatewayNote(list: DataSourceList): string | null {
  * with a review list (was 8 plus three per suggestion). DISC-NAV-P0-01.1 leaves the page
  * itself alone and takes the offering's tab bar above it from nine links to eight (four
  * tabs and Find's four pages).
+ *
+ * DISC-DATA-P0-05.1 adds two controls, each shown only when it applies: "Run this
+ * weekly" in the result of a search that just ran on a free source (hidden when that
+ * same search is already the weekly one), and Pause or Resume on the one line that
+ * describes the offering's weekly search once there is one. A page with neither state
+ * has the same 5 controls as before.
  */
 export default async function DiscoverProspectsPage({
   params,
@@ -60,11 +74,13 @@ export default async function DiscoverProspectsPage({
   const workspace = await getWorkspaceForProduct(product.id);
   if (!workspace) notFound();
 
-  const [suggestions, icp, list] = await Promise.all([
+  const [suggestions, icp, list, savedSearch] = await Promise.all([
     listProspectSuggestions(workspace.id),
     getIcpProfile(workspace.id),
     listDataSources(workspace.id),
+    getSavedSearch(workspace.id),
   ]);
+  const weekly = summariseSavedSearch(savedSearch);
 
   // Find looks for companies; a source that only holds channels is not offered here.
   const sources = list.sources.filter(
@@ -102,7 +118,17 @@ export default async function DiscoverProspectsPage({
           hiringKeywords: approvedIcp ? [...approvedIcp.buying_signals, ...approvedIcp.existing_tools].join(", ") : "",
         }}
         primary={suggestions.length === 0}
+        saveWeeklyAction={saveWeeklySearchAction.bind(null, businessId, productId, workspace.id)}
+        weekly={weekly}
       />
+
+      {weekly ? (
+        <WeeklySearchLine
+          search={weekly}
+          sourceLabel={list.sources.find((source) => source.id === weekly.sourceId)?.label ?? null}
+          toggleAction={setWeeklySearchEnabledAction.bind(null, businessId, productId, workspace.id, !weekly.enabled)}
+        />
+      ) : null}
 
       <SuggestionReviewList
         suggestions={suggestions}

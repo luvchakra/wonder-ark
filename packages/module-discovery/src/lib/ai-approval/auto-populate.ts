@@ -6,7 +6,7 @@ import { generateOutreachMessage } from "../ai/generate-message";
 import { scoreProspect } from "../scoring/score-prospect";
 import { approveIcpProfile } from "../icp/mutations";
 import { getIcpProfile } from "../icp/queries";
-import { approveProspectSuggestions } from "../prospects/mutations";
+import { approveSuggestionsAndQueueEnrichment } from "../data-sources/approval";
 import { getMostRecentProspect } from "../prospects/queries";
 import { approveOutreachStrategy } from "../outreach/mutations";
 import { getWorkspaceForProduct } from "../tenancy/queries";
@@ -59,7 +59,9 @@ export async function autoDiscoverOneProspect(workspaceId: string): Promise<Auto
 
   const suggestions = await discoverProspects(workspaceId, undefined, 1);
   if (suggestions.length === 0) return 0;
-  const added = await approveProspectSuggestions(workspaceId, suggestions.map((s) => s.id));
+  // DISC-DATA-P0-04.1: queues the company's free lookup of its missing details, as every
+  // other approval does.
+  const { added } = await approveSuggestionsAndQueueEnrichment(workspaceId, suggestions.map((s) => s.id));
 
   if (added > 0) {
     const prospect = await getMostRecentProspect(workspaceId);

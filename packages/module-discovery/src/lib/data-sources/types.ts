@@ -88,6 +88,9 @@ export type FindOutcome =
       unitsSpent: number | null;
       /** Sources asked in this run that did not answer, in the gateway's words. */
       providerIssues: { id: string; status: "needs_setup" | "unavailable" | "quota" }[];
+      /** DISC-DATA-P0-05.1: the search as it was run, when it may be saved to run
+       * weekly (a free WorksLake source). Absent for a paid source or the AI web search. */
+      weekly?: { sourceId: string; what: string; where: string; companySize?: string; hasWebsite?: boolean };
     }
   | {
       status: "failed";
@@ -144,3 +147,46 @@ export type LookupState = { status: "completed" | "failed"; message: string } | 
 export type LookupQuotaState =
   | { state: "ok"; period: string; paid: { limit: number; remaining: number } }
   | { state: "needs_setup" | "unavailable" | "quota"; message: string };
+
+/**
+ * DISC-DATA-P0-05.1: a Find search an offering runs again every week
+ * (`discovery.saved_searches`, one per offering).
+ */
+export const SAVED_SEARCH_INTERVAL_DAYS = 7;
+
+export type SavedSearch = {
+  id: string;
+  workspace_id: string;
+  kind: "company" | "channel";
+  request: unknown;
+  enabled: boolean;
+  last_run_at: string | null;
+  next_run_at: string | null;
+  last_result: unknown;
+  created_at: string;
+};
+
+/** What the last weekly run did. A failed run says why; it is never shown as a result. */
+export type SavedSearchLastResult =
+  | { status: "completed"; found: number; added: number }
+  | { status: "failed"; message: string };
+
+/** What the Find page shows about the saved search. */
+export type SavedSearchSummary = {
+  what: string;
+  where: string;
+  sourceId: string;
+  enabled: boolean;
+  lastRunAt: string | null;
+  /** Null while paused. */
+  nextRunAt: string | null;
+  lastResult: SavedSearchLastResult | null;
+};
+
+export type SaveWeeklySearchOutcome =
+  | { status: "saved" }
+  /** One is already saved; nothing changed. The page asks before replacing it. */
+  | { status: "exists" }
+  | { status: "refused"; message: string };
+
+export type SaveWeeklySearchState = SaveWeeklySearchOutcome | { status: "failed"; message: string } | null;

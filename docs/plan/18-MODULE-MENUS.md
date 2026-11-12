@@ -29,11 +29,62 @@ Everyday pages:
 Discovery's own menu (four tabs per offering and a Today list) is in
 `17-DISCOVERY-DATA-AND-CONSUMER.md`, package B6.
 
-## Not in this change
+## Not in the menu change
 
-Labels are unchanged, so help and tests that name a page still match. Page contents are
-unchanged. Simplifying the pages themselves, module by module, is the next step and needs
-each page's controls counted before and after (CLAUDE.md, "Minimal UI").
+Labels are unchanged, so help and tests that name a page still match. The menu change left
+page contents alone; the pages are the next section.
+
+## Pages: fewer controls on the everyday pages
+
+Second step of the same request. The 22 everyday pages of Service, Inventory, CRM and
+Finance were audited and the ones with the most to gain simplified (CLAUDE.md, "Minimal
+UI"). Discovery's pages are in `17-DISCOVERY-DATA-AND-CONSUMER.md`.
+
+A control is something to press or change that is on screen when the page opens: a
+button, a link, a select, an input, a tab, a switch. A row's action counts once however
+many rows there are; a row link counts once; the Export button counts once. Counts are
+for a user who may do everything on the page.
+
+| Module | Page | Before | After | What moved where |
+| --- | --- | --- | --- | --- |
+| Service | Dashboard | 11 | 8 | "New opportunity", "New job" and "Schedule" removed: each only opened a list page that the menu and the card's "View all" open. |
+| Service | Schedule | 10 | 10 | The technician list (a switch per team member) is behind one "Technicians" button under the calendar. |
+| Service | Invoices | 4 | 4 | No control moved. Below `md` each invoice is a card; it was a seven-column table that scrolled sideways. |
+| Inventory | Dashboard | 7 | 4 | Choosing a warehouse applies the filter, so Apply (and Clear, shown once a warehouse was chosen) are gone. "Quick links" removed: Products and Audit log are in the menu; alerts open from "All alerts" on the Reorder watchlist. |
+| Inventory | Products | 6 | 4 | "Barcode / QR" and "Import" are under More. Activate / Deactivate is in the dialog a row's Edit opens. |
+| Inventory | Purchase Orders | 5 | 3 | A row keeps View. Edit (drafts) and the next step are in the order View opens. |
+| Inventory | Sales Orders | 4 | 3 | A row keeps View; the next step is in the order View opens. |
+| CRM | Inbox | 7 | 4 | The create form is behind "New ticket". "Customer 360" and "Convert to prospect" share one More button on rows that have both. |
+| CRM | Leads | 6 | 4 | Choosing a status or an owner saves it; Update and Assign are gone. |
+| CRM | Sales Opportunities (List) | 8 | 5 | A row keeps View. Assign owner and Edit value are on the opportunity's page. |
+| CRM | Follow-ups | 13 | 9 | The four filters are behind one "Filters" button; a filter applies when chosen, so Apply is gone. |
+| Finance | Dashboard | 12 | 8 | "GST Profile", "e-Way Bill", "e-Invoicing" and "GST Filing" removed: all four are in the menu. A missing GST profile links to its page. |
+| Finance | GST Filing | 5 | 5 | The boxed paragraph on each tab is one line. An empty month shows no download button (4 controls) where it showed a disabled one. |
+
+Schedule's count is by kind, so it is unchanged: the switches became one button. With five
+team members the page has four fewer things on it.
+
+Three helpers in `packages/core/src/components/ui/` carry the repeated patterns:
+`more-menu.tsx` (occasional actions behind "More", or behind one icon button on a row),
+`fold.tsx` (one button that opens filters, a form or a rarely used list) and
+`auto-submit-select.tsx` (a select that submits its own form when changed).
+
+What did not change: no route, permission check, licence check, server action or query.
+Every action is still there; these take one click more than before:
+
+- Inventory: label printing and import (More); activate or deactivate a product (Edit
+  first); approve, send, close or edit a purchase order and confirm, process, pack or ship
+  a sales order (View first).
+- CRM: create a ticket (New ticket first); Customer 360 or Convert to prospect on a ticket
+  that has both (More first); assign an owner or edit the value of an opportunity from the
+  List view (View first); filter follow-ups (Filters first).
+- Service: mark a team member as a technician (Technicians first).
+
+Audited and left alone, with their control counts: Service Jobs (5), My Day (5: a
+technician needs Open, Map, the visit's next step and the clock), Customers (2);
+Inventory stock (3); CRM Dashboard (Export and tiles that are the data); Finance Invoices
+(the period chips and four status tiles are its filters), Bills (2), Expenses (2),
+Banking (4).
 
 ## Stories
 
@@ -41,3 +92,7 @@ each page's controls counted before and after (CLAUDE.md, "Minimal UI").
 ### PLATFORM-NAV-P0-01.2 — Inventory menu: everyday pages first, two groups
 ### PLATFORM-NAV-P0-01.3 — CRM menu: everyday pages first, Insights and Setup
 ### PLATFORM-NAV-P0-01.4 — Finance menu: everyday pages first, three groups
+### PLATFORM-NAV-P0-02.1 — Service pages: dashboard, Schedule, invoice cards on a phone
+### PLATFORM-NAV-P0-02.2 — Inventory pages: dashboard, Products, Purchase Orders, Sales Orders
+### PLATFORM-NAV-P0-02.3 — CRM pages: Inbox, Leads, Sales Opportunities, Follow-ups
+### PLATFORM-NAV-P0-02.4 — Finance pages: dashboard, GST Filing

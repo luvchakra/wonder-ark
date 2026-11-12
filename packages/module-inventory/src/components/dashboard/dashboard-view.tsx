@@ -5,10 +5,8 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
   AlertTriangle,
   ArrowRight,
-  Bell,
   Clock,
   FileWarning,
-  History,
   IndianRupee,
   Package,
   PackageCheck,
@@ -21,9 +19,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@cofounderai/core/ui/card";
 import { Badge } from "@cofounderai/core/ui/badge";
-import { Button } from "@cofounderai/core/ui/button";
 import { Label } from "@cofounderai/core/ui/label";
-import { NativeSelect } from "@cofounderai/core/ui/native-select";
+import { AutoSubmitSelect } from "@cofounderai/core/ui/auto-submit-select";
 import {
   ChartContainer,
   ChartTooltip,
@@ -72,62 +69,24 @@ export function DashboardView({
 
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
-      <div className="flex flex-col gap-3">
-        {warehouses.length > 1 ? (
-          <form method="get" className="flex flex-wrap items-end gap-2">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="warehouse">Warehouse</Label>
-              <NativeSelect id="warehouse" name="warehouse" defaultValue={selectedWarehouseId ?? ""}>
-                <option value="">All warehouses</option>
-                {warehouses.map((w) => (
-                  <option key={w.id} value={w.id}>
-                    {w.name}
-                  </option>
-                ))}
-              </NativeSelect>
-            </div>
-            <Button type="submit" size="sm" variant="outline">
-              Apply
-            </Button>
-            {selectedWarehouseId ? (
-              <Button asChild size="sm" variant="ghost">
-                <Link href={`${inventoryPath}/dashboard`}>Clear</Link>
-              </Button>
-            ) : null}
-          </form>
-        ) : null}
-
-        {/* Informational quick links, not creation shortcuts -- the dashboard's own job
-            is to summarize state, and "New purchase order"/"New stock transfer"/"Adjust
-            stock" read as actions to take even though they just opened the relevant list
-            page. Alerts/Audit log/Products are genuinely "go look at more" destinations,
-            matching what a dashboard is for. Grouped in their own bordered card (rather
-            than a bare flex-wrapped row) with an even 3-col grid -- three buttons wrapped
-            2-then-1 otherwise, which read as ragged rather than organized. */}
-        <div className="rounded-xl border border-border bg-card p-3">
-          <p className="mb-2 text-xs font-medium tracking-wide text-muted-foreground uppercase">Quick links</p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-            <Button asChild size="sm" variant="outline" className="w-full justify-start sm:justify-center">
-              <Link href={`${inventoryPath}/alerts`}>
-                <Bell className="size-3.5" aria-hidden="true" />
-                Low stock alerts
-              </Link>
-            </Button>
-            <Button asChild size="sm" variant="outline" className="w-full justify-start sm:justify-center">
-              <Link href={`${inventoryPath}/products`}>
-                <Package className="size-3.5" aria-hidden="true" />
-                Products
-              </Link>
-            </Button>
-            <Button asChild size="sm" variant="outline" className="w-full justify-start sm:justify-center">
-              <Link href={`${inventoryPath}/audit-log`}>
-                <History className="size-3.5" aria-hidden="true" />
-                Audit log
-              </Link>
-            </Button>
-          </div>
-        </div>
-      </div>
+      {/* PLATFORM-NAV-P0-02.2: the warehouse filter is the only control above the
+          figures. Choosing a warehouse applies it; "All warehouses" clears it, so the
+          Apply and Clear buttons are gone. The "Quick links" card went too: Products and
+          Audit log are in the menu, and low-stock alerts open from the Reorder watchlist
+          card, where the items that need reordering are listed. */}
+      {warehouses.length > 1 ? (
+        <form method="get" className="flex w-fit flex-col gap-1.5">
+          <Label htmlFor="warehouse">Warehouse</Label>
+          <AutoSubmitSelect id="warehouse" name="warehouse" defaultValue={selectedWarehouseId ?? ""}>
+            <option value="">All warehouses</option>
+            {warehouses.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.name}
+              </option>
+            ))}
+          </AutoSubmitSelect>
+        </form>
+      ) : null}
 
       <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-6">
         {data.stockValue !== null ? (
@@ -231,8 +190,11 @@ export function DashboardView({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
-          <CardHeader className="pb-2">
+          <CardHeader className="flex flex-row items-center justify-between gap-3 pb-2">
             <CardTitle className="text-base">Reorder watchlist</CardTitle>
+            <Link href={`${inventoryPath}/alerts`} className="flex shrink-0 items-center gap-1 text-xs font-medium text-primary hover:underline">
+              All alerts <ArrowRight className="size-3" aria-hidden="true" />
+            </Link>
           </CardHeader>
           <CardContent className="space-y-3">
             {data.lowStock.length === 0 ? (

@@ -42,8 +42,9 @@ function foundLine(contact: Contact): string | null {
 
 /**
  * DISC-DATA-P0-04.3: the delete dialog's one distinct choice. Unticked, the contact is
- * simply deleted. Ticked, its address is first passed to WorksLake's removal list, and
- * the contact is deleted only once that has been accepted. The second line says exactly
+ * simply deleted. Ticked, its address is first added to the business's own opt-out list
+ * and passed to WorksLake's removal list, and the contact is deleted only once both have
+ * accepted it. The second line says exactly
  * what ticking it adds, and nothing more: it does not claim the person is removed
  * anywhere else. Offered only for a contact that has an address to pass on.
  */
@@ -54,7 +55,8 @@ export function RemovalChoice() {
       <span>
         They asked not to be contacted
         <span className="block text-xs text-muted-foreground">
-          Also asks WorksLake to leave this address out of later contact lookups.
+          Blocks every later email from your business to this address, and asks WorksLake to leave it out of later
+          contact lookups.
         </span>
       </span>
     </label>

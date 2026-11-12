@@ -206,7 +206,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "How do I import my products or my prospect list?",
     answer:
-      "Both have a bulk import. Inventory takes pasted CSV text with at least `sku` and `name` (Products → Import); Discovery accepts CSV, Excel or PDF and uses AI to map whatever columns your file has onto its own fields.",
+      "Both have a bulk import. Inventory takes pasted CSV text with at least `sku` and `name` (Products → More → Import); Discovery accepts CSV, Excel or PDF and uses AI to map whatever columns your file has onto its own fields.",
     guideSlug: "inventory",
     sectionId: "setup-order",
   },
@@ -239,6 +239,14 @@ export const FAQ: FaqEntry[] = [
     question: "Why does WorksLake business data say Needs setup or Unavailable?",
     answer:
       "Under an offering's Find tab, WorksLake business data is one of the sources you can search. Needs setup means the WorksLake connection hasn't been set up for this workspace yet; Unavailable means it didn't answer. WonderArk never fills in sample results in its place. Web search (AI) and Import keep working either way.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
+    question: "Can a prospect search run again on its own?",
+    answer:
+      "Yes. Under an offering's Find tab, run a search on a free WorksLake source and click Run this weekly in its result. The search then runs every 7 days using free sources only, never paid lookups, and adds only companies that are new to To review, where you still approve each one. An offering has one weekly search. The line under the search form shows its last run and next run, and Pause stops it until you press Resume.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },

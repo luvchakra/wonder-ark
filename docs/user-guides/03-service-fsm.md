@@ -5,7 +5,7 @@ runs your field-service business: turning a lead into a scheduled job, a
 completed visit, and an invoice — with crew dispatch and inventory
 parts-tracking built in.
 
-Last updated: 2026-10-16
+Last updated: 2026-11-12
 
 ## The Service dashboard
 
@@ -15,8 +15,9 @@ tiles for **Open jobs** (and how many are in progress), **Revenue (month)**,
 won + lost opportunities); an **Invoiced (30 days)** trend and **Jobs by
 status**; and working lists for **Today's schedule** (or this week's), the
 **Unassigned queue**, **Jobs in progress**, **Overdue invoices** and
-**Estimates awaiting response**. Switch the schedule between today and **This week**, and
-start work with **New opportunity**, **New job** or **Schedule**.
+**Estimates awaiting response**. Switch the schedule between today and **This week**.
+Each list ends with **View all**, which opens the page that manages it (Schedule, Jobs,
+Invoices or Opportunities); new jobs and opportunities are created on those pages.
 
 ## Setup before you start
 
@@ -35,7 +36,8 @@ All under **Service → Settings** (needs the permission to manage settings; any
   ("Next: PREFIX/FY/0001").
 
 **Technicians** are set up on the **Schedule** page, not in Settings: the **Technicians**
-panel chooses which members can be assigned schedule events. Someone who isn't a technician
+button under the calendar opens the list that chooses which members can be assigned
+schedule events. Someone who isn't a technician
 sees a message on **My Day** asking an owner or admin to add them. There are no service
 areas or zones today.
 

@@ -1,3 +1,4 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireModule } from "@cofounderai/core/licensing/queries";
 import { createClient } from "../../db/server";
 import { discoverProspects } from "../ai/discover-prospects";
@@ -108,8 +109,15 @@ function summariseReasons(counts: Map<string, number>): string[] {
   return [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([label, count]) => `${count} ${label}`);
 }
 
-async function approvedIcpCriteria(workspaceId: string): Promise<IcpPreFilterCriteria | null> {
-  const icp = await getIcpProfile(workspaceId);
+async function approvedIcpCriteria(workspaceId: string, client?: SupabaseClient): Promise<IcpPreFilterCriteria | null> {
+  let icp;
+  if (client) {
+    const { data, error } = await client.from("icp_profiles").select("*").eq("workspace_id", workspaceId).maybeSingle();
+    if (error) throw error;
+    icp = data;
+  } else {
+    icp = await getIcpProfile(workspaceId);
+  }
   if (!icp || icp.status !== "approved") return null;
   return {
     industries: icp.industries,
@@ -127,8 +135,9 @@ export async function stageGatewayResults(
   workspaceId: string,
   items: BusinessItem[],
   matchReason: (item: BusinessItem) => string,
+  client?: SupabaseClient,
 ): Promise<{ added: number; skipped: Omit<Extract<FindOutcome, { status: "completed" }>["skipped"], "unreadable">; unstageable: number }> {
-  const criteria = await approvedIcpCriteria(workspaceId);
+  const criteria = await approvedIcpCriteria(workspaceId, client);
   const icpReasons = new Map<string, number>();
   let icp = 0;
   let alreadyInReview = 0;
@@ -164,7 +173,7 @@ export async function stageGatewayResults(
   // domain first, then company name.
   const duplicates = await Promise.all(
     candidates.map((row) =>
-      findDuplicateProspect(workspaceId, { companyName: row.company_name, website: row.website }),
+      findDuplicateProspect(workspaceId, { companyName: row.company_name, website: row.website }, client),
     ),
   );
   const fresh = candidates.filter((_, index) => !duplicates[index]);
@@ -172,7 +181,7 @@ export async function stageGatewayResults(
 
   let added = 0;
   if (fresh.length > 0) {
-    const supabase = await createClient();
+    const supabase = client ?? (await createClient());
     // The unique key on (workspace_id, source, external_id) makes a repeated search, a
     // double click or a retried request add nothing: a record already waiting for review
     // is left as it is, and only the rows actually inserted come back.
@@ -300,22 +309,39 @@ async function findWithWebSearch(workspaceId: string, input: FindInput, label: s
 }
 
 /**
+ * DISC-DATA-P0-05.1: how a run with no signed-in user is made, for a saved search run by
+ * the domain-events drain. The drain has already checked the Discovery licence of the
+ * event's business; the workspace must belong to that business. Such a run may use free
+ * sources only, never the AI web search, and records itself in the ledger under
+ * `ledgerKey` (the saved search and the date it fell due) so a redelivered event finds
+ * the first run and does not ask the gateway, or count usage, twice.
+ */
+export type UnattendedFind = { client: SupabaseClient; businessId: string; ledgerKey: unknown };
+
+/**
  * Runs one Find and reports what happened. Expected refusals (source not set up, gateway
  * down, quota used) come back as a `failed` outcome with a message for the screen;
  * anything else (no licence, usage allowance used up, an AI provider error) is thrown
  * for the caller to report.
  */
-export async function runFind(workspaceId: string, input: FindInput): Promise<FindOutcome> {
-  const businessId = await getBusinessIdForWorkspace(workspaceId);
+export async function runFind(workspaceId: string, input: FindInput, unattended?: UnattendedFind): Promise<FindOutcome> {
+  const client = unattended?.client;
+  const businessId = await getBusinessIdForWorkspace(workspaceId, client);
   if (!businessId) throw new Error("Workspace not found.");
-  await requireModule(businessId, "discovery");
+  if (unattended) {
+    if (unattended.businessId !== businessId) throw new Error("Workspace not found.");
+  } else {
+    await requireModule(businessId, "discovery");
+  }
 
   // The AI web search does not depend on the gateway, so it never waits on it.
   if (input.sourceId === WEB_SEARCH_SOURCE_ID) {
+    // It spends AI budget and needs a person's session; it never runs on a schedule.
+    if (unattended) return failed("invalid", "Web search (AI) can't run on a schedule.");
     return findWithWebSearch(workspaceId, input, WEB_SEARCH_SOURCE_LABEL);
   }
 
-  const list = await listDataSources(workspaceId);
+  const list = await listDataSources(workspaceId, client);
   const source = list.sources.find((entry) => entry.id === input.sourceId && entry.action !== "import");
   if (!source) return failed("invalid", "Choose a source to search.");
 
@@ -328,6 +354,9 @@ export async function runFind(workspaceId: string, input: FindInput): Promise<Fi
       ? failed("needs_setup", `Needs setup: ${source.label} isn't set up yet.`)
       : failed("unavailable", `Unavailable: ${source.label} can't be searched right now.`);
   }
+  if (unattended && source.paid) {
+    return failed("invalid", `${source.label} uses paid lookups, which a weekly search never spends.`);
+  }
   // What to look for comes from what the person typed (prefilled from their ICP). With
   // nothing typed there is nothing to search for, and no default stands in for it.
   if (!cleanText(input.what, 300)) {
@@ -337,7 +366,7 @@ export async function runFind(workspaceId: string, input: FindInput): Promise<Fi
     );
   }
 
-  await assertWithinUsageLimit(workspaceId);
+  await assertWithinUsageLimit(workspaceId, client);
 
   const startedAt = Date.now();
   const call = await callGateway(businessId, { ...source, provider: source.provider }, input);
@@ -348,10 +377,11 @@ export async function runFind(workspaceId: string, input: FindInput): Promise<Fi
         workspaceId,
         operation: call.run.operation,
         source: source.provider,
-        request: call.run.request,
+        request: unattended?.ledgerKey ?? call.run.request,
         status: "failed",
         durationMs: Date.now() - startedAt,
         errorCode: call.failure.code,
+        client,
       });
     }
     if (call.failure.failure === "quota") {
@@ -365,17 +395,19 @@ export async function runFind(workspaceId: string, input: FindInput): Promise<Fi
     workspaceId,
     operation: run.operation,
     source: source.provider,
-    request: run.request,
+    request: unattended?.ledgerKey ?? run.request,
     status: "succeeded",
     resultCount: run.results.length,
     unitsSpent: run.usage?.unitsSpent ?? null,
     durationMs: Date.now() - startedAt,
+    client,
   });
 
   const staged = await stageGatewayResults(
     workspaceId,
     run.results,
     source.action === "signals" ? hiringMatchReason : () => searchMatchReason(input.what, input.where),
+    client,
   );
 
   return {
@@ -386,5 +418,18 @@ export async function runFind(workspaceId: string, input: FindInput): Promise<Fi
     skipped: { ...staged.skipped, unreadable: run.unreadable + staged.unstageable },
     unitsSpent: run.usage?.unitsSpent ?? null,
     providerIssues: run.providerIssues,
+    // DISC-DATA-P0-05.1: only a free source may be saved to run weekly. The save action
+    // checks this again against the gateway's list; this only decides whether to offer it.
+    ...(source.paid
+      ? {}
+      : {
+          weekly: {
+            sourceId: source.id,
+            what: cleanText(input.what, 300) ?? "",
+            where: cleanText(input.where, 300) ?? "",
+            ...(cleanText(input.companySize, 200) ? { companySize: cleanText(input.companySize, 200) as string } : {}),
+            ...(input.hasWebsite ? { hasWebsite: true } : {}),
+          },
+        }),
   };
 }

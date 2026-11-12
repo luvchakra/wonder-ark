@@ -615,6 +615,7 @@ adds its stories here when it is built.
 ### DISC-DATA-P0-04.1 — Enrich on approval and Fill missing details (B4)
 ### DISC-DATA-P0-04.2 — Find contacts, address status and sending rules (B4)
 ### DISC-DATA-P0-04.3 — Removal: "They asked not to be contacted" (B4)
+### DISC-DATA-P0-05.1 — Weekly saved search (B7)
 ### DISC-NAV-P0-01.1 — Four-tab offering navigation (B6)
 ### DISC-NAV-P0-01.2 — Today list at the top of Prospects (B6)
 ### DISC-NAV-P0-01.3 — Plain labels: Ideal customer, Find, To review (B6)
@@ -638,19 +639,31 @@ B6, as built:
 - **The table above does not place the Discovery definitions page** (`/discovery`). It sits under Find as "Definitions", since "the Discovery tab becomes Find".
 - **"Follow-ups due" has no stored date to read.** It is derived: a prospect in the Sent stage with no reply and no activity for `STAGE_STUCK_THRESHOLD_DAYS` (7), the rule the list already shows as "Needs next step". Its link opens the list with `?stage=sent&due=1`, a filter added to `listProspects` so the count and the list cannot differ.
 - **Left for B5:** People under Prospects, new sign-ups in the Today list, "What people say" under Results. No placeholder was built for any of them.
-- **"ICP" in body copy** (the ICP page's own buttons and messages) is unchanged; the label rule was applied to navigation, the setup bar, the sidebar and the help guide.
+- **"ICP" in body copy** on the Ideal customer page (its buttons, empty state, clone dialog and version history) now says "ideal customer" (2026-11-12). Identifiers, routes and AI Discovery's stage names keep `icp`.
 
 B4, as built:
 
 - **No migration.** B1's columns carry everything. A lookup's state is read from the run ledger (`discovery.ai_runs`), keyed by a hash that names the prospect and, for a paid lookup, the one click that asked for it. That is also what makes a replayed job or a second click find the first and ask nothing.
 - **"Spends once" is the ledger key plus the existing per-workspace lock** (`prospect_discovery_locks`, built so "two overlapping discovery runs for the same workspace can't both bill"). The click's key is made by the server when the prospect page renders. A paid lookup, an AI web search and another paid lookup therefore never run at the same moment for one offering; the second is refused with "Nothing was spent".
 - **The drain runs once a day**, so "fills blank fields within a minute" needs more than the queue. Approval publishes `discovery.prospect.enrichment_requested` (retried by the drain, parked without a licence) and also attempts the lookup straight after the response, as the CRM auto-reply does. The queued job finds a lookup that already succeeded and does not repeat it.
-- **Only approval on the To review list queues enrichment.** AI Discovery's own automatic approval (`lib/pipeline/handlers.ts`, `lib/ai-approval/auto-populate.ts`) is unchanged: those paths research the prospect with AI straight afterwards, and they are protected flows (doc 12, section 0).
+- **Every approval queues enrichment the same way** (changed 2026-11-12; at first only the To review list did). `lib/data-sources/approval.ts::approveSuggestionsAndQueueEnrichment` is what the To review action, AI Discovery's automatic approval (`lib/pipeline/handlers.ts`) and first-setup auto-populate (`lib/ai-approval/auto-populate.ts`) all call: one `discovery.prospect.enrichment_requested` event per approved company, with the prospect as the lookup's ledger key. Only the To review action also attempts the lookup straight after the response; the two AI paths go on to research the prospect and leave the lookup to the drain, so their run time does not grow.
 - **A paid lookup shows what is left, not what it will cost.** The contract gives no price for an enrich or contacts call before it runs. The button opens a confirmation that reads the business's remaining paid lookups from `GET /v1/prospects/sources` at that moment; the result then says how many units were used. The prospect page makes no gateway call until a button is pressed.
 - **`metadata.providers` on enrich and contacts** is read leniently (`providerIssuesOf`): an entry the client cannot read is left out rather than failing an answer the business may have paid for. It is what lets the page say "No named contacts: the contact providers need setup."
 - **Enriched values are read by column**: `hq` as a string, or an object's `text`, else its city, region and country; `linkedinUrl` only as a plain http(s) link; `email` only as an address. A field whose source has no name is not stored.
 - **Editing clears provenance.** Changing a value a source filled removes its `field_sources` entry; changing a found contact's address clears its `email_status`.
-- **"They asked not to be contacted" keeps the contact if the gateway cannot take the request**, and says why, so the request is not lost. It passes the address to the gateway only; it does not add it to the business's own unsubscribe list (`core.communication_suppressions`), which the spec does not ask for.
+- **"They asked not to be contacted" keeps the contact if the gateway cannot take the request**, and says why, so the request is not lost. The address goes to two lists (changed 2026-11-12; at first only the gateway's): first the business's own opt-out list, `core.communication_suppressions`, through `core/privacy/suppression.ts::suppressEmailOnRequest` (the caller's own session, reason `manual`, hash only), which every outreach send already checks in `prepareOutreachEmail`; then the gateway's. If the gateway cannot take it, the address is already blocked for the business and the message says so.
 - **`contacts.source` holds the source's name** as the gateway gave it (for example "Hunter"), since the table has one source column and that is what is shown.
 - **The prospect page reads before it edits.** Details are a read-only list with each value's source; the edit form and the add-contact form are folded. Sources are shown as text; the links are the company's website and profiles and the record at the prospect's own source.
+
+B7, as built:
+
+- **No migration.** `discovery.saved_searches` and its access rules came with B1 (`20261111100000`); `scripts/test-discovery-saved-searches-rls.mjs` covers isolation and licence gating.
+- **What is stored is the Find form's own search** (`sourceId`, `what`, `where`, and the two "More filters" values), not the gateway request, so each run goes through `runFind` like a person's search: the source is looked up in the gateway's list at that moment, and the usage check, ICP pre-filter and duplicate check all apply.
+- **"Free sources only" is checked twice.** Saving is refused for a paid source, the AI web search or the file import. At run time a source the gateway now lists as paid is refused before the search, so a source that changes later never spends paid lookups.
+- **The cron route only queues** (`/api/cron/run-saved-searches`, 05:50 UTC, ten minutes before the drain). It claims a due search by moving `next_run_at` a week on only if it still holds the date that was read, then publishes `discovery.saved_search.run_requested`; a failed publish puts the date back. The drain runs once a day, so a run starts up to a day after it falls due.
+- **Idempotency is the ledger.** A run is recorded in `discovery.ai_runs` under the saved search and its due date. A redelivered event finds that row, succeeded or failed, and asks the gateway nothing; the suggestions' unique key does the rest.
+- **A failed run is not retried.** The handler records the failure on the saved search (`last_result`) and returns; next week's run is the retry. Only a database error throws for the drain to retry. A request refused before it left the server (source not set up, allowance used) writes no ledger row, as elsewhere, and is still recorded on the saved search.
+- **Known limit:** if the gateway answered but staging then failed on a database error, the drain's retry finds the ledger row and skips, so that week's results wait for the next run.
+- **Find gains two conditional controls**, so its count cannot go down: "Run this weekly" in the result of a search that just ran on a free source (hidden when that search is already the weekly one), and Pause or Resume on the weekly search's line. A page with neither state has the same five controls as before.
+- **Saved searches are for companies in this version** (`kind = 'company'`). Channel searches arrive with B5.2.
 

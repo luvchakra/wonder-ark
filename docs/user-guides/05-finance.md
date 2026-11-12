@@ -12,25 +12,28 @@ regardless of country; the tax half supports **India GST, US Sales Tax (plus
 (Germany, France, Belgium, Poland, Italy)** today, with more countries
 visible in the picker as "(Planned)" but not yet selectable.
 
-Last updated: 2026-10-17
+Last updated: 2026-11-12
 
 ## Navigation
 
-**Overview**: Dashboard, Exceptions
-**Accounting**: Chart of Accounts, Journal, Banking, Invoices, Receivables,
-Payables, Bills, Expenses, Financial Reports, Operational Reports,
-Dimensions, Budget, Recurring Entries, Accounting Periods, Backfill
-**Tax & GST**: GST Profile, GST Registrations, GST Ledger, Filing Readiness,
-GST Filing, GSTR-2B Reconciliation, e-Invoicing, e-Way Bill
-**Records**: Evidence, Audit Log
+Everyday pages, at the top of the menu: Dashboard, Invoices, Bills, Expenses, Banking,
+GST Filing
+**Accounting**: Chart of Accounts, Journal, Receivables, Payables, Recurring Entries,
+Accounting Periods, Budget, Dimensions
+**Tax & GST**: Filing Readiness, GST Ledger, GSTR-2B Reconciliation, e-Invoicing,
+e-Way Bill, GST Profile, GST Registrations
+**Reports and records**: Financial Reports, Operational Reports, Exceptions, Evidence,
+Audit Log, Backfill
 
 ## The Finance dashboard
 
 Finance opens on a dashboard that puts the money first: **Cash and bank**,
 **Owed to you**, **You owe**, **Profit this month** and **Net GST position**.
 Underneath are a notice of any **unposted documents** (see below), the
-month's GST snapshot, a **Compliance risk** list — each risk rated high,
-medium or low — and **Upcoming filings**. Until Finance is activated, a banner at the top says "Finish setting up Finance" with
+month's GST snapshot (if your GST profile isn't set up yet, **GST profile not set up**
+opens the page that sets it up), a **Compliance risk** list — each risk rated high,
+medium or low — and **Upcoming filings**. GST Profile, e-Invoicing and e-Way Bill are
+under **Tax & GST** in the menu; GST Filing is at the top of it. Until Finance is activated, a banner at the top says "Finish setting up Finance" with
 **Continue →**. The whole dashboard exports to
 Excel or CSV.
 
@@ -297,8 +300,10 @@ frequency, e-invoice eligibility).
   reconciliation and the period lock. It tells you what is not ready, not
   just whether it is.
 - **GST Filing** — builds a purchase register and sales register for a chosen
-  month. This produces return-preparation output; it does **not** submit
-  anything to a tax authority on your behalf.
+  month, one tab each. A tab offers its CSV download (**Export purchase register (CSV)**,
+  **Export GSTR-1 outward supply (CSV)**) once the month has something in it. This
+  produces return-preparation output; it does **not** submit anything to a tax
+  authority on your behalf.
 - **GSTR-2B Reconciliation** — match your records against GSTR-2B/IMS-style
   exceptions for a chosen month. **Sync exceptions** pulls the latest, then
   **Resolve** or **Dismiss** each one.

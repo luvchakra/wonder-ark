@@ -4,14 +4,12 @@ import { businessPath } from "@/lib/business-path";
 import { revalidatePath } from "next/cache";
 import { redirect, unstable_rethrow } from "next/navigation";
 import { runFind } from "@cofounderai/module-discovery/lib/data-sources/find";
-import type { FindState } from "@cofounderai/module-discovery/lib/data-sources/types";
+import type { FindState, SaveWeeklySearchState } from "@cofounderai/module-discovery/lib/data-sources/types";
+import { saveWeeklySearch, setSavedSearchEnabled } from "@cofounderai/module-discovery/lib/data-sources/saved-searches";
 import { after } from "next/server";
-import { queueProspectEnrichment, runQueuedEnrichmentNow } from "@cofounderai/module-discovery/lib/data-sources/enrichment";
-import { isGatewayConfigured } from "@cofounderai/module-discovery/lib/data-sources/workslake-client";
-import {
-  approveProspectSuggestionsWithProspects,
-  discardProspectSuggestions,
-} from "@cofounderai/module-discovery/lib/prospects/mutations";
+import { approveSuggestionsAndQueueEnrichment } from "@cofounderai/module-discovery/lib/data-sources/approval";
+import { runQueuedEnrichmentNow } from "@cofounderai/module-discovery/lib/data-sources/enrichment";
+import { discardProspectSuggestions } from "@cofounderai/module-discovery/lib/prospects/mutations";
 
 async function discoverPath(businessId: string, productId: string) {
   return `${await businessPath(businessId)}/discovery/offerings/${productId}/prospects/discover`;
@@ -59,6 +57,52 @@ export async function findAction(
   }
 }
 
+/**
+ * DISC-DATA-P0-05.1: "Run this weekly". Saves the search that was just run, as the form
+ * posts it back; `saveWeeklySearch` checks the licence and that the source is a free,
+ * active WorksLake source before storing anything. With one already saved it changes
+ * nothing and says so, unless `replace` was posted, which the page sends only from its
+ * "Replace it" button. Returned as state so a refusal reaches the screen.
+ */
+export async function saveWeeklySearchAction(
+  businessId: string,
+  productId: string,
+  workspaceId: string,
+  _prevState: SaveWeeklySearchState,
+  formData: FormData,
+): Promise<SaveWeeklySearchState> {
+  const field = (name: string) => String(formData.get(name) ?? "").trim();
+  try {
+    const outcome = await saveWeeklySearch(
+      workspaceId,
+      {
+        sourceId: field("sourceId"),
+        what: field("what"),
+        where: field("where"),
+        companySize: field("companySize") || undefined,
+        hasWebsite: formData.get("hasWebsite") !== null,
+      },
+      { replace: formData.get("replace") !== null },
+    );
+    if (outcome.status === "saved") revalidatePath(await discoverPath(businessId, productId));
+    return outcome;
+  } catch (error) {
+    unstable_rethrow(error);
+    return { status: "failed", message: error instanceof Error ? error.message : "The search couldn't be saved." };
+  }
+}
+
+/** DISC-DATA-P0-05.1: pause or resume the offering's weekly search. */
+export async function setWeeklySearchEnabledAction(
+  businessId: string,
+  productId: string,
+  workspaceId: string,
+  enabled: boolean,
+) {
+  await setSavedSearchEnabled(workspaceId, enabled);
+  revalidatePath(await discoverPath(businessId, productId));
+}
+
 export async function approveSuggestionsAction(
   businessId: string,
   productId: string,
@@ -66,22 +110,13 @@ export async function approveSuggestionsAction(
   formData: FormData,
 ) {
   const ids = formData.getAll("ids").map(String);
-  const { added, duplicates, prospects } = await approveProspectSuggestionsWithProspects(workspaceId, ids);
-
-  // DISC-DATA-P0-04.1: each approved company gets one free lookup of its missing details.
-  // It is queued through core.domain_events, so it survives this request and is retried,
-  // and attempted straight after the response as well, because the drain runs once a
-  // day. Neither blocks the approval, and a failure of either leaves the prospect as it
-  // is. With no gateway settings there is nothing to ask, so nothing is queued.
-  const companyIds = prospects.filter((prospect) => (prospect.kind ?? "company") === "company").map((prospect) => prospect.id);
-  if (companyIds.length > 0 && isGatewayConfigured()) {
-    try {
-      await queueProspectEnrichment(workspaceId, companyIds);
-    } catch (error) {
-      console.error("Could not queue enrichment:", error instanceof Error ? error.message : error);
-    }
-    after(() => runQueuedEnrichmentNow(companyIds));
-  }
+  // DISC-DATA-P0-04.1: each approved company gets one free lookup of its missing details,
+  // queued through core.domain_events by the shared approval (so AI Discovery's automatic
+  // approval queues it the same way). Here a person is waiting, so it is also attempted
+  // straight after the response, because the drain runs once a day. Neither blocks the
+  // approval, and a failure of either leaves the prospect as it is.
+  const { added, duplicates, enrichmentQueuedFor } = await approveSuggestionsAndQueueEnrichment(workspaceId, ids);
+  if (enrichmentQueuedFor.length > 0) after(() => runQueuedEnrichmentNow(enrichmentQueuedFor));
 
   revalidatePath(await prospectsPath(businessId, productId));
   revalidatePath(await discoverPath(businessId, productId));

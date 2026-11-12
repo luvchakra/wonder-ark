@@ -99,7 +99,7 @@ export async function cloneIcpAction(businessId: string, productId: string, sour
   try {
     await cloneIcpProfileToWorkspace(sourceIcpId, workspace.id);
   } catch (error) {
-    return { error: error instanceof Error ? error.message : "Could not clone this ICP." };
+    return { error: error instanceof Error ? error.message : "Could not clone this ideal customer." };
   }
   revalidatePath(await icpPath(businessId, productId));
   return { success: true };

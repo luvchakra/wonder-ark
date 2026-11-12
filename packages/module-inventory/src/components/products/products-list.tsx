@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Barcode, Package, Pencil, Plus, Upload } from "lucide-react";
 import { Button } from "@cofounderai/core/ui/button";
 import { Badge } from "@cofounderai/core/ui/badge";
-import { SubmitButton } from "@cofounderai/core/ui/submit-button";
+import { MoreMenu, MoreMenuItem } from "@cofounderai/core/ui/more-menu";
 import { EmptyState } from "@cofounderai/core/ui/empty-state";
 import {
   Table,
@@ -59,21 +59,23 @@ export function ProductsList({
 
   return (
     <div className="flex flex-col gap-4">
+      {/* PLATFORM-NAV-P0-02.2: one primary action. Label printing and the CSV import are
+          occasional jobs, so they sit under More. */}
       {canEdit ? (
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <div className="grid grid-cols-2 gap-2 sm:flex sm:w-auto">
-            <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={() => setBarcodeDialogOpen(true)}>
-              <Barcode className="size-4" aria-hidden="true" />
+        <div className="flex items-center justify-end gap-2">
+          <MoreMenu>
+            <MoreMenuItem onSelect={() => setBarcodeDialogOpen(true)}>
+              <Barcode className="size-4 text-muted-foreground" aria-hidden="true" />
               Barcode / QR
-            </Button>
-            <Button size="sm" variant="outline" className="w-full sm:w-auto" asChild>
+            </MoreMenuItem>
+            <MoreMenuItem asChild>
               <Link href={importHref}>
-                <Upload className="size-4" aria-hidden="true" />
+                <Upload className="size-4 text-muted-foreground" aria-hidden="true" />
                 Import
               </Link>
-            </Button>
-          </div>
-          <Button size="sm" className="w-full sm:w-auto" onClick={() => setModalTarget("create")}>
+            </MoreMenuItem>
+          </MoreMenu>
+          <Button size="sm" onClick={() => setModalTarget("create")}>
             <Plus className="size-4" aria-hidden="true" />
             New product
           </Button>
@@ -117,18 +119,9 @@ export function ProductsList({
                     <span className="text-base font-semibold">{inr.format(Number(p.selling_price))}</span>
                   </div>
                   {canEdit ? (
-                    <div className="flex items-center gap-1">
-                      <Button variant="ghost" size="icon" aria-label="Edit product" onClick={() => setModalTarget(p)}>
-                        <Pencil className="size-4" />
-                      </Button>
-                      <form
-                        action={toggleStatusAction.bind(null, p.id, p.status === "active" ? "inactive" : "active")}
-                      >
-                        <SubmitButton variant="ghost" size="sm">
-                          {p.status === "active" ? "Deactivate" : "Activate"}
-                        </SubmitButton>
-                      </form>
-                    </div>
+                    <Button variant="ghost" size="icon" aria-label={`Edit ${p.name}`} onClick={() => setModalTarget(p)}>
+                      <Pencil className="size-4" />
+                    </Button>
                   ) : null}
                 </div>
               </li>
@@ -168,23 +161,11 @@ export function ProductsList({
                   </TableCell>
                   {canEdit ? (
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button variant="ghost" size="sm" onClick={() => setModalTarget(p)}>
-                          <Pencil className="size-4" aria-hidden="true" />
-                          Edit
-                        </Button>
-                        <form
-                          action={toggleStatusAction.bind(
-                            null,
-                            p.id,
-                            p.status === "active" ? "inactive" : "active",
-                          )}
-                        >
-                          <SubmitButton variant="ghost" size="sm">
-                            {p.status === "active" ? "Deactivate" : "Activate"}
-                          </SubmitButton>
-                        </form>
-                      </div>
+                      {/* One action per row; Activate / Deactivate is in the dialog Edit opens. */}
+                      <Button variant="ghost" size="sm" onClick={() => setModalTarget(p)}>
+                        <Pencil className="size-4" aria-hidden="true" />
+                        Edit
+                      </Button>
                     </TableCell>
                   ) : null}
                 </TableRow>
@@ -202,6 +183,11 @@ export function ProductsList({
             modalTarget === "create" ? undefined : categoryNameById.get(modalTarget.category_id ?? "")
           }
           suppliers={suppliers}
+          onToggleStatus={
+            modalTarget === "create"
+              ? undefined
+              : () => toggleStatusAction(modalTarget.id, modalTarget.status === "active" ? "inactive" : "active")
+          }
           onClose={() => setModalTarget(null)}
         />
       ) : null}

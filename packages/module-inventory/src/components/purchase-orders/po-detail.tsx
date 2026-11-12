@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, X } from "lucide-react";
+import { Check, Pencil, X } from "lucide-react";
 import { Button } from "@cofounderai/core/ui/button";
 import { Badge } from "@cofounderai/core/ui/badge";
 import { Input } from "@cofounderai/core/ui/input";
@@ -43,6 +43,7 @@ export function PoDetail({
   primaryLabel,
   onReceive,
   onPrimaryAction,
+  onEdit,
   onClose,
 }: {
   purchaseOrder: PurchaseOrder;
@@ -51,6 +52,9 @@ export function PoDetail({
   primaryLabel: string | null;
   onReceive: (itemId: string, quantity: number) => void;
   onPrimaryAction: () => void;
+  /** PLATFORM-NAV-P0-02.2: present only for a draft the user may edit -- the Edit that
+   * used to sit on the list row. */
+  onEdit?: () => void;
   onClose: () => void;
 }) {
   const [receiveQty, setReceiveQty] = useState<Record<string, string>>({});
@@ -235,11 +239,19 @@ export function PoDetail({
           </div>
         </div>
 
-        {primaryLabel ? (
-          <div className="mt-5 flex justify-end">
-            <Button size="lg" onClick={onPrimaryAction}>
-              {primaryLabel}
-            </Button>
+        {primaryLabel || onEdit ? (
+          <div className="mt-5 flex flex-wrap justify-end gap-3">
+            {onEdit ? (
+              <Button size="lg" variant="outline" onClick={onEdit}>
+                <Pencil className="size-4" aria-hidden="true" />
+                Edit
+              </Button>
+            ) : null}
+            {primaryLabel ? (
+              <Button size="lg" onClick={onPrimaryAction}>
+                {primaryLabel}
+              </Button>
+            ) : null}
           </div>
         ) : null}
       </div>

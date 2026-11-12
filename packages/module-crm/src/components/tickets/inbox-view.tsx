@@ -2,12 +2,15 @@
 
 import { useState, useTransition } from "react";
 import Link from "next/link";
+import { Plus } from "lucide-react";
 import { Badge } from "@cofounderai/core/ui/badge";
 import { Button } from "@cofounderai/core/ui/button";
 import { Input } from "@cofounderai/core/ui/input";
 import { Label } from "@cofounderai/core/ui/label";
 import { NativeSelect } from "@cofounderai/core/ui/native-select";
 import { EmptyState } from "@cofounderai/core/ui/empty-state";
+import { Fold } from "@cofounderai/core/ui/fold";
+import { MoreMenu, MoreMenuItem } from "@cofounderai/core/ui/more-menu";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@cofounderai/core/ui/table";
 import { formatDateTime } from "@cofounderai/core/lib/format";
 import type { Channel } from "../../lib/channels/types";
@@ -111,25 +114,32 @@ export function InboxView({
     );
   }
 
+  /** PLATFORM-NAV-P0-02.3: a ticket row already carries its status and assignee, so what
+   * else it offers takes one more control at most -- the action itself when there is one,
+   * a More menu when there are both. */
   function rowActions(ticket: Ticket) {
+    const customerHref = ticket.party_id ? `/${businessSlug}/crm/customers/${ticket.party_id}?ticketId=${ticket.id}` : null;
+    const isConverted = converted.has(ticket.id);
+    const canConvert = Boolean(ticket.external_sender_handle) && !isConverted;
+
     return (
       <>
-        {ticket.party_id ? (
-          <Link
-            href={`/${businessSlug}/crm/customers/${ticket.party_id}?ticketId=${ticket.id}`}
-            className="text-sm font-medium text-primary hover:underline"
-          >
+        {isConverted ? <Badge variant="secondary">Converted</Badge> : null}
+        {customerHref && canConvert ? (
+          <MoreMenu variant="row" label={`More for ${ticket.subject || "ticket"}`} disabled={pending}>
+            <MoreMenuItem asChild>
+              <Link href={customerHref}>Customer 360</Link>
+            </MoreMenuItem>
+            <MoreMenuItem onSelect={() => runConvert(ticket.id)}>Convert to prospect</MoreMenuItem>
+          </MoreMenu>
+        ) : customerHref ? (
+          <Link href={customerHref} className="text-sm font-medium text-primary hover:underline">
             Customer 360
           </Link>
-        ) : null}
-        {ticket.external_sender_handle ? (
-          converted.has(ticket.id) ? (
-            <Badge variant="secondary">Converted</Badge>
-          ) : (
-            <Button variant="outline" size="sm" disabled={pending} onClick={() => runConvert(ticket.id)}>
-              Convert to prospect
-            </Button>
-          )
+        ) : canConvert ? (
+          <Button variant="outline" size="sm" disabled={pending} onClick={() => runConvert(ticket.id)}>
+            Convert to prospect
+          </Button>
         ) : null}
       </>
     );
@@ -137,9 +147,16 @@ export function InboxView({
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-3 rounded-2xl border border-border p-4">
-        <p className="text-sm font-medium">New ticket</p>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      {/* PLATFORM-NAV-P0-02.3: the inbox opens on the tickets. The create form (subject,
+          channel, Create ticket) sits behind one New ticket button. Errors show here, not
+          inside the fold, because a row's own actions report through the same line. */}
+      {error ? <p className="text-sm text-destructive">{error}</p> : null}
+      <Fold
+        label="New ticket"
+        variant="default"
+        icon={<Plus className="size-4" aria-hidden="true" />}
+        contentClassName="rounded-2xl border border-border p-4"
+      >
         <form
           className="flex flex-wrap items-end gap-2"
           onSubmit={(e) => {
@@ -169,7 +186,7 @@ export function InboxView({
             Create ticket
           </Button>
         </form>
-      </div>
+      </Fold>
 
       {tickets.length === 0 ? (
         <EmptyState variant="inline" message="No tickets yet." />
@@ -222,12 +239,7 @@ export function InboxView({
                   <TableCell className="font-medium">{ticket.subject || "(no subject)"}</TableCell>
                   <TableCell className="text-muted-foreground">{ticket.channel_id ? channelById.get(ticket.channel_id)?.name ?? "—" : "—"}</TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      {statusSelect(ticket, "h-8 w-28")}
-                      <Badge variant={STATUS_VARIANT[ticket.status]} className="hidden lg:inline-flex">
-                        {ticket.status}
-                      </Badge>
-                    </div>
+{statusSelect(ticket, "h-8 w-28")}
                   </TableCell>
                   <TableCell>{assignSelect(ticket, "h-8 w-36")}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{formatDateTime(ticket.created_at)}</TableCell>

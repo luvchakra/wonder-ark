@@ -191,7 +191,7 @@ export function OfferingOverviewSummary({
               <p className="text-sm text-muted-foreground">{icpFieldsCount} of {ICP_LIST_FIELDS.length} fields defined</p>
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">No ICP yet</p>
+            <p className="text-sm text-muted-foreground">No ideal customer yet</p>
           )}
         </Link>
 
