@@ -300,6 +300,14 @@ export const FAQ: FaqEntry[] = [
   },
   {
     category: "Day to day",
+    question: "How do people join my offering's list, and can I email them?",
+    answer:
+      "For an offering sold to consumers, open Prospects, People and create the Sign-up page, then share its link. People who join agree to the consent line you set and get a confirmation email with an unsubscribe link and their own referral link. You can also import a list under Find, Import if you confirm these people agreed to hear from you. From a person's page you can log a conversation, send questions or send an email, but only to someone who agreed and hasn't unsubscribed.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
     question: "Why can't I send an email to one of my contacts?",
     answer:
       "If Find contacts added the contact and its address is marked Invalid, WonderArk won't send to it: choose another contact or correct the address. An address marked Risky or Not verified can be sent to after you confirm once. A contact you typed yourself has no mark and sends as usual. Separately, an address that unsubscribed from your business's emails is never sent to.",

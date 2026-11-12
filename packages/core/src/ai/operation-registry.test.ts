@@ -5,6 +5,7 @@ const OPERATIONS: AiOperation[] = [
   "understand_product",
   "generate_icp",
   "generate_consumer_icp",
+  "summarize_audience_feedback",
   "research_prospect",
   "discover_prospects",
   "generate_outreach_strategy",

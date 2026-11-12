@@ -17,7 +17,7 @@ import { STAGE_STUCK_THRESHOLD_DAYS, isFollowUpDue, type ProspectPipelineState }
  *
  * Pure: no server code, so the component and the test can both import it.
  */
-export type TodayRowId = "replies" | "follow_ups" | "to_review";
+export type TodayRowId = "replies" | "follow_ups" | "to_review" | "new_signups";
 
 export type TodayRow = {
   id: TodayRowId;
@@ -46,6 +46,9 @@ export function buildTodayList(input: {
   suggestionCount: number;
   /** The offering's Prospects page, `/<business>/discovery/offerings/<id>/prospects`. */
   prospectsPath: string;
+  /** DISC-CONS-P0-05.2: people who signed up and haven't been contacted yet. Left out
+   * for an offering sold only to companies. */
+  newSignups?: number;
 }): TodayRow[] {
   const replies = input.prospects.filter((p) => p.stage === TODAY_FILTERS.replies.stage).length;
   const followUps = input.prospects.filter(isFollowUpDue).length;
@@ -70,6 +73,13 @@ export function buildTodayList(input: {
       text: `${plural(input.suggestionCount, "suggestion is", "suggestions are")} waiting for review`,
       action: "Review",
       href: `${input.prospectsPath}/discover#to-review-heading`,
+    },
+    {
+      id: "new_signups",
+      count: input.newSignups ?? 0,
+      text: `${plural(input.newSignups ?? 0, "new sign-up hasn't", "new sign-ups haven't")} been contacted yet`,
+      action: "See people",
+      href: `${input.prospectsPath}?list=people`,
     },
   ];
   return rows.filter((row) => row.count > 0);

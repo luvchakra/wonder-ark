@@ -7,7 +7,11 @@ import {
 import { SubmitButton } from "@cofounderai/core/ui/submit-button";
 import { Label } from "@cofounderai/core/ui/label";
 import { Textarea } from "@cofounderai/core/ui/textarea";
-import { importProspectsAction } from "./actions";
+import { importPeopleAction, importProspectsAction } from "./actions";
+import { audienceTypeOf } from "@cofounderai/module-discovery/lib/icp/audience";
+import { IMPORT_CONSENT_TEXT } from "@cofounderai/module-discovery/lib/audience/rules";
+
+const PEOPLE_TEMPLATE_HREF = `data:text/csv;charset=utf-8,${encodeURIComponent("email,name,tags\nasha@example.com,Asha,parent; pune\n")}`;
 
 const TEMPLATE_CSV =
   "company_name,website,industry,company_size,location,description\n" +
@@ -28,8 +32,60 @@ export default async function ImportProspectsPage({
   const workspace = await getWorkspaceForProduct(product.id);
   if (!workspace) notFound();
 
+  // DISC-CONS-P0-03.6: an offering sold to consumers imports people who agreed to hear
+  // from the business; one sold to both can import either.
+  const audienceType = audienceTypeOf(product);
+  const peopleForm = (
+    <form action={importPeopleAction.bind(null, businessId, productId, workspace.id)} className="flex flex-col gap-3">
+      <p className="text-sm text-muted-foreground">
+        Upload a CSV or Excel (.xlsx) file. Required column: <code className="rounded bg-muted px-1">email</code>. Optional:{" "}
+        <code className="rounded bg-muted px-1">name, tags</code>.{" "}
+        <a href={PEOPLE_TEMPLATE_HREF} download="people-import-template.csv" className="underline">
+          Download the template
+        </a>
+        . Nobody is emailed.
+      </p>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="people-file">File</Label>
+        <input
+          type="file"
+          id="people-file"
+          name="file"
+          accept=".csv,text/csv,.xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+          className="text-sm text-muted-foreground file:mr-3 file:rounded-md file:border file:bg-background file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-foreground hover:file:bg-accent"
+        />
+      </div>
+      <div className="flex flex-col gap-1.5">
+        <Label htmlFor="people-csv">Or paste CSV</Label>
+        <Textarea id="people-csv" name="csv" rows={3} placeholder={"email,name\nasha@example.com,Asha"} />
+      </div>
+      <label className="flex items-start gap-2 text-sm">
+        <input type="checkbox" name="consent" value="yes" required className="mt-0.5 size-4" />
+        {IMPORT_CONSENT_TEXT}
+      </label>
+      <SubmitButton size="sm" className="self-start" pendingText="Importing...">
+        Import people
+      </SubmitButton>
+    </form>
+  );
+
+  if (audienceType === "consumer") {
+    return (
+      <div className="flex flex-col gap-4">
+        <h2 className="font-medium">Import people</h2>
+        {peopleForm}
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4">
+      {audienceType === "both" ? (
+        <details className="rounded-md border p-3">
+          <summary className="cursor-pointer text-sm font-medium">Import people instead</summary>
+          <div className="mt-3">{peopleForm}</div>
+        </details>
+      ) : null}
       {/* DISC-NAV-P0-01.1: Import is a page of the Find tab, so the tab bar above leads
           everywhere; the "Back to prospects" link this page carried is gone. */}
       <h2 className="font-medium">Import prospects</h2>

@@ -147,3 +147,14 @@ describe("Today list", () => {
     expect(await today()).toEqual([]);
   });
 });
+
+// DISC-CONS-P0-05.2: new sign-ups not yet contacted, for an offering with people.
+describe("new sign-ups", () => {
+  it("shows a line linking to People only when there are some", () => {
+    const rows = buildTodayList({ prospects: [], suggestionCount: 0, prospectsPath: "/p", newSignups: 2 });
+    expect(rows).toEqual([
+      { id: "new_signups", count: 2, text: "2 new sign-ups haven't been contacted yet", action: "See people", href: "/p?list=people" },
+    ]);
+    expect(buildTodayList({ prospects: [], suggestionCount: 0, prospectsPath: "/p" })).toEqual([]);
+  });
+});

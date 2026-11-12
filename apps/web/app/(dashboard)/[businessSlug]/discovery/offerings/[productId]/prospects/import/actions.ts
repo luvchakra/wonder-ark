@@ -12,6 +12,9 @@ import {
   type ProspectInput,
 } from "@cofounderai/module-discovery/lib/prospects/mutations";
 import { findDuplicateProspect } from "@cofounderai/module-discovery/lib/prospects/duplicates";
+import { readImportFile } from "@cofounderai/module-discovery/lib/shared/read-import-file";
+import { parsePeopleCsv } from "@cofounderai/module-discovery/lib/audience/people-csv";
+import { importPeople } from "@cofounderai/module-discovery/lib/audience/leads";
 
 export async function importProspectsAction(
   businessId: string,
@@ -83,5 +86,31 @@ export async function importProspectsAction(
   revalidatePath(prospectsPath);
   redirect(
     `${prospectsPath}?imported=${inserted}&skipped=${parseErrors.length}&duplicates=${duplicates}${aiRestructured ? "&aiRestructured=1" : ""}`,
+  );
+}
+
+/**
+ * DISC-CONS-P0-03.6: imports a people list for an offering sold to consumers. Refused
+ * unless the importer ticked "These people agreed to hear from me"; that sentence is
+ * stored as each person's consent. CSV or Excel with an `email` column; a PDF, or a file
+ * without that column, is refused rather than sent to AI (it is personal data). Nobody
+ * is emailed.
+ */
+export async function importPeopleAction(businessId: string, productId: string, workspaceId: string, formData: FormData) {
+  const file = formData.get("file");
+  let text = String(formData.get("csv") ?? "");
+  if (file instanceof File && file.size > 0) {
+    const read = await readImportFile(file);
+    if (!read.structured) throw new Error("Upload a CSV or Excel file with an email column.");
+    text = read.text;
+  }
+  const parsed = parsePeopleCsv(text);
+  if (parsed.rows.length === 0) throw new Error(parsed.errors[0] ?? "No people to import.");
+  const outcome = await importPeople(workspaceId, parsed.rows, formData.get("consent") === "yes");
+
+  const prospectsPath = `${await businessPath(businessId)}/discovery/offerings/${productId}/prospects`;
+  revalidatePath(prospectsPath);
+  redirect(
+    `${prospectsPath}?list=people&peopleImported=${outcome.added}&duplicates=${outcome.duplicates}&skipped=${outcome.invalid + parsed.errors.length}`,
   );
 }

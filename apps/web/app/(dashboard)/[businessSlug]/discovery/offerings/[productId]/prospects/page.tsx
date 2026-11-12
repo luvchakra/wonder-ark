@@ -21,6 +21,7 @@ import { AutoPopulateStepBanner } from "@cofounderai/module-discovery/components
 import { AutoPopulateCompleteDialog } from "@cofounderai/module-discovery/components/tenancy/auto-populate-complete-dialog";
 import {
   createProspectAction,
+  saveSignupPageAction,
   bulkResearchAction,
   bulkScoreAction,
   autoDiscoverOneProspectAction,
@@ -28,9 +29,16 @@ import {
 import { markTaskDoneAction } from "../campaigns/actions";
 import Link from "next/link";
 import { audienceTypeOf } from "@cofounderai/module-discovery/lib/icp/audience";
+import { countNewSignups, listLeads } from "@cofounderai/module-discovery/lib/audience/leads";
+import { getSignupPage } from "@cofounderai/module-discovery/lib/audience/pages";
+import { defaultConsentText } from "@cofounderai/module-discovery/lib/audience/rules";
+import { PeopleList } from "@cofounderai/module-discovery/components/audience/people-list";
+import { SignupPageSettings } from "@cofounderai/module-discovery/components/audience/signup-page-settings";
+import { SITE_URL } from "@cofounderai/core/site";
+import { getBusiness } from "@cofounderai/module-discovery/lib/tenancy/queries";
 
-/** DISC-CONS-P0-05.1: the lists the Prospects tab offers, by who buys the offering. */
-const LIST_LABEL = { companies: "Companies", channels: "Channels" } as const;
+/** DISC-CONS-P0-05.1/05.2: the lists the Prospects tab offers, by who buys the offering. */
+const LIST_LABEL = { companies: "Companies", channels: "Channels", people: "People" } as const;
 type ProspectList = keyof typeof LIST_LABEL;
 
 export default async function ProspectsPage({
@@ -55,6 +63,7 @@ export default async function ProspectsPage({
     autopopulated?: string;
     aiRestructured?: string;
     list?: string;
+    peopleImported?: string;
   }>;
 }) {
   const { businessSlug, productId } = await params;
@@ -91,9 +100,14 @@ export default async function ProspectsPage({
   // has companies and channels, one list at a time. A business offering is unchanged.
   const audienceType = audienceTypeOf(product);
   const lists: ProspectList[] =
-    audienceType === "consumer" ? ["channels"] : audienceType === "both" ? ["companies", "channels"] : [];
+    audienceType === "consumer" ? ["channels", "people"] : audienceType === "both" ? ["companies", "channels", "people"] : [];
   const currentList: ProspectList | null = lists.find((entry) => entry === query.list) ?? lists[0] ?? null;
   const kind = currentList === "channels" ? ("channel" as const) : currentList === "companies" ? ("company" as const) : undefined;
+  // DISC-CONS-P0-05.2: People are the offering's own list of those who opted in.
+  const showPeople = currentList === "people";
+  const [leads, signupPage, business] = showPeople
+    ? await Promise.all([listLeads(workspace.id), getSignupPage(workspace.id), getBusiness(businessId)])
+    : [[], null, null];
 
   // `search` filters client-side (ProspectsBoard) against this already-fetched list, not
   // the DB query -- the Advanced fields (status/stage/industry/sort) still need a fresh
@@ -130,6 +144,7 @@ export default async function ProspectsPage({
     prospects: hasListFilters ? await listProspects(workspace.id) : prospects,
     suggestionCount,
     prospectsPath: basePath,
+    newSignups: lists.includes("people") ? await countNewSignups(workspace.id) : undefined,
   });
 
   return (
@@ -186,6 +201,13 @@ export default async function ProspectsPage({
         icpHref={`/${businessSlug}/discovery/offerings/${productId}/icp`}
       />
 
+      {query.peopleImported ? (
+        <p className="rounded-md border bg-muted p-3 text-sm">
+          Imported {query.peopleImported} {query.peopleImported === "1" ? "person" : "people"}.
+          {duplicates && duplicates !== "0" ? ` Skipped ${duplicates} already on your list.` : ""}
+          {skipped && skipped !== "0" ? ` Skipped ${skipped} row(s) without a valid email.` : ""}
+        </p>
+      ) : null}
       {imported ? (
         <p className="rounded-md border bg-muted p-3 text-sm">
           Imported {imported} prospect{imported === "1" ? "" : "s"}.
@@ -209,6 +231,17 @@ export default async function ProspectsPage({
         </p>
       ) : null}
 
+      {showPeople ? (
+        <div className="flex flex-col gap-4">
+          <SignupPageSettings
+            page={signupPage}
+            pageUrl={signupPage ? `${SITE_URL}/p/w/${signupPage.token}` : null}
+            saveAction={saveSignupPageAction.bind(null, businessId, productId, workspace.id)}
+            defaultConsent={defaultConsentText(business?.name ?? "this business")}
+          />
+          <PeopleList leads={leads} basePath={`${basePath}/people`} />
+        </div>
+      ) : (
       <ProspectsBoard
         prospects={prospects}
         basePath={basePath}
@@ -225,6 +258,7 @@ export default async function ProspectsPage({
         channels={currentList === "channels"}
         list={lists.length > 1 ? (currentList ?? undefined) : undefined}
       />
+      )}
     </div>
   );
 }
