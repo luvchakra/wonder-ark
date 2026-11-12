@@ -1281,11 +1281,11 @@ Source: [`docs/plan/17-DISCOVERY-DATA-AND-CONSUMER.md`](./plan/17-DISCOVERY-DATA
 | `DISC-NAV-P0-01.1` | Four-tab offering navigation | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +8 |
 | `DISC-NAV-P0-01.2` | Today list at the top of Prospects | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +6 |
 | `DISC-NAV-P0-01.3` | Plain labels | ✅ Done | `packages/core/src/lib/offering-nav.ts` +2 |
-| `DISC-CONS-P0-01.1` | Who buys this | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/actions.ts` +2 |
-| `DISC-CONS-P0-01.2` | Ideal user beside the company ICP | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/icp/actions.ts` +10 |
-| `DISC-CONS-P0-01.3` | Wording from the audience type | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/icp/page.tsx` |
-| `DISC-CONS-P0-02.1` | Find channels and places they gather | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +11 |
-| `DISC-CONS-P0-02.2` | Channel drafts, Mark as posted, Live | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +4 |
+| `DISC-CONS-P0-01.1` | Who buys this | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/actions.ts` +9 |
+| `DISC-CONS-P0-01.2` | Ideal user beside the company ICP | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/icp/actions.ts` +15 |
+| `DISC-CONS-P0-01.3` | Wording from the audience type | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/icp/page.tsx` +2 |
+| `DISC-CONS-P0-02.1` | Find channels and places they gather | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +13 |
+| `DISC-CONS-P0-02.2` | Channel drafts, Mark as posted, Live | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +11 |
 | `DISC-CONS-P0-05.1` | Channels list on Prospects | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +4 |
 
 ## Module menus
