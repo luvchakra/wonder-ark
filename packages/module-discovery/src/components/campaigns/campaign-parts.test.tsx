@@ -9,7 +9,8 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("next/link", () => ({ default: ({ href, children, ...rest }: { href: string; children: React.ReactNode }) => <a href={href} {...rest}>{children}</a> }));
 
-const { CampaignList, CampaignResultsView, MailboxForm, StepList, TemplateList, launchLines, leftOutText } = await import("./campaign-parts");
+const { AudienceForm, CampaignList, CampaignResultsView, MailboxForm, ScheduleForm, StepList, TemplateList, activateLines, leftOutText } = await import("./campaign-parts");
+const { CampaignPreviewView } = await import("./preview-parts");
 const { dailyCheckIn } = await import("../../lib/campaigns/types");
 
 function controls(html: string): number {
@@ -109,7 +110,7 @@ describe("Sending from", () => {
 
 describe("steps and messages", () => {
   it("lists the sequence as it will run", () => {
-    expect(text(renderToStaticMarkup(<StepList steps={steps} />))).toBe("1. Introduction email, sent first 2. Follow-up email, 3 days after step 1");
+    expect(text(renderToStaticMarkup(<StepList steps={[steps[0]!, { ...steps[1]!, delay_days: 1 }]} />))).toBe("1. Introduction email, sent first 2. Follow-up email, 1 day after step 1");
   });
 
   const templates = [
@@ -167,19 +168,103 @@ describe("results", () => {
   });
 });
 
-describe("the Launch dialog's lines", () => {
-  it("state what launching does, in this campaign's numbers", () => {
-    const lines = launchLines({ campaign, wouldEnrol: 12, mailbox, steps });
+describe("the Activate dialog's lines", () => {
+  it("state what activating does, in this campaign's numbers", () => {
+    const lines = activateLines({ campaign, wouldEnrol: 12, mailbox, steps });
     expect(lines).toEqual([
       "12 prospects are enrolled now.",
-      "Each gets up to 2 emails, from asha@acme.example, with the text shown on this page. Nobody approves each email first.",
-      "At most 30 emails a day go out, on Mon, Tue, Wed, Thu, Fri, between 9:00 and 18:00 (Asia/Kolkata). A few go straight away if that is now; the rest at the daily check, 11:35.",
+      "Each gets the 2 emails you previewed, from asha@acme.example. Nobody approves each email first.",
+      "Emails go out on Mon, Tue, Wed, Thu, Fri, between 9:00 and 18:00 (Asia/Kolkata), at the daily check at 11:35.",
+      "At most 30 emails a day, the mailbox's limit, shared by all of this offering's campaigns.",
+      "2 emails to each prospect: step 2 3 days after step 1.",
+      "A few go straight away if it is within those hours now; the rest at the daily check.",
       "Follow-ups to a prospect stop when it replies, its email bounces, it unsubscribes, or you mark it won or lost.",
       "You can pause the campaign at any time, and nothing more is sent while it is paused.",
     ]);
-    expect(launchLines({ campaign: { ...campaign, auto_enroll: true }, wouldEnrol: 1, mailbox, steps })[0]).toBe(
+    expect(activateLines({ campaign: { ...campaign, auto_enroll: true }, wouldEnrol: 1, mailbox, steps: [steps[0]!] }).slice(0, 2)).toEqual([
       "1 prospect is enrolled now, and new prospects that fit are added as they appear.",
-    );
+      "Each gets the email you previewed, from asha@acme.example. Nobody approves each email first.",
+    ]);
+  });
+});
+
+describe("Schedule and Audience", () => {
+  it("fills the schedule from the campaign as it stands, with one Save", () => {
+    const html = renderToStaticMarkup(<ScheduleForm campaign={{ ...campaign, daily_limit: 10 }} steps={steps} mailboxLimit={30} action={noop} />);
+    expect(html).toMatch(/name="dailyLimit"[^>]*value="10"/);
+    expect(html).toMatch(/name="delayDays2"[^>]*value="3"/);
+    expect(html).toMatch(/name="delayDays3"[^>]*value=""/);
+    expect(html.match(/name="sendDays"[^>]*checked=""/g) ?? html.match(/checked=""[^>]*name="sendDays"/g)).toHaveLength(5);
+    expect(html.match(/type="submit"/g)).toHaveLength(1);
+    expect(text(html)).toContain("blank for the mailbox's 30");
+    expect(text(html)).toContain("Changing the schedule means previewing the campaign again before it can send.");
+    expect(text(html)).toContain("One that has already been sent to someone can't be removed.");
+  });
+
+  it("holds the name and who is enrolled, with one Save", () => {
+    const html = renderToStaticMarkup(<AudienceForm campaign={campaign} action={noop} />);
+    expect(html.match(/type="submit"/g)).toHaveLength(1);
+    expect(html).toContain('name="onlyQualified"');
+    expect(html).toContain('name="autoEnroll"');
+    expect(html).not.toContain('name="sendDays"');
+  });
+});
+
+describe("the preview", () => {
+  const preview = {
+    audience: 3,
+    alreadyEnrolled: false,
+    leftOut: { no_email: 2 },
+    schedule: ["Emails go out on Mon, Tue.", "At most 30 emails a day."],
+    steps: [{ position: 1, purpose: "intro" as const }, { position: 2, purpose: "follow_up" as const }],
+    step: 1,
+    index: 0,
+    lastIndex: 1,
+    confirmed: false,
+    lines: [
+      {
+        segment: "general",
+        prospects: 1,
+        email: { ok: true as const, prospectId: "p3", company: "Gamma <b>Dental</b>", from: "Asha <asha@acme.example>", to: "info@gamma.example", subject: "An idea for Gamma", text: "Hello Gamma.\n\n--\nUnsubscribe: https://app.example/u" },
+      },
+      { segment: "plumber", prospects: 2, email: { ok: false as const, prospectId: "p2", company: "Beta Plumbing", reason: "Not sent: this prospect has no value for the first part of the prospect's location" } },
+    ],
+  };
+  const render = (overrides: Record<string, unknown> = {}) =>
+    renderToStaticMarkup(<CampaignPreviewView preview={{ ...preview, ...overrides }} campaignPath="/acme/discovery/offerings/p1/campaigns/c1" confirmAction={noop} testAction={() => async () => null} />);
+
+  it("shows who, when and the real emails, a skipped prospect as skipped, and ends in This looks right", () => {
+    const html = render();
+    const shown = text(html);
+    expect(shown).toContain("3 prospects would be enrolled when you activate.");
+    expect(shown).toContain("Left out: 2 have no email address.");
+    expect(shown).toContain("Emails go out on Mon, Tue.");
+    expect(shown).toContain("The emails: step 1, introduction, prospect 1 in each line of work");
+    expect(shown).toContain("From Asha &lt;asha@acme.example&gt; To info@gamma.example (Gamma &lt;b&gt;Dental&lt;/b&gt;) Subject An idea for Gamma Hello Gamma. -- Unsubscribe: https://app.example/u");
+    expect(shown).toContain("Beta Plumbing would be skipped. Not sent: this prospect has no value for the first part of the prospect's location.");
+    expect(shown).toMatch(/This looks right$/);
+    expect(html).not.toContain("<b>Dental</b>");
+    // The step link, Next prospect, one test button (the skipped email has none) and the confirmation.
+    expect(controls(html)).toBe(4);
+    expect(html).toContain('href="/acme/discovery/offerings/p1/campaigns/c1?preview=1&amp;step=2&amp;n=0"');
+    expect(html).toContain('href="/acme/discovery/offerings/p1/campaigns/c1?preview=1&amp;step=1&amp;n=1"');
+    expect(shown).not.toContain("Previous prospect");
+  });
+
+  it("has no address field anywhere: a test can only go to the mailbox", () => {
+    expect(render()).not.toMatch(/<input[^>]*type="(email|text)"/);
+  });
+
+  it("says so once it is confirmed, and for a paused campaign names the people it is still writing to", () => {
+    const html = render({ confirmed: true, alreadyEnrolled: true, audience: 1 });
+    expect(text(html)).toContain("1 prospect is enrolled and still in progress.");
+    expect(text(html)).toContain("You confirmed this preview. Back to the campaign");
+    expect(text(html)).not.toContain("This looks right");
+  });
+
+  it("says when a line of work has no further prospect, and when there is nobody at all", () => {
+    expect(text(render({ index: 1, lines: [{ segment: "general", prospects: 1, email: null }] }))).toContain("No prospect 2 in this line of work.");
+    expect(text(render({ audience: 0, lines: [] }))).toContain("Nobody would be written to, so there is no email to show.");
   });
 });
 

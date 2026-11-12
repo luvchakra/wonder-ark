@@ -168,6 +168,8 @@ function claimRule(args: Record<string, unknown>) {
     const mailbox = h.loadMailboxForSending.getMockImplementation()?.(workspaceId) as { dailyLimit: number } | null;
     if (!mailbox) return defer("mailbox_not_verified");
     if (sends.filter((row) => row.workspace_id === workspaceId && row.status !== "skipped").length >= mailbox.dailyLimit) return defer("daily_limit");
+    const own = campaignRow.daily_limit as number | null | undefined;
+    if (typeof own === "number" && sends.filter((row) => row.campaign_id === campaignRow.id && row.status !== "skipped").length >= own) return defer("campaign_daily_limit");
   }
   const row = {
     id: `send-${sends.length + 1}`,
@@ -423,7 +425,26 @@ describe("the daily limit", () => {
     expect(sendMail).toHaveBeenCalledTimes(2);
   });
 
-  it("sends only a small first batch after Launch", async () => {
+  // DISC-CAMP-P0-05.4
+  it("holds a campaign to its own emails a day and moves on to the next campaign", async () => {
+    setup({
+      outreach_campaigns: [campaign("c1", W1, { daily_limit: 1 }), campaign("c2")],
+      outreach_campaign_steps: [...stepsOf("c1"), ...stepsOf("c2")],
+      outreach_templates: [...templatesOf("c1"), ...templatesOf("c2")],
+      prospects: [prospect("p1"), prospect("p2"), prospect("p3"), prospect("p4")],
+      contacts: [contact("k1", "p1"), contact("k2", "p2"), contact("k3", "p3"), contact("k4", "p4")],
+      outreach_enrollments: [enrollment("e1", "c1", "p1", "k1"), enrollment("e2", "c1", "p2", "k2"), enrollment("e3", "c2", "p3", "k3"), enrollment("e4", "c2", "p4", "k4")],
+    });
+
+    const summary = await tick();
+
+    // One from the capped campaign, both from the other; the capped one's second stays due.
+    expect(summary).toMatchObject({ sent: 3, deferred: 1 });
+    expect(sentTo().sort()).toEqual(["k1@prospect.example", "k3@prospect.example", "k4@prospect.example"]);
+    expect(enrollments().find((row) => row.id === "e2")).toMatchObject({ status: "active", next_step_position: 1 });
+  });
+
+  it("sends only a small first batch after Activate", async () => {
     seed(5);
     expect(await tick({ campaignId: "c1", maxSends: 2 })).toMatchObject({ sent: 2 });
     expect(sendMail).toHaveBeenCalledTimes(2);

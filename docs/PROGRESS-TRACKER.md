@@ -19,14 +19,14 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 613 |
+| ✅ Done | 615 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
 | ⬜ Not started | 1 |
-| **Total** | **697** |
+| **Total** | **699** |
 
 | Backlog | Done | Set aside | Remaining | Total |
 |---|---|---|---|---|
@@ -42,7 +42,7 @@ file is stale, so it cannot quietly drift out of date.
 | [WonderArk branding](./plan/16-BRANDING-BACKLOG.md) | 13 | 0 | 0 | 13 |
 | [Discovery — prospect data and consumer discovery](./plan/17-DISCOVERY-DATA-AND-CONSUMER.md) | 17 | 0 | 0 | 17 |
 | [Module menus](./plan/18-MODULE-MENUS.md) | 10 | 0 | 0 | 10 |
-| [Discovery — outreach campaigns](./plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md) | 15 | 0 | 1 | 16 |
+| [Discovery — outreach campaigns](./plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md) | 17 | 0 | 1 | 18 |
 
 ## What is left
 
@@ -1313,7 +1313,7 @@ Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUT
 | `DISC-CAMP-P0-01.1` | Tables, RLS, audit triggers, claim function | ✅ Done | `packages/module-discovery/src/lib/campaigns/types.ts` +2 |
 | `DISC-CAMP-P0-01.2` | Ownership-map row, CLAUDE.md exception, security rules line on campaign sends | ✅ Done | `supabase/migrations/20261112100000_discovery_outreach_campaigns.sql` |
 | `DISC-CAMP-P0-02.1` | Enrolment from the audience filter, with reasons for those left out | ✅ Done | `packages/module-discovery/src/lib/campaigns/audience.test.ts` +4 |
-| `DISC-CAMP-P0-02.2` | Tick | ✅ Done | `packages/core/src/privacy/suppression.ts` +2 |
+| `DISC-CAMP-P0-02.2` | Tick | ✅ Done | `packages/core/src/privacy/suppression.ts` +3 |
 | `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ✅ Done | `packages/module-discovery/src/lib/messages/send.test.ts` +3 |
 | `DISC-CAMP-P0-02.4` | Sender mailbox | ✅ Done | `packages/module-discovery/src/lib/campaigns/host-guard.test.ts` +10 |
 | `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ✅ Done | `packages/core/src/ai/operation-registry.ts` +5 |
@@ -1323,6 +1323,8 @@ Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUT
 | `DISC-CAMP-P0-04.3` | Automatic pause on bounce or complaint rate | ✅ Done | `packages/module-discovery/src/lib/campaigns/tick.ts` |
 | `DISC-CAMP-P0-05.1` | Campaigns page, new campaign, Launch dialog, pause and resume | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/campaigns/[campaignId]/page.tsx` +8 |
 | `DISC-CAMP-P0-05.2` | Campaign results | ✅ Done | `packages/module-discovery/src/components/campaigns/campaign-parts.tsx` |
+| `DISC-CAMP-P0-05.3` | Preview with real emails, Send me a test, This looks right, then Activate | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/campaigns/actions.ts` +8 |
+| `DISC-CAMP-P0-05.4` | Schedule | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/campaigns/actions.ts` +8 |
 | `DISC-CAMP-P0-06.1` | Call, WhatsApp and LinkedIn steps as Today rows with drafts | ✅ Done | `packages/module-discovery/src/lib/campaigns/campaigns.test.ts` +2 |
 | `DISC-CAMP-P0-07.1` | Cron route, daily schedule, hourly workflow | ✅ Done | `.github/workflows/discovery-campaign-tick.yml` +2 |
 | `DISC-CAMP-P0-07.2` | Add new prospects automatically | ✅ Done | `packages/module-discovery/src/lib/campaigns/tick.ts` |

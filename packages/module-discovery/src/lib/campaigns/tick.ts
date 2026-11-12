@@ -3,21 +3,20 @@ import { createAdminClient as createCoreAdminClient } from "@cofounderai/core/db
 import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render";
 import { prepareOutreachEmail } from "@cofounderai/core/privacy/suppression";
 import { createAdminClient } from "../../db/admin";
-import { emailSendCheck } from "../messages/email-status";
 import { getBusiness, getBusinessIdForWorkspace, getProduct, getWorkspace } from "../tenancy/queries";
 import { enrolAudience, getCampaignDetail, type CampaignDetail } from "./campaigns";
 import type { ImapDeps } from "./imap";
 import { syncMailboxInbox } from "./inbox";
 import { loadMailboxForSending, type SendingMailbox } from "./mailbox";
-import { MERGE_FIELD_LABEL, cityOf, renderTemplate, type MergeValues } from "./render";
+import { addressOf, composeStep, type StepRecipient } from "./compose";
 import { OUTCOME_UNKNOWN_REASON, sendViaSmtp, type SmtpDeps } from "./smtp";
 import { STOP_REASON, stopEnrollmentsForProspect } from "./stops";
-import { GENERAL_SEGMENT, type Campaign, type CampaignStep, type Enrollment } from "./types";
+import type { Campaign, CampaignStep, Enrollment } from "./types";
 
 /**
  * DISC-CAMP-P0-02.2 / 04.1 / 04.3 / 07.2: the tick, the only code that sends a campaign
  * email. It runs with the service role from the cron route and, for a first small
- * batch, straight after Launch.
+ * batch, straight after Activate.
  *
  * For each active campaign inside its sending hours it takes the enrollments that are
  * due, oldest first, and for each one: checks whether it should stop, checks the
@@ -76,9 +75,9 @@ export type TickSummary = {
 export type TickOptions = {
   now?: Date;
   budgetMs?: number;
-  /** Only this campaign: the first batch after Launch. */
+  /** Only this campaign: the first batch after Activate. */
   campaignId?: string;
-  /** At most this many sends: the first batch after Launch is small. */
+  /** At most this many sends: the first batch after Activate is small. */
   maxSends?: number;
   smtp?: SmtpDeps;
   imap?: ImapDeps;
@@ -159,7 +158,14 @@ async function skipAndStop(ctx: WorkspaceContext, enrollment: Enrollment, step: 
 }
 
 function deferred(reason: string): EnrollmentOutcome {
-  const stop = reason === "daily_limit" || reason === "not_licensed" || reason === "mailbox_not_verified" ? "workspace" : reason === "campaign_not_active" ? "campaign" : undefined;
+  // The mailbox's limit, the licence and the mailbox concern every campaign of the
+  // workspace; a campaign's own limit (DISC-CAMP-P0-05.4) or status only that campaign.
+  const stop =
+    reason === "daily_limit" || reason === "not_licensed" || reason === "mailbox_not_verified"
+      ? "workspace"
+      : reason === "campaign_not_active" || reason === "campaign_daily_limit"
+        ? "campaign"
+        : undefined;
   return { kind: "deferred", reason, stop };
 }
 
@@ -202,61 +208,51 @@ async function processEnrollment(ctx: WorkspaceContext, detail: CampaignDetail, 
   // A call, WhatsApp or LinkedIn step is done by a person from a draft; the tick waits.
   if (step.channel !== "email") return { kind: "waiting" };
 
-  let contact: { id: string; email: string | null; first_name: string | null; email_status: string | null } | null = null;
-  if (enrollment.recipient === "contact") {
-    if (!enrollment.contact_id) {
-      await stopEnrollment(db, enrollment.id, "stopped", STOP_REASON.contactDeleted);
-      return { kind: "stopped" };
-    }
+  let contact: StepRecipient["contact"] = null;
+  if (enrollment.recipient === "contact" && enrollment.contact_id) {
     const { data, error } = await db.from("contacts").select("id, email, first_name, email_status").eq("id", enrollment.contact_id).maybeSingle();
     if (error) throw error;
     contact = data;
-    if (!contact) {
-      await stopEnrollment(db, enrollment.id, "stopped", STOP_REASON.contactDeleted);
-      return { kind: "stopped" };
-    }
   }
-  const toEmail = (contact ? contact.email : (prospect.company_email as string | null))?.trim();
-  if (!toEmail) {
-    await stopEnrollment(db, enrollment.id, "stopped", STOP_REASON.noEmail);
-    return { kind: "stopped" };
-  }
-
-  const check = emailSendCheck(contact?.email_status as Parameters<typeof emailSendCheck>[0]);
-  if (check === "blocked") return skipAndStop(ctx, enrollment, step, "invalid_address", STOP_REASON.invalidAddress);
-  if (check === "confirm" && !campaign.include_unverified) return skipAndStop(ctx, enrollment, step, "unverified_address", STOP_REASON.unverifiedAddress);
+  const recipient: StepRecipient = {
+    prospect: prospect as StepRecipient["prospect"],
+    contact,
+    recipient: enrollment.recipient,
+    segment: enrollment.segment,
+  };
+  const toEmail = addressOf(recipient);
 
   // The opt-out list, and the unsubscribe link every email carries. If it cannot be
   // read, nothing is sent and the enrollment stays due.
-  let compliance: Awaited<ReturnType<typeof prepareOutreachEmail>>;
-  try {
-    compliance = await prepareOutreachEmail(ctx.businessId, toEmail, ctx.core);
-  } catch (error) {
-    console.error("The opt-out list could not be checked, so a campaign email was not sent:", error instanceof Error ? error.message : error);
-    return { kind: "deferred", reason: "policy_check_failed" };
+  let compliance: Awaited<ReturnType<typeof prepareOutreachEmail>> | null = null;
+  if (toEmail) {
+    try {
+      compliance = await prepareOutreachEmail(ctx.businessId, toEmail, ctx.core);
+    } catch (error) {
+      console.error("The opt-out list could not be checked, so a campaign email was not sent:", error instanceof Error ? error.message : error);
+      return { kind: "deferred", reason: "policy_check_failed" };
+    }
   }
-  if (compliance.suppressed) return skipAndStop(ctx, enrollment, step, "suppressed", STOP_REASON.suppressed);
 
-  const template =
-    templates.find((entry) => entry.step_id === step.id && entry.segment === enrollment.segment) ??
-    templates.find((entry) => entry.step_id === step.id && entry.segment === GENERAL_SEGMENT);
-  if (!template) return skipAndStop(ctx, enrollment, step, "no_message", STOP_REASON.noMessage);
-
-  const values: MergeValues = {
-    company: prospect.company_name as string,
-    city: cityOf(prospect.location as string | null),
-    line_of_work: (prospect.industry as string | null) ?? null,
-    first_name: contact?.first_name ?? null,
-    offering: ctx.offeringName,
-    sender_name: ctx.mailbox.fromName,
-    business_name: ctx.businessName,
-  };
-  const rendered = renderTemplate(template, values);
-  if (!rendered.ok) {
-    return rendered.reason === "missing_merge_field"
-      ? skipAndStop(ctx, enrollment, step, "missing_merge_field", `Not sent: this prospect has no value for ${rendered.missing.map((field) => MERGE_FIELD_LABEL[field]).join(", ")}`)
-      : skipAndStop(ctx, enrollment, step, "invalid_template", "Not sent: the step's text has a merge field that can't be filled");
+  // The same function the preview uses: what this step's email is, or why there is none.
+  const composed = composeStep({
+    campaign,
+    step,
+    templates,
+    recipient,
+    suppressed: compliance?.suppressed === true,
+    sender: { fromName: ctx.mailbox.fromName, offeringName: ctx.offeringName, businessName: ctx.businessName },
+  });
+  if (!composed.ok) {
+    // No one to write to: there is no send to record, the enrollment just stops.
+    if (composed.code === "no_email" || composed.code === "contact_deleted") {
+      await stopEnrollment(db, enrollment.id, "stopped", composed.reason);
+      return { kind: "stopped" };
+    }
+    return skipAndStop(ctx, enrollment, step, composed.code, composed.reason);
   }
+  if (!compliance || compliance.suppressed) return { kind: "deferred", reason: "policy_check_failed" };
+  const rendered = composed;
 
   const row = await claim(db, enrollment.id, step.id, null);
   if (!row) return { kind: "deferred", reason: "policy_check_failed" };
@@ -314,7 +310,7 @@ async function processEnrollment(ctx: WorkspaceContext, detail: CampaignDetail, 
     {
       fromName: ctx.mailbox.fromName,
       fromEmail: ctx.mailbox.fromEmail,
-      to: toEmail,
+      to: composed.to,
       subject: rendered.subject,
       headers: compliance.headers,
       text: renderEmailText(rendered.body, compliance.unsubscribeUrl),

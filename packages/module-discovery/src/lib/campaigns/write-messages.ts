@@ -27,7 +27,7 @@ import { GENERAL_SEGMENT, type CampaignStep } from "./types";
  *    been answered before (same prompt, version and model) is not sent again: the
  *    earlier answer is copied from the template it was stored in;
  *  - the answer is a draft. It is stored as a template labelled AI-generated, which the
- *    person can read and edit before Launch; nothing is sent by writing it;
+ *    person can read and edit before Activate; nothing is sent by writing it;
  *  - an answer is stored only if it has exactly the steps asked for, uses only the
  *    listed merge fields, stays inside the length limits and contains no link, address
  *    or phone number. Anything else is refused whole for that line of work and reported;
@@ -86,7 +86,10 @@ export async function writeCampaignMessages(campaignId: string): Promise<WriteMe
   if (!detail) throw new Error("Campaign not found.");
   const { campaign, steps, templates } = detail;
   await authoriseCampaigns(campaign.workspace_id);
-  if (campaign.status !== "draft") return { status: "refused", message: "Messages are written before a campaign is launched. Edit them on the campaign page instead." };
+  // DISC-CAMP-P0-05.4: also while paused, for a follow-up that was added then.
+  if (campaign.status !== "draft" && campaign.status !== "paused") {
+    return { status: "refused", message: campaign.status === "active" ? "Pause the campaign to write or change its messages." : "A finished campaign can't be changed." };
+  }
 
   const emailSteps = steps.filter((step) => step.channel === "email");
   if (emailSteps.length === 0) return { status: "refused", message: "This campaign has no email step to write." };
@@ -100,8 +103,13 @@ export async function writeCampaignMessages(campaignId: string): Promise<WriteMe
   const icp = await getIcpProfile(campaign.workspace_id);
   const idealCustomer = icp?.status === "approved" ? { painPoints: icp.pain_points ?? [], buyingSignals: icp.buying_signals ?? [] } : null;
 
-  const preview = await previewAudience(campaign);
-  const segments = [GENERAL_SEGMENT, ...preview.segments.map((entry) => entry.segment)];
+  // A draft is written for the lines of work it would enrol. A paused campaign already
+  // has its people: a step added to it is written for the lines of work it has text for.
+  const lines =
+    campaign.status === "draft"
+      ? (await previewAudience(campaign)).segments.map((entry) => entry.segment)
+      : [...new Set(templates.map((template) => template.segment))].filter((segment) => segment !== GENERAL_SEGMENT).sort();
+  const segments = [GENERAL_SEGMENT, ...lines];
 
   const supabase = await createClient();
   const written: string[] = [];

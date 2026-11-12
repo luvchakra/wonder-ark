@@ -39,8 +39,12 @@ the campaign, within this document. Everything else in that rule stands. The saf
 
 ## Safeguards (all required; a failed check means do not send)
 
-- **Opt-in.** Nothing sends until a user with permission presses Launch on that campaign. Default state is draft.
-  Pause stops everything at once. A paused or completed campaign never sends.
+- **Opt-in.** Nothing sends until a user with permission presses Activate on that campaign (it was called Launch).
+  Default state is draft. Pause stops everything at once. A paused or completed campaign never sends.
+- **Preview first (owner, 2026-11-12: "campaign should have a preview button then an activate button").** Activate
+  appears only after a person opened the preview and pressed "This looks right". The database refuses activation
+  without that confirmation and clears it when anything the preview showed changes (who is enrolled, the schedule,
+  a step, a step's text, the name or address emails come from), so the page cannot skip it.
 - **Reviewed text by default.** What goes out is a template the user could read before launch, filled by code with a
   closed list of merge fields (`company`, `city`, `line_of_work`, `first_name`, `offering`, `sender_name`,
   `business_name`). The model never writes to a recipient unseen unless the user turns on "Personal opening line"
@@ -58,7 +62,9 @@ the campaign, within this document. Everything else in that rule stands. The saf
   send does not happen and the enrollment stays due.
 - **Caps.** Per mailbox per day (default 30, most 200), counted in the claim. A workspace has one mailbox, so this
   is also the workspace's cap across all its campaigns. A send that would pass the cap is deferred to the next day,
-  not skipped: no row is written for it. At most 5 steps, at least 2 days apart. A prospect is in at most one active
+  not skipped: no row is written for it. A campaign may set a lower limit of its own, counted in the same claim. At
+  most 5 steps, 1 to 30 days apart (owner, 2026-11-12: "make campaign frequency configurable"; it was at least 2).
+  A prospect is in at most one active
   campaign per workspace. (There is no platform-wide cap: campaigns do not use a shared sender.)
 - **Suppression and validity.** `prepareOutreachEmail()` before every send (unsubscribe link and RFC 8058 headers);
   `emailSendCheck()` blocks `invalid`; `risky` and `unverified` addresses are skipped in automatic sending unless the
@@ -216,6 +222,8 @@ messages a business starts.
 ### DISC-CAMP-P0-04.3 — Automatic pause on bounce or complaint rate
 ### DISC-CAMP-P0-05.1 — Campaigns page, new campaign, Launch dialog, pause and resume
 ### DISC-CAMP-P0-05.2 — Campaign results: funnel and per-prospect status, cards on phones
+### DISC-CAMP-P0-05.3 — Preview with real emails, Send me a test, This looks right, then Activate
+### DISC-CAMP-P0-05.4 — Schedule: emails a day for the campaign, days and hours, number of follow-ups and the days between
 ### DISC-CAMP-P0-06.1 — Call, WhatsApp and LinkedIn steps as Today rows with drafts
 ### DISC-CAMP-P0-07.1 — Cron route, daily schedule, hourly workflow (off until secrets exist)
 ### DISC-CAMP-P0-07.2 — Add new prospects automatically
@@ -303,4 +311,39 @@ Where the build differs from the text above. The live repo wins (`CLAUDE.md`).
 - **A blank server field keeps what is saved** while the address is unchanged, because a closed fold posts
   nothing. A changed address starts again from its own domain. An incoming server therefore cannot be removed by
   blanking it; it can be replaced.
+
+Preview, Activate and Schedule (`05.3`, `05.4`), as built:
+
+- **Migration `20261112140000`** holds the rules: `preview_confirmed_at` / `preview_confirmed_by`, the campaign's
+  own `daily_limit`, the triggers that clear the confirmation, and the claim's `campaign_daily_limit`.
+- **The preview is the campaign page with `?preview=1`**, not a new route, so the offering's navigation is
+  untouched. It is computed by the code that enrols and sends: `previewAudience` for who and why not,
+  `composeStep` (extracted from the tick, which now calls it too) for each email, `prepareOutreachEmail` for the
+  unsubscribe footer. It shows one prospect per line of work at a time; step links and Previous / Next prospect
+  move through the steps and up to five prospects per line.
+- **"Send me a test" has no address field.** It sends the previewed email to the mailbox's own From address, with
+  that address's own unsubscribe link (not the prospect's, so pressing it cannot opt the prospect out), a "[Test]"
+  subject, at most 5 an hour per campaign (`test_sent_at`, counted before sending so failures count too), an
+  audit entry, and no enrollment, send or message row.
+- **A paused campaign's preview shows the people it is still writing to.** Resume needs no new preview unless
+  something changed while paused; then the page says so and shows Preview in Resume's place.
+- **Only a draft or paused campaign can be changed.** A running campaign's messages, schedule and audience are
+  read-only: pause first. The name can change at any time.
+- **Removing a follow-up:** a step that has already been sent to anyone cannot be removed (refused, with the step
+  named). Steps nobody has reached can be removed or added while paused; a prospect who had finished the
+  sequence is not reopened by a step added afterwards. A step added while paused is written for the lines of
+  work the campaign already has text for.
+- **Visible controls on the campaign page, folds closed, before and after** (N messages, P enrolled prospects).
+  The link back to Campaigns was removed (the offering's tab bar has it) to pay for the third fold.
+
+  | State | Before | After |
+  | --- | --- | --- |
+  | Draft, no text | 4 | 4 (Write messages, Sending from, Schedule, Audience) |
+  | Draft, text ready | 4 + N | 4 + N (Preview or Activate, three folds, N Edit) |
+  | Running | 5 + N + P | 3 + P (Pause, Sending from, Finish campaign) |
+  | Paused | 5 + N + P | 5 + N + P |
+  | Finished | 2 + P | 1 + P |
+
+  The preview is a new view: the link back, one link per step when there are several, Previous and Next
+  prospect, one "Send me a test" per line of work, and "This looks right".
 

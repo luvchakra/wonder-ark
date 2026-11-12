@@ -37,18 +37,25 @@ vi.mock("../tenancy/queries", () => ({
 vi.mock("./mailbox", () => ({ getSenderMailbox: h.getSenderMailbox }));
 
 const {
+  activateCampaign,
+  confirmCampaignPreview,
   createCampaign,
   enrolAudience,
   finishCampaign,
   getCampaignDetail,
   getCampaignResults,
-  launchCampaign,
   pauseCampaign,
   replaceCampaignSteps,
   resumeCampaign,
   saveCampaignTemplate,
   updateCampaignSettings,
 } = await import("./campaigns");
+
+/** Confirms the preview, as "This looks right" does, then activates. */
+const launchCampaign = async (id: string) => {
+  await confirmCampaignPreview(id);
+  return activateCampaign(id);
+};
 
 const WORKSPACE = "w1";
 const BUSINESS = "b1";
@@ -60,7 +67,7 @@ function setup(seed: Record<string, Record<string, unknown>[]> = {}, coreSeed: R
   // Tables the tests push rows into directly must exist up front.
   db = createMemoryDb({ outreach_templates: [], outreach_sends: [], messages: [], ...seed });
   core = createMemoryDb({ business_settings: [{ business_id: BUSINESS, timezone: "Asia/Kolkata" }], ...coreSeed });
-  h.createClient.mockResolvedValue(db.client);
+  h.createClient.mockResolvedValue(Object.assign(db.client, { auth: { getUser: async () => ({ data: { user: { id: "u1" } } }) } }));
   h.createCoreClient.mockResolvedValue(core.client);
 }
 
@@ -151,12 +158,62 @@ describe("a new campaign", () => {
   });
 });
 
-describe("Launch", () => {
+describe("Preview, then Activate (DISC-CAMP-P0-05.3)", () => {
+  it("cannot be activated until its preview is confirmed", async () => {
+    const id = await draft();
+
+    expect(await activateCampaign(id)).toEqual({ status: "needs_preview", message: "Preview the campaign and confirm it looks right before activating it." });
+    expect(enrollments()).toHaveLength(0);
+    expect(campaign().status).toBe("draft");
+
+    expect(await confirmCampaignPreview(id)).toEqual({ status: "saved" });
+    expect(campaign().preview_confirmed_at).toEqual(expect.any(String));
+    expect(campaign().preview_confirmed_by).toBe("u1");
+    expect(await activateCampaign(id)).toMatchObject({ status: "activated" });
+  });
+
+  it("has nothing to confirm until every step has text and the mailbox is verified", async () => {
+    const unwritten = await draft({ written: false });
+    expect(await confirmCampaignPreview(unwritten)).toMatchObject({ status: "refused" });
+    expect(campaign().preview_confirmed_at ?? null).toBeNull();
+
+    setup({ prospects: [prospect("p1")], contacts: [contact("c1", "p1", "ravi@acme.example")] });
+    const id = await draft();
+    h.getSenderMailbox.mockResolvedValueOnce({ status: "unverified" });
+    expect(await confirmCampaignPreview(id)).toEqual({ status: "needs_setup", message: "Needs setup: connect a mailbox" });
+    expect(campaign().preview_confirmed_at ?? null).toBeNull();
+  });
+
+  it("needs a new confirmation to resume when the campaign was changed while paused", async () => {
+    const id = await draft();
+    await launchCampaign(id);
+    await pauseCampaign(id);
+    // What the database does when anything the preview showed changes.
+    Object.assign(campaign(), { preview_confirmed_at: null, preview_confirmed_by: null });
+
+    const refused = await resumeCampaign(id);
+    expect(refused).toMatchObject({ status: "needs_preview" });
+    expect(campaign().status).toBe("paused");
+
+    expect(await confirmCampaignPreview(id)).toEqual({ status: "saved" });
+    expect(await resumeCampaign(id)).toEqual({ status: "saved" });
+    expect(campaign().status).toBe("active");
+  });
+
+  it("cannot be confirmed while it is running or once it is finished", async () => {
+    const id = await draft();
+    await launchCampaign(id);
+    expect(await confirmCampaignPreview(id)).toMatchObject({ status: "refused" });
+  });
+});
+
+describe("Activate", () => {
   it("is refused with Needs setup while no mailbox is verified, and enrols nobody", async () => {
     const id = await draft();
+    await confirmCampaignPreview(id);
     for (const mailbox of [null, { status: "unverified" }, { status: "failed" }]) {
       h.getSenderMailbox.mockResolvedValueOnce(mailbox);
-      expect(await launchCampaign(id)).toEqual({ status: "needs_setup", message: "Needs setup: connect a mailbox" });
+      expect(await activateCampaign(id)).toEqual({ status: "needs_setup", message: "Needs setup: connect a mailbox" });
     }
     expect(enrollments()).toHaveLength(0);
     expect(campaign().status).toBe("draft");
@@ -175,7 +232,7 @@ describe("Launch", () => {
 
     const outcome = await launchCampaign(id);
 
-    expect(outcome).toEqual({ status: "launched", enrolled: 1, leftOut: { not_qualified: 1 } });
+    expect(outcome).toEqual({ status: "activated", enrolled: 1, leftOut: { not_qualified: 1 } });
     expect(enrollments()).toHaveLength(1);
     expect(enrollments()[0]).toMatchObject({ campaign_id: id, prospect_id: "p1", contact_id: "c1", recipient: "contact", segment: "general", next_step_position: 1 });
     expect(enrollments()[0]!.next_due_at).toEqual(expect.any(String));
@@ -202,7 +259,7 @@ describe("Launch", () => {
   it("cannot be launched twice", async () => {
     const id = await draft();
     await launchCampaign(id);
-    expect(await launchCampaign(id)).toEqual({ status: "refused", message: "This campaign was already launched." });
+    expect(await activateCampaign(id)).toEqual({ status: "refused", message: "This campaign was already activated." });
     expect(enrollments()).toHaveLength(1);
   });
 
@@ -228,7 +285,9 @@ describe("Launch", () => {
   it("needs the permission", async () => {
     const id = await draft();
     h.requirePermission.mockRejectedValueOnce(new Error("You don't have permission to do this (discovery.manage)."));
-    await expect(launchCampaign(id)).rejects.toThrow("discovery.manage");
+    await expect(activateCampaign(id)).rejects.toThrow("discovery.manage");
+    h.requirePermission.mockRejectedValueOnce(new Error("You don't have permission to do this (discovery.manage)."));
+    await expect(confirmCampaignPreview(id)).rejects.toThrow("discovery.manage");
     expect(enrollments()).toHaveLength(0);
   });
 });
@@ -256,29 +315,48 @@ describe("pause, resume and finish", () => {
     expect(await finishCampaign(id)).toEqual({ status: "saved" });
     expect(await resumeCampaign(id)).toMatchObject({ status: "refused" });
     expect(await updateCampaignSettings(id, { name: "x" })).toMatchObject({ status: "refused" });
+    expect(await confirmCampaignPreview(id)).toMatchObject({ status: "refused" });
     expect(campaign().status).toBe("completed");
   });
 });
 
 describe("changing a campaign", () => {
-  it("changes the steps only before launch, within the sequence rules", async () => {
+  it("changes the steps only while it is a draft or paused, within the sequence rules", async () => {
     const id = await draft();
-    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 1 }])).toMatchObject({ status: "refused" });
+    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 0 }])).toMatchObject({ status: "refused" });
+    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 31 }])).toMatchObject({ status: "refused" });
     expect(await replaceCampaignSteps(id, [{ channel: "call", delayDays: 0 }])).toMatchObject({ status: "refused" });
     expect(await replaceCampaignSteps(id, Array.from({ length: 6 }, () => ({ channel: "email" as const, delayDays: 3 })))).toMatchObject({ status: "refused" });
-
     // Call, WhatsApp and LinkedIn steps wait on DISC-CAMP-P0-06.1.
     expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "call", delayDays: 4 }])).toEqual({ status: "refused", message: "Only email steps are available for now." });
 
-    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 4 }])).toEqual({ status: "saved" });
+    // DISC-CAMP-P0-05.4: a follow-up may come one day later.
+    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 1 }])).toEqual({ status: "saved" });
     expect(db.rows("outreach_campaign_steps").map((step) => [step.position, step.channel, step.delay_days, step.purpose])).toEqual([
       [1, "email", 0, "intro"],
-      [2, "email", 4, "follow_up"],
+      [2, "email", 1, "follow_up"],
     ]);
 
-    await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }]);
     await launchCampaign(id);
-    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 3 }])).toMatchObject({ status: "refused" });
+    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 3 }])).toEqual({ status: "refused", message: "Pause the campaign to change its steps." });
+  });
+
+  it("while paused, adds a step and changes a gap, but will not remove a step that was sent to someone", async () => {
+    const id = await draft();
+    await launchCampaign(id);
+    await pauseCampaign(id);
+    const second = db.rows("outreach_campaign_steps").find((step) => step.position === 2)!;
+    db.rows("outreach_sends").push({ id: "send-1", step_id: second.id, campaign_id: id, status: "sent" });
+
+    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }])).toEqual({ status: "refused", message: "Step 2 has already been sent to someone, so it can't be removed." });
+    expect(db.rows("outreach_campaign_steps")).toHaveLength(3);
+
+    // Step 3 has been sent to nobody: it can go, and step 2's gap can change.
+    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 7 }])).toEqual({ status: "saved" });
+    expect(db.rows("outreach_campaign_steps").map((step) => [step.position, step.delay_days])).toEqual([[1, 0], [2, 7]]);
+
+    expect(await replaceCampaignSteps(id, [{ channel: "email", delayDays: 0 }, { channel: "email", delayDays: 7 }, { channel: "email", delayDays: 2 }])).toEqual({ status: "saved" });
+    expect(db.rows("outreach_campaign_steps")).toHaveLength(3);
   });
 
   it("saves a person's edit, labels it, and refuses a field outside the list", async () => {
@@ -288,6 +366,33 @@ describe("changing a campaign", () => {
 
     expect(await saveCampaignTemplate("t-1", { subject: " Hi  {{company}} ", body: "Hello {{first_name}}" })).toEqual({ status: "saved" });
     expect(db.rows("outreach_templates")[0]).toMatchObject({ subject: "Hi {{company}}", body: "Hello {{first_name}}", origin: "user_modified" });
+  });
+
+  it("does not change a running campaign's messages, schedule or audience: pause first", async () => {
+    const id = await draft();
+    await launchCampaign(id);
+
+    expect(await saveCampaignTemplate("t-1", { subject: "Changed", body: "Changed text" })).toEqual({ status: "refused", message: "Pause the campaign to change its messages." });
+    expect(await updateCampaignSettings(id, { sendDays: [1] })).toMatchObject({ status: "refused" });
+    expect(await updateCampaignSettings(id, { dailyLimit: 5 })).toMatchObject({ status: "refused" });
+    expect(await updateCampaignSettings(id, { audience: { onlyQualified: false } })).toMatchObject({ status: "refused" });
+    expect(db.rows("outreach_templates")[0]).toMatchObject({ subject: "Hello {{company}}" });
+    // The name is not part of what is sent.
+    expect(await updateCampaignSettings(id, { name: "Renamed" })).toEqual({ status: "saved" });
+
+    await pauseCampaign(id);
+    expect(await saveCampaignTemplate("t-1", { subject: "Changed", body: "Changed text" })).toEqual({ status: "saved" });
+    expect(await updateCampaignSettings(id, { sendDays: [1] })).toEqual({ status: "saved" });
+  });
+
+  it("holds a campaign's own emails a day between 1 and the mailbox's limit", async () => {
+    const id = await draft();
+    expect(await updateCampaignSettings(id, { dailyLimit: 31 })).toMatchObject({ status: "refused" });
+    expect(await updateCampaignSettings(id, { dailyLimit: 0 })).toMatchObject({ status: "refused" });
+    expect(await updateCampaignSettings(id, { dailyLimit: 10 })).toEqual({ status: "saved" });
+    expect(campaign().daily_limit).toBe(10);
+    expect(await updateCampaignSettings(id, { dailyLimit: null })).toEqual({ status: "saved" });
+    expect(campaign().daily_limit).toBeNull();
   });
 
   it("holds the audience and sending hours to valid values", async () => {
