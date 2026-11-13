@@ -15,6 +15,8 @@ import { ActionForm } from "@cofounderai/module-discovery/components/marketing/a
 import { Field } from "@cofounderai/module-discovery/components/marketing/field";
 import { saveProfileAction } from "../actions";
 import { fundingContext } from "../context";
+import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
+import ReadinessPage from "../readiness/page";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -210,6 +212,10 @@ export default async function FundingProfilePage({ params }: { params: Promise<{
           </Card>
         </div>
       </div>
+      {/* DISC-NAV-P0-01.6: Investor readiness is a section of the Profile tab. */}
+      <SectionFold id="readiness" title="Investor readiness" hint="The checklist investors look for, by category">
+        <ReadinessPage params={params} />
+      </SectionFold>
     </>
   );
 }

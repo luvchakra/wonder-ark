@@ -26,15 +26,13 @@ export default async function FundingLayout({
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6">
       <SectionTabs
         tabs={[
-          { href: root, label: "Dashboard", exact: true },
-          { href: `${root}/profile`, label: "Funding Profile" },
-          { href: `${root}/readiness`, label: "Investor Readiness" },
-          { href: `${root}/rounds`, label: "Fundraising" },
-          { href: `${root}/investors`, label: "Investors" },
-          { href: `${root}/outreach`, label: "Investor Outreach" },
-          { href: `${root}/data-room`, label: "Data Room" },
-          { href: `${root}/due-diligence`, label: "Due Diligence" },
-          { href: `${root}/analytics`, label: "Analytics" },
+          // DISC-NAV-P0-01.6: four tabs. Rounds and Analytics are sections of Overview,
+          // Readiness of Profile, Outreach of Investors and Due diligence of Data room;
+          // each keeps its own address and, opened there, its tab stays marked.
+          { href: root, label: "Overview", exact: true, also: [`${root}/rounds`, `${root}/analytics`] },
+          { href: `${root}/profile`, label: "Profile", also: [`${root}/readiness`] },
+          { href: `${root}/investors`, label: "Investors", also: [`${root}/outreach`] },
+          { href: `${root}/data-room`, label: "Data room", also: [`${root}/due-diligence`] },
         ]}
       />
       {canView ? (

@@ -23,7 +23,7 @@ Discovery's menu in the sidebar is four links, with nothing to unfold:
 | **Overview** | The Discovery dashboard (below) |
 | **Acquisition** | The offering you last worked in. Its tabs — Setup, Find, Prospects, Results — are across the top of the page |
 | **Marketing** | The Marketing overview. Overview, Campaigns, Content and Website & SEO are tabs across the top |
-| **Funding** | The Funding dashboard. Funding Profile, Investor Readiness, Fundraising, Investors, Investor Outreach, Data Room, Due Diligence and Analytics are tabs across the top |
+| **Funding** | The Funding overview. Overview, Profile, Investors and Data room are tabs across the top |
 
 **Business** is not in Discovery's menu. It is a row of its own at the top of the sidebar,
 above the modules, because it describes the business whichever module you are in. Its page
@@ -626,16 +626,24 @@ Nothing is ever published or sent automatically: AI drafts, a person approves.
 
 ## Funding
 
-Funding helps you get ready for and run a raise.
+Funding helps you get ready for and run a raise. It has four tabs: **Overview**,
+**Profile**, **Investors** and **Data room**. As on Acquisition and Marketing, each tab is
+one page, and anything beyond its main content is a section with a title, a one-line
+summary and a chevron. Rounds and Analytics are sections of Overview, Investor readiness
+of Profile, Investor outreach of Investors, and Due diligence of Data room; their old
+addresses still open them on their own.
 
-- **Dashboard** — your round's progress, the investor pipeline and what
-  needs attention next.
-- **Funding Profile** — the company story investors ask for: stage, traction,
+- **Overview** — four headline figures (the round's target, committed, raised and
+  remaining; before a round, investors, active conversations, open diligence and missing
+  documents). Then sections: **Needs attention** (open when there is something), **Round
+  progress and pipeline**, **All figures** (with the read-only figures from Finance),
+  **Rounds** and **Analytics**.
+- **Profile** — the company story investors ask for: stage, traction,
   team, use of funds. If Finance is licensed, key figures (revenue, burn,
   cash) are read from your books and shown as "From Finance"; otherwise you enter them.
-- **Investor Readiness** — a checklist score across the areas investors check, with what's
+- **Investor readiness** (a section of Profile) — a checklist score across the areas investors check, with what's
   missing. **Add standard checklist** adds the usual items, each Missing until reviewed.
-- **Fundraising** — create a round (target, instrument, dates) and move it through its
+- **Rounds** (a section of Overview) — create a round (target, instrument, dates) and move it through its
   stages. A round needs a target amount before it can open.
 - **Investors** — your investor list, with research on each (labelled Source-backed,
   User-entered or AI-inferred). Investors move
@@ -643,20 +651,20 @@ Funding helps you get ready for and run a raise.
   Meeting → Partner review → Due diligence → Term discussion → Committed →
   Invested** (or **Passed**). Forward moves can skip stages; amounts are
   required once an investor commits, and **Invested** needs the amount received.
-- **Investor Outreach** — draft outreach (the AI can help) and log replies. **Submit for
+- **Investor outreach** (a section of Investors) — draft outreach (the AI can help) and log replies. **Submit for
   approval** → **Approve** → **Send to <email>**; approving and sending need
   `funding.approve`. If a send fails, move it back to draft, fix it and approve again. Emails carry an unsubscribe
   option, and an investor who unsubscribes is not emailed again — the send
   shows as failed with that reason (see "Outreach, replies and unsubscribes").
-- **Data Room** — upload documents (pitch deck, financials, legal; up to 4 MB each) by
+- **Data room** — upload documents (pitch deck, financials, legal; up to 4 MB each) by
   category; a new version keeps the old one. New uploads start as drafts, and only
   documents marked **Ready** can be shared. A share link lasts 1–90 days (14 by default), is
   shown once, and can be revoked at any time. Uploading needs `funding.manage` and
   `funding.data_room.manage`; sharing needs `funding.approve` and `funding.data_room.share`.
-- **Due Diligence** — track each investor's requests: Open, In progress, Submitted,
+- **Due diligence** (a section of Data room) — track each investor's requests: Open, In progress, Submitted,
   Accepted, Needs clarification or Closed. Accepting needs `funding.approve`.
-- **Analytics** — conversion through the pipeline and how the round is
-  tracking.
+- **Analytics** (a section of Overview) — conversion through the pipeline and how the round
+  is tracking.
 
 ## Who can do what
 

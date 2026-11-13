@@ -3,7 +3,7 @@ import { Landmark, Plus } from "lucide-react";
 import { PageHeader } from "@cofounderai/core/ui/page-header";
 import { ExportMenu } from "@cofounderai/core/export-ui/export-menu";
 import { Button } from "@cofounderai/core/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@cofounderai/core/ui/card";
+import { Card, CardContent } from "@cofounderai/core/ui/card";
 import { EmptyState } from "@cofounderai/core/ui/empty-state";
 import { getFundingFinanceSnapshot } from "@cofounderai/module-gst/contract/index";
 import {
@@ -28,6 +28,9 @@ import { InvestorFunnel } from "@cofounderai/module-discovery/components/funding
 import { FundingAttentionList } from "@cofounderai/module-discovery/components/funding/attention-list";
 import { RoundBadge } from "@cofounderai/module-discovery/components/funding/status";
 import { fundingContext } from "./context";
+import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
+import RoundsPage from "./rounds/page";
+import FundingAnalyticsPage from "./analytics/page";
 
 const ACTIVE_STAGES = new Set(["contacted", "meeting", "partner_review", "due_diligence", "term_discussion"]);
 
@@ -37,7 +40,14 @@ const ACTIVE_STAGES = new Set(["contacted", "meeting", "partner_review", "due_di
  * diligence queue, rule-based attention, and — only when Finance is licensed — cash and
  * runway read from the ledger with the time they were read.
  */
-export default async function FundingDashboardPage({ params }: { params: Promise<{ businessSlug: string }> }) {
+export default async function FundingDashboardPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ businessSlug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const open = (await searchParams).open;
   const { businessSlug } = await params;
   const { businessId, root, canView, canManage } = await fundingContext(businessSlug);
   if (!canView) return null;
@@ -91,12 +101,15 @@ export default async function FundingDashboardPage({ params }: { params: Promise
                   <Link href={`${root}/profile`}>Write the funding profile</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link href={`${root}/rounds`}>Set up a round</Link>
+                  <Link href={`${root}?open=rounds#rounds`}>Set up a round</Link>
                 </Button>
               </div>
             ) : null}
           </CardContent>
         </Card>
+        <SectionFold id="rounds" title="Rounds" hint="Set up the round you are raising" open={open === "rounds"}>
+          <RoundsPage params={params} />
+        </SectionFold>
       </>
     );
   }
@@ -138,7 +151,9 @@ export default async function FundingDashboardPage({ params }: { params: Promise
         }
       />
 
-      <section aria-label="Key figures" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+      {/* DISC-NAV-P0-01.6: four headline figures; everything else is a section folded behind
+          a chevron. Rounds and Analytics, once tabs of their own, are sections here. */}
+      <section aria-label="Key figures" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {progress && round ? (
           <>
             <FigureTile label="Target" figure={progress.target} money currency={round.currency} />
@@ -146,112 +161,114 @@ export default async function FundingDashboardPage({ params }: { params: Promise
             <FigureTile label="Raised" figure={progress.raised} money currency={round.currency} />
             <FigureTile label="Remaining" figure={progress.aboveTarget ? { ...progress.remaining, value: null, definition: "Raised is above the target." } : progress.remaining} money currency={round.currency} />
           </>
-        ) : null}
-        <FigureTile label="Investors identified" figure={count(investors.length, "Active investors in your database.")} />
-        <FigureTile
-          label="In this round's pipeline"
-          figure={count(pipeline.filter((p) => p.stage !== "passed").length, "Investors added to the round's pipeline, excluding those who passed.")}
-        />
-        <FigureTile
-          label="Active conversations"
-          figure={count(pipeline.filter((p) => ACTIVE_STAGES.has(p.stage)).length, "Investors between Contacted and Term discussion.")}
-        />
-        <FigureTile label="Meetings logged" figure={count(interactions.length, "Meeting interactions logged against this round.")} />
-        <FigureTile
-          label="Diligence open"
-          figure={count(diligence.filter((d) => d.status !== "accepted" && d.status !== "closed").length, "Requests not yet accepted or closed.")}
-        />
-        <FigureTile
-          label="Data room missing"
-          figure={count(dataRoom.filter((d) => d.status === "missing").length, "Checklist documents with no file uploaded.")}
-        />
-        <FigureTile
-          label="Days in round"
-          figure={{ value: daysInRound, kind: "actual", definition: "Days since the round was opened. Blank until it is opened." }}
-        />
-        <FigureTile
-          label="Runway (months)"
-          figure={{
-            value: financeData?.runwayMonths ?? null,
-            kind: "actual",
-            definition: financeData
-              ? `Cash ÷ average monthly loss over the last three complete months, read from Finance at ${new Date(financeData.asOf).toLocaleString("en-IN")}. Blank when the business is not losing money.`
-              : "Finance metrics unavailable: Finance is not licensed or not set up for this business.",
-          }}
-        />
+        ) : (
+          <>
+            <FigureTile label="Investors identified" figure={count(investors.length, "Active investors in your database.")} />
+            <FigureTile
+              label="Active conversations"
+              figure={count(pipeline.filter((p) => ACTIVE_STAGES.has(p.stage)).length, "Investors between Contacted and Term discussion.")}
+            />
+            <FigureTile
+              label="Diligence open"
+              figure={count(diligence.filter((d) => d.status !== "accepted" && d.status !== "closed").length, "Requests not yet accepted or closed.")}
+            />
+            <FigureTile
+              label="Data room missing"
+              figure={count(dataRoom.filter((d) => d.status === "missing").length, "Checklist documents with no file uploaded.")}
+            />
+          </>
+        )}
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-        <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3">
+        <SectionFold
+          id="attention"
+          title="Needs attention"
+          hint={attention.length ? `${attention.length} item${attention.length === 1 ? "" : "s"}` : "Nothing right now"}
+          open={attention.length > 0 && !open}
+        >
+          <FundingAttentionList items={attention} root={root} />
+        </SectionFold>
+        <SectionFold
+          id="pipeline"
+          title="Round progress and pipeline"
+          hint={round ? `${pipeline.filter((p) => p.stage !== "passed").length} investors in ${round.name}'s pipeline` : "No live round"}
+        >
           {progress ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>Round progress</CardTitle>
-                <CardDescription>A commitment is not money received — the two are counted separately.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <RoundProgressBar progress={progress} />
-              </CardContent>
-            </Card>
+            <>
+              <p className="text-sm text-muted-foreground">A commitment is not money received — the two are counted separately.</p>
+              <RoundProgressBar progress={progress} />
+            </>
           ) : null}
-          <Card>
-            <CardHeader>
-              <CardTitle>Investor pipeline</CardTitle>
-              <CardDescription>Reached each stage (from stage history) · currently there · step conversion.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {pipeline.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No investors in this round yet.</p>
-              ) : (
-                <InvestorFunnel steps={funnel.steps} passed={funnel.passed} />
-              )}
-            </CardContent>
-          </Card>
+          <p className="text-sm font-medium">Investor pipeline</p>
+          <p className="text-xs text-muted-foreground">Reached each stage (from stage history) · currently there · step conversion.</p>
+          {pipeline.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No investors in this round yet.</p>
+          ) : (
+            <InvestorFunnel steps={funnel.steps} passed={funnel.passed} />
+          )}
+        </SectionFold>
+        <SectionFold id="figures" title="All figures" hint="Investors, conversations, meetings, diligence, data room, runway, Finance">
+          <section aria-label="All figures" className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <FigureTile label="Investors identified" figure={count(investors.length, "Active investors in your database.")} />
+            <FigureTile
+              label="In this round's pipeline"
+              figure={count(pipeline.filter((p) => p.stage !== "passed").length, "Investors added to the round's pipeline, excluding those who passed.")}
+            />
+            <FigureTile
+              label="Active conversations"
+              figure={count(pipeline.filter((p) => ACTIVE_STAGES.has(p.stage)).length, "Investors between Contacted and Term discussion.")}
+            />
+            <FigureTile label="Meetings logged" figure={count(interactions.length, "Meeting interactions logged against this round.")} />
+            <FigureTile
+              label="Diligence open"
+              figure={count(diligence.filter((d) => d.status !== "accepted" && d.status !== "closed").length, "Requests not yet accepted or closed.")}
+            />
+            <FigureTile
+              label="Data room missing"
+              figure={count(dataRoom.filter((d) => d.status === "missing").length, "Checklist documents with no file uploaded.")}
+            />
+            <FigureTile
+              label="Days in round"
+              figure={{ value: daysInRound, kind: "actual", definition: "Days since the round was opened. Blank until it is opened." }}
+            />
+            <FigureTile
+              label="Runway (months)"
+              figure={{
+                value: financeData?.runwayMonths ?? null,
+                kind: "actual",
+                definition: financeData
+                  ? `Cash ÷ average monthly loss over the last three complete months, read from Finance at ${new Date(financeData.asOf).toLocaleString("en-IN")}. Blank when the business is not losing money.`
+                  : "Finance metrics unavailable: Finance is not licensed or not set up for this business.",
+              }}
+            />
+          </section>
+          <ul className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+            {DILIGENCE_STATUSES.map((s) => (
+              <li key={s} className="flex justify-between gap-2">
+                <span className="text-muted-foreground">Diligence: {DILIGENCE_STATUS_LABEL[s]}</span>
+                <span className="font-medium tabular-nums">{diligence.filter((d) => d.status === s).length}</span>
+              </li>
+            ))}
+          </ul>
           {financeData ? (
-            <Card>
-              <CardHeader>
-                <CardTitle>From Finance</CardTitle>
-                <CardDescription>Read-only, as of {new Date(financeData.asOf).toLocaleString("en-IN")}.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-                  <Stat label="Cash" value={formatAmount(financeData.cash, financeData.currency)} />
-                  <Stat label="Revenue, last 3 months" value={formatAmount(financeData.revenueLast3Months, financeData.currency)} />
-                  <Stat label="Monthly burn" value={financeData.netBurn === null ? "Not burning" : formatAmount(financeData.netBurn, financeData.currency)} />
-                  <Stat label="Receivables" value={formatAmount(financeData.receivable, financeData.currency)} />
-                </dl>
-              </CardContent>
-            </Card>
+            <>
+              <p className="text-sm font-medium">From Finance · read-only, as of {new Date(financeData.asOf).toLocaleString("en-IN")}</p>
+              <dl className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
+                <Stat label="Cash" value={formatAmount(financeData.cash, financeData.currency)} />
+                <Stat label="Revenue, last 3 months" value={formatAmount(financeData.revenueLast3Months, financeData.currency)} />
+                <Stat label="Monthly burn" value={financeData.netBurn === null ? "Not burning" : formatAmount(financeData.netBurn, financeData.currency)} />
+                <Stat label="Receivables" value={formatAmount(financeData.receivable, financeData.currency)} />
+              </dl>
+            </>
           ) : null}
-        </div>
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Needs attention</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FundingAttentionList items={attention} root={root} />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Diligence</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="grid grid-cols-2 gap-2 text-sm">
-                {DILIGENCE_STATUSES.map((s) => (
-                  <li key={s} className="flex justify-between gap-2">
-                    <span className="text-muted-foreground">{DILIGENCE_STATUS_LABEL[s]}</span>
-                    <span className="font-medium tabular-nums">{diligence.filter((d) => d.status === s).length}</span>
-                  </li>
-                ))}
-              </ul>
-              <Link href={`${root}/due-diligence`} className="mt-3 inline-block text-sm text-primary hover:underline">
-                Open the queue
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
+        </SectionFold>
+        <SectionFold id="rounds" title="Rounds" hint={`${rounds.length} round${rounds.length === 1 ? "" : "s"}`} open={open === "rounds"}>
+          <RoundsPage params={params} />
+        </SectionFold>
+        <SectionFold id="analytics" title="Analytics" hint="Round, pipeline conversion, activity, time in stage" open={open === "analytics"}>
+          <FundingAnalyticsPage params={params} searchParams={searchParams} />
+        </SectionFold>
       </div>
     </>
   );

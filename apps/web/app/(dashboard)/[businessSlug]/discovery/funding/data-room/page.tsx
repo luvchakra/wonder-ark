@@ -32,6 +32,8 @@ import {
   uploadDataRoomAction,
 } from "../actions";
 import { fundingContext } from "../context";
+import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
+import DiligencePage from "../due-diligence/page";
 
 function size(bytes: number | null): string {
   if (bytes === null) return "";
@@ -44,7 +46,13 @@ function size(bytes: number | null): string {
  * shared) intact. Sharing is explicit, per investor or address, expiring and revocable,
  * needs funding.approve, and every open of a link is recorded.
  */
-export default async function DataRoomPage({ params }: { params: Promise<{ businessSlug: string }> }) {
+export default async function DataRoomPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ businessSlug: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { businessSlug } = await params;
   const { businessId, canView, canManage, canApprove } = await fundingContext(businessSlug);
   if (!canView) return null;
@@ -157,6 +165,10 @@ export default async function DataRoomPage({ params }: { params: Promise<{ busin
           </Card>
         </div>
       ) : null}
+      {/* DISC-NAV-P0-01.6: Due diligence is a section of the Data room tab. */}
+      <SectionFold id="due-diligence" title="Due diligence" hint="Investors' requests and their status">
+        <DiligencePage params={params} searchParams={searchParams} />
+      </SectionFold>
     </>
   );
 }

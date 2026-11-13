@@ -14,6 +14,8 @@ import { InvestorFields } from "@cofounderai/module-discovery/components/funding
 import { StageBadge } from "@cofounderai/module-discovery/components/funding/status";
 import { createInvestorAction } from "../actions";
 import { fundingContext } from "../context";
+import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
+import OutreachPage from "../outreach/page";
 
 const RESEARCH_LABEL = { not_researched: "Not researched", researching: "Researching", researched: "Researched", stale: "Stale" } as const;
 
@@ -99,6 +101,10 @@ export default async function InvestorsPage({
           </CardContent>
         </Card>
       ) : null}
+      {/* DISC-NAV-P0-01.6: Investor outreach is a section of the Investors tab. */}
+      <SectionFold id="outreach" title="Investor outreach" hint="Drafts and messages to investors; a person sends each one">
+        <OutreachPage params={params} searchParams={searchParams} />
+      </SectionFold>
     </>
   );
 }

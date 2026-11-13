@@ -26,7 +26,7 @@ test.describe("Discovery › Funding", () => {
     await expect(page).toHaveURL(new RegExp(`/${slug}/discovery/funding$`));
     await expectNoAppCrash(page);
     const tabs = page.locator('nav[aria-label="Section"]');
-    for (const label of ["Funding Profile", "Investor Readiness", "Fundraising", "Data Room", "Due Diligence"]) {
+    for (const label of ["Overview", "Profile", "Investors", "Data room"]) {
       await expect(tabs.getByRole("link", { name: label, exact: true })).toBeVisible();
     }
   });
