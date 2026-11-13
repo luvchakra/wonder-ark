@@ -216,7 +216,9 @@ Everything that brings companies in is under the **Find** tab.
 
   After a search, a summary says how many results came back, how many were added, and how
   many were left out because they are already prospects, already waiting for review, or
-  outside your approved ICP. What was found waits under **To review**, each with its place,
+  outside your approved ICP. When you type a place under **Where**, results from that place
+  are kept even if your ICP's geographies name it differently; with **Where** empty, your
+  ICP's geographies decide. What was found waits under **To review**, each with its place,
   category, why it fits and a badge naming its source. Untick any you don't want, then
   click **Approve selected** to add the rest to your prospects, or **Discard selected** to
   remove them. Running the same search again doesn't add the same company twice.
