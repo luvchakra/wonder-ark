@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { AppSidebar } from "./app-sidebar";
 import { AppTopbar } from "./app-topbar";
 import { SidebarProvider } from "./sidebar-context";
+import { SidebarFab } from "./sidebar-fab";
 import type { ShellAlert, ShellBusiness, ShellNavModule, ShellProduct, ShellUser } from "./types";
 
 /**
@@ -76,9 +77,11 @@ export function DashboardShell({
               Doesn't affect the legitimate `overflow-x-auto` containers (tables, etc.)
               nested inside `children` -- those still scroll internally exactly as
               before. */}
-          <main className="flex-1 overflow-x-hidden bg-background p-4 sm:p-6">{children}</main>
+          {/* Bottom padding below `lg` keeps the last of the page clear of the menu button. */}
+          <main className="flex-1 overflow-x-hidden bg-background p-4 pb-24 sm:p-6 sm:pb-24 lg:pb-6">{children}</main>
         </div>
       </div>
+      <SidebarFab />
     </SidebarProvider>
   );
 }
