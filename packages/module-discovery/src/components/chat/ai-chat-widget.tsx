@@ -149,7 +149,7 @@ export function AiChatWidget() {
             setOpen(true);
             setShowBackToChat(false);
           }}
-          className="fixed right-6 bottom-6 z-40 flex items-center gap-2 rounded-full border bg-background px-4 py-2.5 text-sm font-medium shadow-lg transition-colors hover:bg-accent"
+          className="fixed right-6 bottom-24 z-40 flex items-center gap-2 rounded-full lg:bottom-6 border bg-background px-4 py-2.5 text-sm font-medium shadow-lg transition-colors hover:bg-accent"
         >
           <MessageCircle className="size-4 text-primary" aria-hidden="true" />
           Back to chat
