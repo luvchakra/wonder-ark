@@ -143,9 +143,16 @@ export async function stageGatewayResults(
   items: BusinessItem[],
   matchReason: (item: BusinessItem) => string,
   client?: SupabaseClient,
-  options: { icpPreFilter?: boolean } = {},
+  options: { icpPreFilter?: boolean; placeAsked?: boolean } = {},
 ): Promise<{ added: number; skipped: Omit<Extract<FindOutcome, { status: "completed" }>["skipped"], "unreadable">; unstageable: number }> {
-  const criteria = options.icpPreFilter === false ? null : await approvedIcpCriteria(workspaceId, client);
+  const approved = options.icpPreFilter === false ? null : await approvedIcpCriteria(workspaceId, client);
+  // DISC-DATA-P0-03.3: a place the person typed under Where is what they asked for, and
+  // the source already searched by it. A record's location is often only a town or a
+  // locality ("Mysuru", "Whitefield") with no state or city around it, so checking it
+  // against the ICP's geographies word by word turned away exactly what was asked for.
+  // With a place typed, the geography check is left out; the rest of the ICP's check
+  // (industries, size, exclusions) still applies.
+  const criteria = approved && options.placeAsked ? { ...approved, geographies: [] } : approved;
   const icpReasons = new Map<string, number>();
   let icp = 0;
   let alreadyInReview = 0;
@@ -494,7 +501,7 @@ export async function runFind(workspaceId: string, input: FindInput, unattended?
           source.action === "signals" ? hiringMatchReason : () => searchMatchReason(input.what, input.where),
           client,
           // A gathering place is not a company the ICP describes, so its pre-filter does not apply.
-          { icpPreFilter: target === "companies" },
+          { icpPreFilter: target === "companies", placeAsked: input.where.trim().length > 0 },
         );
 
   return {

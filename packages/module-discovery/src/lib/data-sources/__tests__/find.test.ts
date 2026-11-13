@@ -264,7 +264,8 @@ describe("what is left out, and why", () => {
       business("excluded", { industry: "Government electrical works" }),
     ]);
 
-    const outcome = await runFind(WORKSPACE, input);
+    // No place typed: the ICP's geographies decide where results may be.
+    const outcome = await runFind(WORKSPACE, { ...input, where: "" });
 
     expect(stagedRows(supabase).map((row) => row.external_id)).toEqual(["fits"]);
     expect(outcome).toMatchObject({
@@ -280,6 +281,21 @@ describe("what is left out, and why", () => {
         ],
       },
     });
+  });
+
+  it("DISC-DATA-P0-03.3: keeps a result from the place the person typed, though its location names only a town", async () => {
+    const supabase = mockDb();
+    h.getIcpProfile.mockResolvedValue({ ...approvedIcp, geographies: ["Bengaluru", "Karnataka"] });
+    searchReturns([
+      business("mysuru", { location: { ...businessItem.location, text: "Mysuru", city: "Mysuru", region: null, country: "IN" } }),
+      business("whitefield", { location: { ...businessItem.location, text: "Whitefield", city: "Whitefield", region: null, country: "IN" } }),
+      business("wrong-industry", { industry: "Retail" }),
+    ]);
+
+    const outcome = await runFind(WORKSPACE, { ...input, where: "Bengaluru; Karnataka" });
+
+    expect(stagedRows(supabase).map((row) => row.external_id)).toEqual(["mysuru", "whitefield"]);
+    expect(outcome).toMatchObject({ added: 2, skipped: { icp: 1, icpReasons: ["1 outside your ICP's industries"] } });
   });
 
   it("does not turn a result away for a value the source did not give", async () => {
