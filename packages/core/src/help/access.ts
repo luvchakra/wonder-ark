@@ -22,6 +22,20 @@ export function helpReturnPath(next: string | null | undefined): string | null {
   return next.length > 5 && next.endsWith("/") ? next.slice(0, -1) : next;
 }
 
+/**
+ * PLATFORM-P1-10.15: where sign-in may return to. A help page (above), or one fixed page of
+ * an organization's own address: `/business`, where a business just created from its
+ * website is reviewed. Signing in on a new organization's address is the first thing its
+ * founder does there (session cookies belong to one address), so creating a business sends
+ * them to `<new address>/login?next=/business`. Still a fixed list: `next` can never name
+ * another host or an arbitrary page.
+ */
+const ORG_RETURN_PAGES = new Set(["/business"]);
+
+export function signInReturnPath(next: string | null | undefined): string | null {
+  return helpReturnPath(next) ?? (next && ORG_RETURN_PAGES.has(next) ? next : null);
+}
+
 /** `/login?next=<help page>` for a signed-out visitor who asked for `pathname`. */
 export function signInUrlFor(pathname: string): string {
   const next = helpReturnPath(pathname);

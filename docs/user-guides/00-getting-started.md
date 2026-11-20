@@ -6,7 +6,7 @@ differ, licensing the modules you need, plans and billing, and adding your
 team. The last section (§14) is for whoever runs the platform itself rather than for
 everyday users.
 
-Last updated: 2026-11-13
+Last updated: 2026-11-20
 
 ## 1. Creating an account
 
@@ -62,7 +62,10 @@ tabs:
   (under **Address and environment**, with a live preview), website and description. Click
   **Create Business**.
 
-The name can be changed later on the **Business** page.
+The new business opens on its own address (for example `home-wonderapps-biz.ark.wonderapps.biz`).
+Sign in there once; from **From website** you then land on its **Business** page, where
+you review what was read from the site. The name can be changed later on the **Business**
+page.
 
 ## 3. Businesses, offerings, and why there are two concepts
 

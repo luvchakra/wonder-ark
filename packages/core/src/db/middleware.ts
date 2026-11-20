@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { helpReturnPath, isHelpPath } from "../help/access";
+import { helpReturnPath, isHelpPath, signInReturnPath } from "../help/access";
 import { moduleRegistry } from "@cofounderai/module-registry";
 import { MODULE_VIEW_PERMISSION } from "../rbac/module-permissions";
 import {
@@ -362,7 +362,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Signed in already and sent to sign-in on the way to a help page: go straight there.
-  const helpBack = user && isAuthPath ? helpReturnPath(request.nextUrl.searchParams.get("next")) : null;
+  const helpBack = user && isAuthPath ? signInReturnPath(request.nextUrl.searchParams.get("next")) : null;
   if (helpBack) {
     const url = request.nextUrl.clone();
     url.pathname = helpBack;

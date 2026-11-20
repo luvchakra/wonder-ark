@@ -12,6 +12,21 @@ import { getRequestHost } from "@/lib/org-host";
 
 export type CreateBusinessFromWebsiteState = { error: string } | null;
 
+/**
+ * PLATFORM-P1-10.15: where a business just created is opened. With organization addresses
+ * on, it is its own address (`<slug>.<base>`): a bare `/<slug>/...` path asked for on the
+ * address the person is on would be read as a page of *that* organization and end in a
+ * 404. Session cookies belong to one address, so it opens on that address's sign-in, which
+ * then returns to `page`. Without addresses, the path form.
+ */
+async function newBusinessDestination(businessId: string, page: "" | "/business"): Promise<string> {
+  const path = await businessPath(businessId);
+  const { base, protocol, port } = await getRequestHost();
+  const url = orgUrl(path.slice(1), base, protocol, port);
+  if (!url) return `${path}${page}`;
+  return page ? `${url}/login?next=${encodeURIComponent(page)}` : `${url}/login`;
+}
+
 /** PLATFORM-P1-10.14: a new organization at the address prefix and environment chosen in the
  * modal (the prefix follows the name unless edited). A refusal comes back in words. With
  * addresses on, the new organization opens on its own address (sign in there). */
@@ -29,7 +44,7 @@ export async function createBusinessAction(
   if (!slug) {
     const business = await createBusiness(accountId, { ...input, industry: String(formData.get("industry") ?? "") });
     revalidatePath("/dashboard");
-    redirect(await businessPath(business.id));
+    redirect(await newBusinessDestination(business.id, ""));
   }
   const result = await createBusinessWithAddress(accountId, {
     ...input,
@@ -80,7 +95,7 @@ export async function createBusinessFromWebsiteAction(
   await createWebsiteOnboardingRun(business.id, website);
 
   revalidatePath("/dashboard");
-  redirect(`${await businessPath(business.id)}/business`);
+  redirect(await newBusinessDestination(business.id, "/business"));
 }
 
 export async function createProductAction(businessId: string, formData: FormData) {
