@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { helpReturnPath, isHelpPath, signInUrlFor } from "./access";
+import { helpReturnPath, isHelpPath, signInReturnPath, signInUrlFor } from "./access";
 
 describe("help access", () => {
   it("recognises the help hub and every guide", () => {
@@ -21,5 +21,15 @@ describe("help access", () => {
   it("builds the sign-in URL for a help page, and the plain one otherwise", () => {
     expect(signInUrlFor("/help/getting-started")).toBe("/login?next=%2Fhelp%2Fgetting-started");
     expect(signInUrlFor("/dashboard")).toBe("/login");
+  });
+});
+
+describe("signInReturnPath (PLATFORM-P1-10.15)", () => {
+  it("allows a help page or a new organization's Business page, and nothing else", () => {
+    expect(signInReturnPath("/help/finance")).toBe("/help/finance");
+    expect(signInReturnPath("/business")).toBe("/business");
+    for (const next of [null, "", "/business/", "/business/x", "//business", "https://evil.example/business", "/dashboard", "/platform"]) {
+      expect(signInReturnPath(next), String(next)).toBeNull();
+    }
   });
 });

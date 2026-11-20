@@ -6,7 +6,7 @@ import { createClient } from "@cofounderai/core/db/server";
 import { recordSignupAcceptance } from "@cofounderai/core/privacy/legal-acceptance";
 import { orgAddressClosedReason, refuseNonMemberOnOrgAddress } from "@/lib/org-sign-in-gate";
 import { onOrgAddress } from "@/lib/org-host";
-import { helpReturnPath } from "@cofounderai/core/help/access";
+import { signInReturnPath } from "@cofounderai/core/help/access";
 import {
   OAUTH_PROVIDER_LABELS,
   isOAuthProvider,
@@ -43,9 +43,10 @@ export async function login(
   const refused = await refuseNonMemberOnOrgAddress(supabase);
   if (refused) return { error: refused };
 
-  // Signed in from a help page's redirect: back to that page. Only a help page qualifies
-  // (core/help/access.ts), so the form field can't send anyone anywhere else.
-  const back = helpReturnPath(String(formData.get("next") ?? ""));
+  // Signed in from a help page's redirect, or on a just-created organization's address:
+  // back to that page. Only a fixed list qualifies (core/help/access.ts), so the form field
+  // can't send anyone anywhere else.
+  const back = signInReturnPath(String(formData.get("next") ?? ""));
   redirect(back ?? ((await onOrgAddress()) ? "/" : "/dashboard"));
 }
 
@@ -183,7 +184,7 @@ export async function signInWithOAuthProvider(provider: OAuthProvider, returnTo?
     options: {
       // The request's own origin: on an organization's address, social sign-in returns there
       // (needs the wildcard in Supabase's redirect allow-list) and lands on its home.
-      redirectTo: `${origin}/auth/callback?next=${helpReturnPath(returnTo) ?? ((await onOrgAddress()) ? "/" : "/dashboard")}`,
+      redirectTo: `${origin}/auth/callback?next=${signInReturnPath(returnTo) ?? ((await onOrgAddress()) ? "/" : "/dashboard")}`,
       // Microsoft only returns the address when asked for the `email` scope; without it
       // Supabase can't create the user (Supabase's Azure guide).
       ...(provider === "azure" ? { scopes: "email" } : {}),

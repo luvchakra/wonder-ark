@@ -123,10 +123,16 @@ describe("login — back to the help page that sent you here", () => {
     );
   });
 
+  it("PLATFORM-P1-10.15: returns to a new organization's Business page", async () => {
+    mockAuth();
+
+    expect(await captureRedirect(() => login(null, form({ email: "a@b.com", password: "pw", next: "/business" })))).toBe("/business");
+  });
+
   it("ignores a `next` that isn't a help page", async () => {
     mockAuth();
 
-    for (const next of ["https://evil.example", "//evil.example", "/platform", "/help/../platform"]) {
+    for (const next of ["https://evil.example", "//evil.example", "/platform", "/help/../platform", "/business/../platform", "/business/x", "//business"]) {
       expect(await captureRedirect(() => login(null, form({ email: "a@b.com", password: "pw", next }))), next).toBe("/dashboard");
     }
   });

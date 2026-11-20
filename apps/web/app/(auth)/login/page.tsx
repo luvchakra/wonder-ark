@@ -4,7 +4,7 @@ import { AuthError } from "@/components/auth/auth-error";
 import { login } from "@/app/(auth)/actions";
 import { getPublicLoginBranding } from "@cofounderai/core/admin/platform-branding";
 import { getEnabledOAuthProviders } from "@cofounderai/core/auth/oauth-providers";
-import { helpReturnPath } from "@cofounderai/core/help/access";
+import { signInReturnPath } from "@cofounderai/core/help/access";
 
 /**
  * PLATFORM-P0-03.3: `login_headline`/`login_support_text` (added by PLATFORM-P0-03.1)
@@ -20,8 +20,9 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
     getEnabledOAuthProviders(),
     searchParams,
   ]);
-  // Sent here from a help page: sign-in brings them back to it.
-  const returnTo = helpReturnPath(typeof next === "string" ? next : null);
+  // Sent here from a help page, or to a new organization's Business page: sign-in brings
+  // them back to it.
+  const returnTo = signInReturnPath(typeof next === "string" ? next : null);
   const termsUrl = branding.loginTermsUrl || "/terms";
   const privacyUrl = branding.loginPrivacyUrl || "/privacy";
 

@@ -10,7 +10,7 @@ export const HELP_GUIDES: HelpGuide[] = [
     "order": 0,
     "title": "Getting Started",
     "summary": "Everything from your first login to a working business: creating an account, setting up your first business, understanding how businesses and offerings differ, licensing the modules you need, plans and billing, and adding your team.",
-    "lastUpdated": "2026-11-13",
+    "lastUpdated": "2026-11-20",
     "sections": [
       {
         "id": "creating-an-account",
@@ -20,7 +20,7 @@ export const HELP_GUIDES: HelpGuide[] = [
       {
         "id": "onboarding-your-first-business",
         "heading": "2. Onboarding: your first business",
-        "body": "New accounts go straight to the dashboard. Until you have a business, the sidebar shows\n**Create a business**; later, create more from **Manage organizations** (the last item in the\nbusiness switcher) with **New organization**. The **Create a new business** dialog has two\ntabs:\n\n- **From website** — enter \"Your Business Website\" and click **Understand My Business**.\n  The business is created straight away and the AI reads your site in the background; you\n  review and approve what it found before it changes anything.\n- **Manual entry** — \"Business Name\", then optionally the address prefix and environment\n  (under **Address and environment**, with a live preview), website and description. Click\n  **Create Business**.\n\nThe name can be changed later on the **Business** page."
+        "body": "New accounts go straight to the dashboard. Until you have a business, the sidebar shows\n**Create a business**; later, create more from **Manage organizations** (the last item in the\nbusiness switcher) with **New organization**. The **Create a new business** dialog has two\ntabs:\n\n- **From website** — enter \"Your Business Website\" and click **Understand My Business**.\n  The business is created straight away and the AI reads your site in the background; you\n  review and approve what it found before it changes anything.\n- **Manual entry** — \"Business Name\", then optionally the address prefix and environment\n  (under **Address and environment**, with a live preview), website and description. Click\n  **Create Business**.\n\nThe new business opens on its own address (for example `home-wonderapps-biz.ark.wonderapps.biz`).\nSign in there once; from **From website** you then land on its **Business** page, where\nyou review what was read from the site. The name can be changed later on the **Business**\npage."
       },
       {
         "id": "businesses-offerings-and-why-there-are-two-concepts",
