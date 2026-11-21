@@ -28,9 +28,9 @@ export type PendingCreditPurchase = {
 
 /** Starts a purchase: creates the Razorpay order, then records it as 'created' so the
  * webhook (or the client-reported payment signature, whichever arrives first) has a row
- * to credit. Throws RazorpayNotConfiguredError if RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET
- * aren't set on this deployment -- callers should surface that as "buying credits isn't
- * available yet", not a generic failure. */
+ * to credit. Throws RazorpayNotConfiguredError when Razorpay has no keys (Billing →
+ * Providers, else RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET) -- callers should surface that as
+ * "buying credits isn't available yet", not a generic failure. */
 export async function createPendingCreditPurchase(accountId: string, planKey: string): Promise<PendingCreditPurchase> {
   const plan = getCreditPlan(planKey);
   if (!plan) throw new Error(`Unknown credit plan "${planKey}".`);
@@ -66,7 +66,7 @@ export async function createPendingCreditPurchase(accountId: string, planKey: st
     return {
       purchaseId: purchase.id,
       razorpayOrderId: order.id,
-      razorpayKeyId: process.env.RAZORPAY_KEY_ID!,
+      razorpayKeyId: order.keyId,
       amountInrPaise: plan.amount_inr_paise,
       planLabel: plan.label,
     };

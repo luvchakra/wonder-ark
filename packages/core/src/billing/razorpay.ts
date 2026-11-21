@@ -11,16 +11,41 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 
 export class RazorpayNotConfiguredError extends Error {
   constructor() {
-    super("Razorpay is not configured on this deployment (RAZORPAY_KEY_ID/RAZORPAY_KEY_SECRET missing).");
+    super("Razorpay is not configured: set its keys on Platform Admin → Billing → Providers.");
     this.name = "RazorpayNotConfiguredError";
   }
 }
 
-function getCredentials(): { keyId: string; keySecret: string } {
-  const keyId = process.env.RAZORPAY_KEY_ID;
-  const keySecret = process.env.RAZORPAY_KEY_SECRET;
-  if (!keyId || !keySecret) throw new RazorpayNotConfiguredError();
-  return { keyId, keySecret };
+export type RazorpayCredentials = { keyId: string; keySecret: string; webhookSecret: string | null };
+
+/**
+ * PLATFORM-P1-14.3: the keys AI-credit purchases use. The ones saved on Platform Admin →
+ * Billing → Providers (`platform.billing_providers`, encrypted) come first -- the same keys
+ * subscriptions use -- so nothing has to be set in the deployment. The deployment's
+ * RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET / RAZORPAY_WEBHOOK_SECRET stay a fallback, and are
+ * also the answer when the store cannot be read. `load` is injectable for tests.
+ */
+export async function getRazorpayCredentials(
+  load: () => Promise<{ publicKey: string | null; secretKey: string | null; webhookSecret: string | null } | null> = async () =>
+    (await import("./provider-config")).loadProviderConfig("razorpay"),
+  env: Record<string, string | undefined> = process.env,
+): Promise<RazorpayCredentials | null> {
+  let saved: Awaited<ReturnType<typeof load>> = null;
+  try {
+    saved = await load();
+  } catch (cause) {
+    console.error("[billing] Could not read Razorpay's keys from Platform Admin; using the deployment's.", cause instanceof Error ? cause.message : cause);
+  }
+  const keyId = saved?.publicKey || env.RAZORPAY_KEY_ID;
+  const keySecret = saved?.secretKey || env.RAZORPAY_KEY_SECRET;
+  if (!keyId || !keySecret) return null;
+  return { keyId, keySecret, webhookSecret: saved?.webhookSecret || env.RAZORPAY_WEBHOOK_SECRET || null };
+}
+
+async function getCredentials(): Promise<RazorpayCredentials> {
+  const credentials = await getRazorpayCredentials();
+  if (!credentials) throw new RazorpayNotConfiguredError();
+  return credentials;
 }
 
 export type RazorpayOrder = {
@@ -37,8 +62,8 @@ export async function createRazorpayOrder(input: {
   amountInrPaise: number;
   receipt: string;
   notes?: Record<string, string>;
-}): Promise<RazorpayOrder> {
-  const { keyId, keySecret } = getCredentials();
+}): Promise<RazorpayOrder & { keyId: string }> {
+  const { keyId, keySecret } = await getCredentials();
   const response = await fetch("https://api.razorpay.com/v1/orders", {
     method: "POST",
     headers: {
@@ -58,15 +83,15 @@ export async function createRazorpayOrder(input: {
     throw new Error(`Razorpay order creation failed (${response.status}): ${body}`);
   }
 
-  return (await response.json()) as RazorpayOrder;
+  return { ...((await response.json()) as RazorpayOrder), keyId };
 }
 
 /** Verifies the `x-razorpay-signature` header on a webhook delivery -- HMAC-SHA256 of the
- * raw request body, keyed by RAZORPAY_WEBHOOK_SECRET (set separately from the API key/
+ * raw request body, keyed by the webhook secret (saved on Billing → Providers, else RAZORPAY_WEBHOOK_SECRET; set separately from the API key/
  * secret pair in Razorpay's dashboard, under Webhooks). `timingSafeEqual` so this doesn't
  * leak timing information about how much of the signature matched. */
-export function verifyRazorpayWebhookSignature(rawBody: string, signatureHeader: string | null): boolean {
-  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+export async function verifyRazorpayWebhookSignature(rawBody: string, signatureHeader: string | null): Promise<boolean> {
+  const secret = (await getRazorpayCredentials().catch(() => null))?.webhookSecret;
   if (!secret || !signatureHeader) return false;
 
   const expected = createHmac("sha256", secret).update(rawBody).digest("hex");
@@ -80,8 +105,8 @@ export function verifyRazorpayWebhookSignature(rawBody: string, signatureHeader:
  * secret (not the separate webhook secret). Razorpay recommends checking this
  * client-reported signature too, not relying on the webhook alone, since the webhook can
  * be delayed; either one succeeding is enough to credit the purchase. */
-export function verifyRazorpayPaymentSignature(orderId: string, paymentId: string, signature: string): boolean {
-  const { keySecret } = getCredentials();
+export async function verifyRazorpayPaymentSignature(orderId: string, paymentId: string, signature: string): Promise<boolean> {
+  const { keySecret } = await getCredentials();
   const expected = createHmac("sha256", keySecret).update(`${orderId}|${paymentId}`).digest("hex");
   const expectedBuf = Buffer.from(expected, "hex");
   const providedBuf = Buffer.from(signature, "hex");

@@ -2096,3 +2096,10 @@ deployment's `PLATFORM_AI_API_KEY` goes to the AI Providers store through the sa
 audited path as a key typed there, and Anthropic is switched on. Pressing it twice copies
 nothing the second time. The page then names the deployment variables that hold the same
 value as the platform, which can be deleted from the hosting dashboard.
+
+## PLATFORM-P1-14.3 — Minimum Deployment Variables (owner, 2026-11-21)
+
+AI-credit purchases read Razorpay's keys from Billing → Providers (the store subscriptions
+already use) before the deployment's `RAZORPAY_*` variables, so no payment key needs setting
+in the deployment. What must stay there, and why, is listed in
+`docs/ops/deployment-setup.md` and on the Keys page.
