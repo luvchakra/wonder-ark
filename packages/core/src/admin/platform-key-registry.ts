@@ -141,6 +141,7 @@ export const DEPLOYMENT_ONLY_VARIABLES: readonly { name: string; reason: string 
   { name: "BASE_APP_HOST", reason: "Read on every request, before the database, to tell an organization's address from the main one." },
   { name: "ORG_ADDRESS_REQUIRED", reason: "Read on every request with BASE_APP_HOST." },
   { name: "PLATFORM_ADMIN_EMAILS", reason: "Who may open this portal. Kept outside the portal it protects, so a mistake here cannot lock everyone out." },
+  { name: "BUSINESS_ADMIN_EMAILS", reason: "Who may use the demo-data tool on business accounts without opening this portal. Kept beside PLATFORM_ADMIN_EMAILS." },
 ];
 
 /** "••••abcd" for a secret; the value itself for one that is not. Never the whole secret. */

@@ -134,6 +134,17 @@ describe("updateSession — the help guides are signed-in only", () => {
     }
   });
 
+  // PLATFORM-P1-10.16: "Platform admin" from an organization's address arrives signed out
+  // on the main one; after sign-in the person lands on the console's front page.
+  it("brings a signed-out visitor to the console back to its front page after sign-in", async () => {
+    signedIn(null);
+
+    for (const path of ["/platform", "/platform/keys"]) {
+      const response = await updateSession(request(path));
+      expect(response.headers.get("location"), path).toBe("https://app.example.com/login?next=%2Fplatform");
+    }
+  });
+
   it("keeps the plain sign-in redirect for other protected pages", async () => {
     signedIn(null);
 

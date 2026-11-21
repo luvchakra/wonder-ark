@@ -5,7 +5,8 @@ import { createClient } from "@cofounderai/core/db/server";
 import { getPendingLegalAcceptances } from "@cofounderai/core/privacy/legal-acceptance";
 import { getHostBusiness, getRequestHost } from "@/lib/org-host";
 import { getAnnouncementsByBusiness } from "@cofounderai/core/announcements/active";
-import { isPlatformAdminEmail } from "@cofounderai/core/rbac/platform-admin";
+import { isBusinessAdminEmail, isPlatformAdminEmail } from "@cofounderai/core/rbac/platform-admin";
+import { mainUrl } from "@cofounderai/core/lib/org-address";
 import type { ShellAlert } from "@cofounderai/core/shell/types";
 import { getCurrentAccount } from "@cofounderai/module-discovery/lib/tenancy/queries";
 import { getAiProviderConnection } from "@cofounderai/module-discovery/lib/ai-providers/queries";
@@ -250,7 +251,11 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         name: displayName,
         email: user.email ?? "",
         avatarUrl,
-        isPlatformAdmin: isPlatformAdminEmail(user.email),
+        isBusinessAdmin: isBusinessAdminEmail(user.email),
+        // PLATFORM-P1-10.16: the console lives on the main address only.
+        platformAdminUrl: isPlatformAdminEmail(user.email)
+          ? `${(orgAddress.hostSlug && mainUrl(orgAddress.base, orgAddress.protocol, orgAddress.port)) || ""}/platform`
+          : null,
       }}
       alerts={alerts}
       createBusinessAction={createBusinessAction}

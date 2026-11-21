@@ -25,10 +25,12 @@ describe("help access", () => {
 });
 
 describe("signInReturnPath (PLATFORM-P1-10.15)", () => {
-  it("allows a help page or a new organization's Business page, and nothing else", () => {
+  it("allows a help page, a new organization's Business page or the console's front page, and nothing else", () => {
     expect(signInReturnPath("/help/finance")).toBe("/help/finance");
     expect(signInReturnPath("/business")).toBe("/business");
-    for (const next of [null, "", "/business/", "/business/x", "//business", "https://evil.example/business", "/dashboard", "/platform"]) {
+    // PLATFORM-P1-10.16: and the console's front page, for a platform admin's sign-in.
+    expect(signInReturnPath("/platform")).toBe("/platform");
+    for (const next of [null, "", "/business/", "/business/x", "//business", "https://evil.example/business", "/dashboard", "/platform/keys", "//platform", "https://evil.example/platform"]) {
       expect(signInReturnPath(next), String(next)).toBeNull();
     }
   });

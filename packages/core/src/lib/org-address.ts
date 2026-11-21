@@ -110,6 +110,13 @@ export function orgUrl(slug: string, base: string | null, protocol = "https", po
   return `${protocol}://${slug}.${base}${port ? `:${port}` : ""}`;
 }
 
+/** The URL of the main address (the landing page and the vendor console), or null when
+ * addresses are off and everything is on the one host. */
+export function mainUrl(base: string | null, protocol = "https", port?: string): string | null {
+  if (!base) return null;
+  return `${protocol}://${base}${port ? `:${port}` : ""}`;
+}
+
 /** Top-level paths that are the app's own on every host, never an organization's page:
  * the auth flow, the API, the account area, the console, public pages and assets. On an
  * organization's address everything else is that organization's page. Keep in step with

@@ -49,20 +49,20 @@ describe("platform page data is refused to a non-superadmin before anything is r
  * it does not need to.
  */
 const UNCHECKED: Record<string, string> = {
-  "demo-seed-tracking.ts:createSeedBatch": "called by the demo-data actions after requirePlatformAdmin()",
-  "demo-seed-tracking.ts:trackSeedRecords": "called by the demo-data actions after requirePlatformAdmin()",
-  "demo-seed-tracking.ts:finalizeSeedBatch": "called by the demo-data actions after requirePlatformAdmin()",
-  "demo-seed-tracking.ts:listSeedBatches": "read by /dashboard/admin after its own requirePlatformAdmin()",
-  "demo-seed-tracking.ts:deleteAllSeedDataForBusiness": "called by the demo-data actions after requirePlatformAdmin()",
+  "demo-seed-tracking.ts:createSeedBatch": "called by the demo-data actions after requireBusinessAdmin()",
+  "demo-seed-tracking.ts:trackSeedRecords": "called by the demo-data actions after requireBusinessAdmin()",
+  "demo-seed-tracking.ts:finalizeSeedBatch": "called by the demo-data actions after requireBusinessAdmin()",
+  "demo-seed-tracking.ts:listSeedBatches": "read by /dashboard/admin after its own requireBusinessAdmin()",
+  "demo-seed-tracking.ts:deleteAllSeedDataForBusiness": "called by the demo-data actions after requireBusinessAdmin()",
   "platform-branding.ts:getPublicLoginBranding": "the sign-in page's public branding",
   "platform-health.ts:collectHealthSnapshot": "the ops-alerts cron, behind CRON_SECRET; pages use getHealthSnapshot()",
   "platform-ops-alerts.ts:runOpsAlertCheck": "the ops-alerts cron, behind CRON_SECRET",
   "platform-plans.ts:listPublicPlans": "the public pricing page",
   "queries.ts:listAllUsers": "read by /dashboard/admin and the audit log after their own checks",
-  "queries.ts:listBusinessesForUser": "read by /dashboard/admin after its own requirePlatformAdmin()",
+  "queries.ts:listBusinessesForUser": "read by /dashboard/admin after its own requireBusinessAdmin()",
 };
 
-const CHECK = /\b(requireSuperadmin|requirePlatformAdmin|requirePlatformRole|isSuperadmin|actorId)\(/;
+const CHECK = /\b(requireSuperadmin|requireBusinessAdmin|requirePlatformRole|isSuperadmin|actorId)\(/;
 
 describe("every service-role read in admin/ checks its caller", () => {
   it("has no exported function that builds a service-role client without a check or a listed reason", () => {

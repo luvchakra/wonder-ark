@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { requirePlatformAdmin } from "@cofounderai/core/rbac/platform-admin";
+import { requireBusinessAdmin } from "@cofounderai/core/rbac/platform-admin";
 import { listAllUsers, listBusinessesForUser } from "@cofounderai/core/admin/queries";
 import { listSeedBatches } from "@cofounderai/core/admin/demo-seed-tracking";
 import { formatDateTime } from "@cofounderai/core/lib/format";
@@ -22,7 +22,7 @@ export default async function AdminPage({
   }>;
 }) {
   try {
-    await requirePlatformAdmin();
+    await requireBusinessAdmin();
   } catch {
     redirect("/dashboard");
   }

@@ -7,9 +7,9 @@ import { isSuperadmin } from "@cofounderai/core/rbac/platform-admin";
 import { getRequestHost } from "@/lib/org-host";
 
 /**
- * PLATFORM-P1-10.3 (Main Address Landing): the main address's hand-off. A signed-in person goes
- * to the address of the organization they used last, otherwise their first; with none, a
- * vendor administrator goes to the console and anyone else to create an organization.
+ * PLATFORM-P1-10.3 (Main Address Landing): the main address's hand-off. A platform admin
+ * goes to the console (PLATFORM-P1-10.16). Anyone else goes to the address of the
+ * organization they used last, otherwise their first; with none, to create an organization.
  * Organizations are read under the person's own RLS -- only ones they belong to, active only.
  */
 export async function GET(request: Request) {
@@ -17,6 +17,13 @@ export async function GET(request: Request) {
   const { data: claims } = await supabase.auth.getClaims();
   const origin = new URL(request.url).origin;
   if (!claims?.claims) return NextResponse.redirect(`${origin}/login`);
+
+  // PLATFORM-P1-10.16: the main address is also where WonderArk's own console lives, so a
+  // platform admin who signs in here lands on it (the proxy then asks for the second
+  // factor). "Your business" in the console comes back with ?to=business to skip this.
+  const wantsBusiness = new URL(request.url).searchParams.get("to") === "business";
+  const superadmin = await isSuperadmin().catch(() => false);
+  if (superadmin && !wantsBusiness) return NextResponse.redirect(`${origin}/platform`);
 
   const core = await createClient({ schema: "core" });
   const { data, error } = await core
@@ -35,7 +42,7 @@ export async function GET(request: Request) {
   const slug = last && slugs.includes(last) ? last : slugs[0];
 
   if (!slug) {
-    return NextResponse.redirect(`${origin}${(await isSuperadmin()) ? "/platform" : "/dashboard/organizations"}`);
+    return NextResponse.redirect(`${origin}${superadmin ? "/platform" : "/dashboard/organizations"}`);
   }
   const { base, protocol, port } = await getRequestHost();
   const target = orgUrl(slug, base, protocol, port);

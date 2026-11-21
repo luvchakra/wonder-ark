@@ -390,7 +390,9 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     // A help page comes back after sign-in; other pages keep the existing landing.
-    const back = helpReturnPath(effectivePath);
+    // PLATFORM-P1-10.16: so does the console, at its front page.
+    const onPlatform = effectivePath === "/platform" || effectivePath.startsWith("/platform/");
+    const back = helpReturnPath(effectivePath) ?? (onPlatform ? "/platform" : null);
     if (back) url.search = `?next=${encodeURIComponent(back)}`;
     return NextResponse.redirect(url);
   }

@@ -1942,6 +1942,28 @@ kept).
 Creating an organization asks for its name, an address prefix (follows the name until edited,
 with a live address preview) and its environment, with Back and Cancel.
 
+## PLATFORM-P1-10.15 — New Business Lands On Its Own Address
+
+Creating a business sends its founder to the new address's sign-in and back to `/business`
+(a session belongs to one address), instead of a path that 404s there.
+
+## PLATFORM-P1-10.16 — Platform Admin Signs In On The Main Address (owner, 2026-11-21)
+
+The main address is the landing page and WonderArk's own console. A platform admin who signs
+in there lands on `/platform` (`/go` sends them; the proxy then asks for the second factor).
+The console's header has **Your business** (`/go?to=business`) and **Sign out**. From any
+organization's address, the avatar menu shows **Platform admin** to an email in
+`PLATFORM_ADMIN_EMAILS`; it leads to the console on the main address, where the person signs
+in and is returned to `/platform`. The link is not a gate: the proxy and every console read
+check the caller.
+
+## PLATFORM-P1-10.17 — Separate Variables For Business Admin And Platform Admin (owner, 2026-11-21)
+
+`PLATFORM_ADMIN_EMAILS` is WonderArk's own console (`/platform`). `BUSINESS_ADMIN_EMAILS` is
+the account tools at `/dashboard/admin` (demo data), which act on any business account; it
+opens nothing in the console and no business's own data. A platform admin may use the account
+tools too, so the owner needs only the first.
+
 ---
 
 # 41. MCP Server (added 2026-10-14)
