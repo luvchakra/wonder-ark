@@ -33,7 +33,10 @@ test.describe("Discovery", () => {
     await page.locator('nav[aria-label="Main"]').getByRole("link", { name: "Business", exact: true }).click();
     await expect(page).toHaveURL(new RegExp(`/${slug}/business$`));
     await expectNoAppCrash(page);
-    const offeringLink = page.locator(`main a[href*="/discovery/offerings/"]`).first();
+    // The offerings list renders each link twice, as a card below `md` and as a table row
+    // from `md` up, so only one is on screen at a time: take the visible one. `.first()` in
+    // DOM order is the card, which a desktop viewport hides and can never click.
+    const offeringLink = page.locator(`main a[href*="/discovery/offerings/"]:visible`).first();
     const hasOffering = await offeringLink.count();
     test.skip(hasOffering === 0, "Seed business has no offerings yet");
 
