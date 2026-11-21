@@ -2050,3 +2050,24 @@ key, Unavailable). Stored encrypted in `platform.careers_connection` (service ro
 only as a mask, and each save or clear recorded in `platform.audit_log` with the last four
 characters. `WONDERJOBS_CAREERS_KEY` is the fallback when no key is saved.
 
+## PLATFORM-P1-14.1 — Platform Keys
+
+`/platform/keys`: a superadmin sets, replaces or removes the platform's own keys and settings
+(the Resend key and From address, the email webhook secrets, the WorksLake gateway address and
+key, the WhatsApp and Meta webhook secrets) without a redeploy. Each is stored encrypted in
+`platform.platform_keys` (service role only; no grant to `authenticated`, not even a
+superadmin), shown only as a hint, and every change is recorded in `platform.audit_log` with a
+reason and a fingerprint. The application reads a key with `platformKey(NAME)`
+(`packages/core/src/admin/platform-key-store.ts`): the saved value, else the deployment's
+variable of the same name; saved values are read at most once a minute per server instance.
+The names are a registry in code (`platform-key-registry.ts`), which also lists the variables
+that must stay in the deployment and why. The AI key keeps its own home on AI Providers.
+
+## PLATFORM-P1-14.2 — Import from deployment
+
+One button on the Keys page copies every value the deployment sets, and the platform does not
+have yet, into the encrypted store, on the server: no value is shown, returned or logged. The
+deployment's `PLATFORM_AI_API_KEY` goes to the AI Providers store through the same tested,
+audited path as a key typed there, and Anthropic is switched on. Pressing it twice copies
+nothing the second time. The page then names the deployment variables that hold the same
+value as the platform, which can be deleted from the hosting dashboard.

@@ -13,6 +13,7 @@ import { generatePortalToken, hashPortalToken, resolvePortalToken } from "../por
 import { getEstimateForOpportunity } from "../estimates/queries";
 import { recomputeAndPersistTotals } from "../estimates/mutations";
 import { getInvoice, getInvoiceForJob, listInvoiceLines } from "./queries";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 // Reused as-is for invoice charge lines -- both functions are already generic over any
 // `core.documents` id, nothing about them is actually estimate-specific (F-3's own
@@ -147,8 +148,8 @@ export async function sendInvoice(businessId: string, jobId: string, invoiceId: 
   const { data: business } = await core.from("businesses").select("name, website").eq("id", businessId).maybeSingle();
   const brandName = business?.name ?? "Your service provider";
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromAddress = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !fromAddress) throw new Error("Email sending isn't configured yet -- set RESEND_API_KEY and RESEND_FROM_EMAIL.");
 
   const rawToken = generatePortalToken();

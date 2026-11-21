@@ -7,6 +7,7 @@ import { BRAND_NAME } from "../lib/brand";
 import { BILLING_NOTIFICATION_TYPES, type BillingNotificationType } from "./notifications";
 import { getLifecyclePolicy } from "./lifecycle-policy";
 import { logBilling } from "./observability";
+import { platformKey } from "../admin/platform-key-store";
 
 /**
  * BILL-35 -- billing emails, sent by the domain-event drain (§61), to the account owners
@@ -73,8 +74,8 @@ async function recipients(businessId: string): Promise<{ emails: string[]; busin
 }
 
 export async function sendBillingEmail(event: DomainEvent): Promise<"sent" | "skipped"> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const from = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !from) return "skipped";
   const type = event.type as BillingNotificationType;
   const { emails, businessName, slug } = await recipients(event.business_id);

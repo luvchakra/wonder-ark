@@ -25,15 +25,19 @@ export default async function PlatformEmailProviderPage() {
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Email Provider</h1>
         <p className="text-sm text-zinc-400">
           Configuration only -- nothing here is wired into real outbound email yet. Platform emails today are sent
-          directly via Resend, reading environment variables. Every change here is recorded with a reason.
+          directly via Resend. Every change here is recorded with a reason.
         </p>
       </div>
 
       <div className="flex flex-col gap-4 rounded-2xl border border-amber-900/60 bg-amber-950/20 p-4 text-sm text-amber-200">
-        Real outbound email (discovery outreach, FSM reminders/invoices/estimates, GST reminders) is not affected by
-        this page. It keeps reading <code className="rounded bg-amber-900/40 px-1">RESEND_API_KEY</code>/
-        <code className="rounded bg-amber-900/40 px-1">RESEND_FROM_EMAIL</code> directly until a future story wires
-        this configuration in.
+        <p>
+          Real outbound email (discovery outreach, FSM reminders/invoices/estimates, GST reminders) is not affected by
+          this page. It is sent through Resend with the key and From address set on{" "}
+          <Link href="/platform/keys" className="underline hover:text-amber-100">
+            Keys
+          </Link>
+          .
+        </p>
       </div>
 
       <div className="flex flex-col gap-4 rounded-2xl border border-zinc-800 p-4">

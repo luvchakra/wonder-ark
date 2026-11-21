@@ -4,6 +4,7 @@ import { registerEventHandler } from "../events/registry";
 import type { DomainEvent } from "../events/types";
 import { BRAND_NAME } from "../lib/brand";
 import { SITE_URL } from "../site";
+import { platformKey } from "../admin/platform-key-store";
 
 /**
  * RBAC-32 / §52 -- membership notifications, sent by the domain-event drain (never from a
@@ -31,8 +32,8 @@ async function emailFor(userId: string | undefined): Promise<{ email: string | n
 }
 
 export async function sendMemberEmail(event: DomainEvent): Promise<"sent" | "skipped"> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const from = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !from) return "skipped";
   const payload = event.payload as Payload;
   const core = createAdminClient({ schema: "core" });

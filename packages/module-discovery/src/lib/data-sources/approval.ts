@@ -4,7 +4,7 @@ import {
 } from "../prospects/mutations";
 import type { Prospect } from "../prospects/types";
 import { queueProspectEnrichment } from "./enrichment";
-import { isGatewayConfigured } from "./workslake-client";
+import { isGatewayReady } from "./workslake-client";
 
 /**
  * DISC-DATA-P0-04.1: approving suggestions, and queueing the one free lookup of each
@@ -30,7 +30,7 @@ export async function approveSuggestionsAndQueueEnrichment(
   const companyIds = approval.prospects
     .filter((prospect) => (prospect.kind ?? "company") === "company")
     .map((prospect) => prospect.id);
-  if (companyIds.length === 0 || !isGatewayConfigured()) return { ...approval, enrichmentQueuedFor: [] };
+  if (companyIds.length === 0 || !(await isGatewayReady())) return { ...approval, enrichmentQueuedFor: [] };
   try {
     await queueProspectEnrichment(workspaceId, companyIds);
   } catch (error) {

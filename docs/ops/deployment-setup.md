@@ -28,6 +28,28 @@ every variable. Grouped by purpose:
 | SEO | `NEXT_PUBLIC_SITE_URL` — optional, falls back to the current deployment URL |
 | Careers (WonderJobs) | `WONDERJOBS_CAREERS_KEY` — optional fallback for the career-site key (`wjcs_…`); a key saved on **Platform → Careers** takes precedence and needs no redeploy. `WONDERJOBS_BASE_URL` — tests/staging only; must be an https `*.wonderapps.biz` address, anything else is refused |
 
+### Platform Admin → Keys (PLATFORM-P1-14.1)
+
+Most of these no longer need to be deployment variables. A superadmin sets them on
+**Platform Admin → Keys** (`/platform/keys`): the value is stored encrypted in
+`platform.platform_keys`, is in use within a minute with no redeploy, and each change is
+recorded in the audit log with a reason. A value saved there is used instead of the
+deployment's variable of the same name; the variable stays the fallback until you remove it.
+
+| Set on the Keys page | Stays in the deployment, and why |
+|---|---|
+| `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_WEBHOOK_SECRET`, `EMAIL_INBOUND_WEBHOOK_SECRET` | `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`: needed to reach the database the keys are stored in |
+| `WORKSLAKE_GATEWAY_URL`, `WORKSLAKE_GATEWAY_API_KEY` | `API_KEY_ENCRYPTION_SECRET`: encrypts every stored key, so it is kept apart from them |
+| `CRM_WHATSAPP_APP_SECRET`, `CRM_WHATSAPP_WEBHOOK_VERIFY_TOKEN`, `CRM_META_APP_SECRET`, `CRM_META_WEBHOOK_VERIFY_TOKEN` | `CRON_SECRET`: the hosting provider's scheduler sends it itself and reads it only from the deployment |
+| `PLATFORM_AI_API_KEY` → the **AI Providers** page (its own encrypted store, tested against the provider) | `BASE_APP_HOST`, `ORG_ADDRESS_REQUIRED`: read on every request before the database |
+| | `PLATFORM_ADMIN_EMAILS`: who may open the portal, kept outside it |
+
+**Moving an existing deployment over:** open the Keys page and press **Import from
+deployment**. The server copies each value the deployment sets, and the platform does not
+have yet, into the encrypted store (the AI key is tested and its provider switched on). No
+value is shown or leaves the server. The page then lists which deployment variables hold
+the same value as the platform and can be deleted from the hosting dashboard.
+
 None of this is needed by an ordinary business user signing up on an
 existing WonderArk deployment — it's only relevant to whoever operates the
 deployment itself.

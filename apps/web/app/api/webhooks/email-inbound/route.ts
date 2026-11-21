@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { ingestInboundEmail } from "@cofounderai/module-discovery/lib/conversations/ingest-inbound-email";
 import { ingestInboundJobReply } from "@cofounderai/module-fsm/lib/messages/mutations";
 import { secretsEqual } from "@cofounderai/core/lib/timing-safe";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 /**
  * Provider-agnostic inbound email webhook (Epic 9). Point your email provider's
@@ -13,7 +14,7 @@ import { secretsEqual } from "@cofounderai/core/lib/timing-safe";
  * a third-party provider, not a logged-in user.
  */
 export async function POST(request: Request) {
-  const expectedSecret = process.env.EMAIL_INBOUND_WEBHOOK_SECRET;
+  const expectedSecret = await platformKey("EMAIL_INBOUND_WEBHOOK_SECRET");
   const providedSecret = request.headers.get("x-webhook-secret");
   // SEC-3: constant-time -- a plain !== leaks how much of a guessed secret was right.
   if (!secretsEqual(providedSecret, expectedSecret)) {

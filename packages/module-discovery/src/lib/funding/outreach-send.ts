@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render";
 import { prepareOutreachEmail } from "@cofounderai/core/privacy/suppression";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 /**
  * FND-11 — the investor-outreach delivery adapter (§27.3). Uses the same provider and
@@ -18,8 +19,8 @@ export async function deliverInvestorEmail(input: {
   brandName: string;
   websiteUrl: string | null;
 }): Promise<DeliveryResult> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const from = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !from) {
     return { ok: false, provider: "resend", reason: "Email sending isn't configured yet (RESEND_API_KEY and RESEND_FROM_EMAIL)." };
   }

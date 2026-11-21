@@ -7,6 +7,7 @@ import { loadMailboxForSending } from "../campaigns/mailbox";
 import { sendViaSmtp, type SendResult, type SmtpDeps } from "../campaigns/smtp";
 import { sendViaPlatform } from "../messages/send";
 import { messagingRefusal } from "./rules";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 /**
  * DISC-CONS-P0-03.3 / 05.2: every email to a person on an offering's list goes through
@@ -89,8 +90,8 @@ export async function sendLeadEmail(input: {
   const unsubscribeUrl = unsubscribeUrlFor(lead.lead_token);
   const headers = { "List-Unsubscribe": `<${unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" };
   const mailbox = await loadMailboxForSending(lead.workspace_id);
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromAddress = mailbox?.fromEmail ?? process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const fromAddress = mailbox?.fromEmail ?? (await platformKey("RESEND_FROM_EMAIL"));
   if (!mailbox && (!apiKey || !fromAddress)) {
     return { status: "failed", message: "Needs setup: email sending isn't configured yet." };
   }

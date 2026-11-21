@@ -3,6 +3,7 @@ import { renderEmailHtml, renderEmailText } from "../email/render";
 import { BRAND_NAME } from "../lib/brand";
 import { SITE_URL } from "../site";
 import { collectHealthSnapshot, evaluateAlerts, type OpsAlert } from "./platform-health";
+import { platformKey } from "./platform-key-store";
 
 /**
  * PLATFORM-P1-07.4 ("Operational Alerts"): runs the health checks, records each alert
@@ -38,8 +39,8 @@ async function operatorEmails(): Promise<string[]> {
 
 /** Sends one email per opened episode. Returns null when sent, otherwise why it wasn't. */
 async function emailOperators(alert: OpenedAlert, to: string[]): Promise<string | null> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const from = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !from) return "Email isn't configured (RESEND_API_KEY / RESEND_FROM_EMAIL).";
   if (to.length === 0) return "No platform operator has an email address.";
 

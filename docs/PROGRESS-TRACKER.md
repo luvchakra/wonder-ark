@@ -19,19 +19,19 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 630 |
+| ✅ Done | 632 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
 | ⬜ Not started | 0 |
-| **Total** | **713** |
+| **Total** | **715** |
 
 | Backlog | Done | Set aside | Remaining | Total |
 |---|---|---|---|---|
 | [Platform build-out](./plan/04-CLAUDE-CODE-BACKLOG.md) | 74 | 1 | 0 | 75 |
-| [Platform Administration Portal](./plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md) | 129 | 7 | 0 | 136 |
+| [Platform Administration Portal](./plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md) | 131 | 7 | 0 | 138 |
 | [Discovery — offering-centric upgrade](./plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md) | 56 | 1 | 1 | 58 |
 | [Discovery — opportunity intelligence](./plan/08-DISCOVERY-OPPORTUNITY-INTELLIGENCE-BACKLOG.md) | 0 | 30 | 0 | 30 |
 | [Compliance / Finance — global tax](./plan/11-COMPLIANCE-GLOBAL-TAX-BACKLOG.md) | 87 | 41 | 0 | 128 |
@@ -265,7 +265,7 @@ Source: [`docs/plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md`](./plan/09-PLATFORM-ADM
 | ID | Story | Status | Evidence / note |
 |---|---|---|---|
 | `PLATFORM-P0-09.1` | Internal AI Provider Registry | ✅ Done | `apps/web/app/platform/(protected)/ai-providers/actions.ts` +11 |
-| `PLATFORM-P0-09.2` | Secure API Key Storage | ✅ Done | `apps/web/app/platform/(protected)/ai-providers/actions.ts` +9 |
+| `PLATFORM-P0-09.2` | Secure API Key Storage | ✅ Done | `apps/web/app/platform/(protected)/ai-providers/actions.ts` +11 |
 | `PLATFORM-P0-09.3` | Provider Routing | ✅ Done | `apps/web/app/platform/(protected)/ai-feature-policies/page.tsx` +11 |
 | `PLATFORM-P0-09.4` | AI Feature Policies | ✅ Done | `apps/web/app/platform/(protected)/ai-feature-policies/actions.ts` +8 |
 | `PLATFORM-P0-09.5` | AI Usage | ✅ Done | `apps/web/app/platform/(protected)/ai-usage/page.tsx` +2 |
@@ -480,6 +480,8 @@ Source: [`docs/plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md`](./plan/09-PLATFORM-ADM
 |---|---|---|---|
 | `PLATFORM-P1-13.1` | Public Careers pages | ✅ Done | `apps/web/app/(site)/careers/[id]/apply-form.tsx` +27 |
 | `PLATFORM-P1-13.2` | Career-site key | ✅ Done | `apps/web/app/platform/(protected)/careers/actions.ts` +9 |
+| `PLATFORM-P1-14.1` | Platform Keys | ✅ Done | `apps/web/.env.example` +18 |
+| `PLATFORM-P1-14.2` | Import from deployment | ✅ Done | `apps/web/app/platform/(protected)/keys/actions.ts` +4 |
 
 ## Discovery — offering-centric upgrade
 

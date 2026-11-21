@@ -7,6 +7,7 @@ import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render
 import type { Message } from "@cofounderai/core/messages/types";
 import { createClient as createFsmClient } from "../../db/server";
 import { createAdminClient as createFsmAdminClient } from "../../db/admin";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 function coreClient() {
   return createCoreClient({ schema: "core" });
@@ -58,8 +59,8 @@ async function resolveJobParticipantEmails(businessId: string, jobId: string): P
 }
 
 async function sendParticipantNotification(businessId: string, jobId: string, message: Message): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromAddress = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !fromAddress) return; // same documented gap every other Resend-sending mutation in this module has
 
   const emails = await resolveJobParticipantEmails(businessId, jobId);
@@ -88,8 +89,8 @@ export async function sendJobMessage(businessId: string, jobId: string, body: st
   const trimmed = body.trim();
   if (!trimmed) throw new Error("A message body is required.");
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromAddress = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !fromAddress) throw new Error("Email sending isn't configured yet -- set RESEND_API_KEY and RESEND_FROM_EMAIL.");
 
   const toEmail = await resolveJobCustomerEmail(businessId, jobId);

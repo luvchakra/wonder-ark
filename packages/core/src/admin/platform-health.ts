@@ -1,4 +1,5 @@
 import { createAdminClient } from "../db/admin";
+import { platformKey } from "./platform-key-store";
 
 /**
  * PLATFORM-P1-07.1 (System Health), PLATFORM-P1-07.2 (Error Rate), PLATFORM-P1-07.3 (Queue
@@ -270,6 +271,15 @@ export async function collectHealthSnapshot(): Promise<HealthSnapshot> {
   const bucketNames = new Set((buckets.data ?? []).map((b) => b.name));
   const dayAgo = Date.now() - DAY;
 
+  // PLATFORM-P1-14.1: "configured" means on the platform's Keys page or in the deployment.
+  const [resendKey, resendFrom, resendWebhook, whatsappSecret, whatsappToken] = await Promise.all([
+    platformKey("RESEND_API_KEY"),
+    platformKey("RESEND_FROM_EMAIL"),
+    platformKey("RESEND_WEBHOOK_SECRET"),
+    platformKey("CRM_WHATSAPP_APP_SECRET"),
+    platformKey("CRM_WHATSAPP_WEBHOOK_VERIFY_TOKEN"),
+  ]);
+
   return {
     checkedAt: new Date().toISOString(),
     database,
@@ -281,13 +291,13 @@ export async function collectHealthSnapshot(): Promise<HealthSnapshot> {
       last7d: ai7,
     },
     email: {
-      sendConfigured: Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL),
-      statusWebhookConfigured: Boolean(process.env.RESEND_WEBHOOK_SECRET),
+      sendConfigured: Boolean(resendKey && resendFrom),
+      statusWebhookConfigured: Boolean(resendWebhook),
       failed24h: emailFailed24,
       failed7d: emailFailed7,
     },
     whatsapp: {
-      webhookConfigured: Boolean(process.env.CRM_WHATSAPP_APP_SECRET && process.env.CRM_WHATSAPP_WEBHOOK_VERIFY_TOKEN),
+      webhookConfigured: Boolean(whatsappSecret && whatsappToken),
       connections: connectionCounts,
       errors24h: wa24,
       errors7d: wa7,

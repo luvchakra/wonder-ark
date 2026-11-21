@@ -108,6 +108,8 @@ export const PLATFORM_NAV_GROUPS: PlatformNavGroup[] = [
     label: "Integrations",
     links: [
       { href: "/platform/integrations", label: "Integrations" },
+      // PLATFORM-P1-14.1: the platform's own keys and settings, moved off the deployment.
+      { href: "/platform/keys", label: "Keys" },
       // PLATFORM-P1-13.2: the WonderJobs career-site key behind the public /careers pages.
       { href: "/platform/careers", label: "Careers" },
     ],

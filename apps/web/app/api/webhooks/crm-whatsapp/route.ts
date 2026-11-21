@@ -2,6 +2,7 @@ import { NextResponse, after } from "next/server";
 import { verifyMetaSignature, verifyMetaSubscription } from "@cofounderai/module-crm/lib/webhooks/verify-meta-signature";
 import { ingestInboundWhatsAppMessage } from "@cofounderai/module-crm/lib/whatsapp/ingest-inbound-message";
 import { processWhatsAppAutoReply } from "@cofounderai/module-crm/lib/ai/auto-reply";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 /**
  * WhatsApp Business Platform (Cloud API) inbound webhook (docs/design/
@@ -18,7 +19,7 @@ import { processWhatsAppAutoReply } from "@cofounderai/module-crm/lib/ai/auto-re
  */
 
 export async function GET(request: Request) {
-  const verifyToken = process.env.CRM_WHATSAPP_WEBHOOK_VERIFY_TOKEN;
+  const verifyToken = await platformKey("CRM_WHATSAPP_WEBHOOK_VERIFY_TOKEN");
   if (!verifyToken) {
     return NextResponse.json({ error: "Webhook not configured" }, { status: 401 });
   }
@@ -30,7 +31,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const appSecret = process.env.CRM_WHATSAPP_APP_SECRET;
+  const appSecret = await platformKey("CRM_WHATSAPP_APP_SECRET");
   if (!appSecret) {
     return NextResponse.json({ error: "Webhook not configured" }, { status: 401 });
   }

@@ -5,6 +5,7 @@ import { createClient } from "../db/server";
 import { renderEmailHtml, renderEmailText } from "../email/render";
 import { BRAND_NAME } from "../lib/brand";
 import { SITE_URL } from "../site";
+import { platformKey } from "../admin/platform-key-store";
 
 /**
  * RBAC-07..RBAC-17, RBAC-25..RBAC-30 -- people and roles in a business.
@@ -269,8 +270,8 @@ export async function inviteMember(input: z.input<typeof inviteSchema>): Promise
 }
 
 async function sendInvitationEmail(businessId: string, email: string, roleId: string, token: string, message: string | null): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const from = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !from) return false;
   const admin = createAdminClient({ schema: "core" });
   const [{ data: business }, { data: role }] = await Promise.all([

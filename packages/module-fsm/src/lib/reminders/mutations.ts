@@ -2,6 +2,7 @@ import { Resend } from "resend";
 import { createAdminClient as createCoreAdmin } from "@cofounderai/core/db/admin";
 import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render";
 import { createAdminClient as createFsmAdmin } from "../../db/admin";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 const DEFAULT_LEAD_HOURS = 48;
 // How far ahead the scan looks for candidate events -- generous enough that no
@@ -64,8 +65,8 @@ export async function sendDueReminders(): Promise<{ internalSent: number; custom
   if (settingsRes.error) throw settingsRes.error;
 
   const leadHoursByBusiness = new Map(settingsRes.data.map((s) => [s.business_id as string, s.reminder_lead_hours as number]));
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromAddress = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !fromAddress) {
     // Same documented gap every other Resend-sending mutation in this module has --
     // nothing to send without it, and a cron run shouldn't throw over missing config.

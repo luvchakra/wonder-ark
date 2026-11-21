@@ -38,7 +38,7 @@ import { EmailSendForm } from "@cofounderai/module-discovery/components/prospect
 import { PaidLookupButton } from "@cofounderai/module-discovery/components/prospects/paid-lookup-button";
 import { ProspectDetails } from "@cofounderai/module-discovery/components/prospects/prospect-details";
 import { getEnrichmentState, missingEnrichFields } from "@cofounderai/module-discovery/lib/data-sources/enrichment";
-import { isGatewayConfigured } from "@cofounderai/module-discovery/lib/data-sources/workslake-client";
+import { isGatewayReady } from "@cofounderai/module-discovery/lib/data-sources/workslake-client";
 import { BuyerIntelligenceTable } from "@cofounderai/module-discovery/components/prospects/buyer-intelligence-table";
 import { ScoreRagBadge } from "@cofounderai/module-discovery/components/prospects/rag-badge";
 import { FsmHandoffPanel } from "@cofounderai/module-discovery/components/prospects/fsm-handoff-panel";
@@ -353,7 +353,7 @@ export default async function ProspectDetailPage({
   const isCompany = (prospect.kind ?? "company") === "company";
   // DISC-CONS-P0-02.2: a channel's drafts, and its posts kept in marketing content.
   const channelPosts = isCompany ? [] : await listChannelPosts(businessId, prospect.id);
-  const gatewayReady = isGatewayConfigured();
+  const gatewayReady = await isGatewayReady();
   const hasMissingDetails = isCompany && missingEnrichFields(prospect).length > 0;
 
   const [contacts, research, scores, strategy, messages, conversations, researchBrief, buyerIntelligence, watchlistEntry, prospectFeedback, enrichmentState] = await Promise.all([
