@@ -17,6 +17,9 @@ vi.mock("next/headers", () => ({ cookies: async () => cookieStore }));
 const { refuseNonMemberOnOrgAddress } = vi.hoisted(() => ({ refuseNonMemberOnOrgAddress: vi.fn() }));
 vi.mock("../../../lib/org-sign-in-gate", () => ({ refuseNonMemberOnOrgAddress }));
 
+const { mainAddressLanding } = vi.hoisted(() => ({ mainAddressLanding: vi.fn() }));
+vi.mock("../../../lib/sign-in-landing", () => ({ mainAddressLanding }));
+
 const { GET } = await import("./route");
 
 const ORIGIN = "https://app.example.com";
@@ -49,6 +52,27 @@ function path(response: Response): string {
 beforeEach(() => {
   vi.clearAllMocks();
   cookieStore.get.mockReturnValue(undefined);
+  mainAddressLanding.mockResolvedValue("/dashboard");
+});
+
+// PLATFORM-P1-10.16: a social or emailed-link sign-in that asked for no page lands a
+// platform admin on the console; a page that was asked for is left alone.
+describe("GET /auth/callback — where a platform admin lands", () => {
+  it("lands on the console when no page was asked for", async () => {
+    mockAuth();
+    mainAddressLanding.mockResolvedValue("/platform");
+
+    expect(path(await GET(request("?code=one-time-code")))).toBe("/platform");
+    expect(path(await GET(request("?token_hash=abc&type=email")))).toBe("/platform");
+  });
+
+  it("keeps the page that was asked for", async () => {
+    mockAuth();
+    mainAddressLanding.mockResolvedValue("/platform");
+
+    expect(path(await GET(request("?code=one-time-code&next=/reset-password")))).toBe("/reset-password");
+    expect(mainAddressLanding).not.toHaveBeenCalled();
+  });
 });
 
 describe("GET /auth/callback — PKCE code links", () => {

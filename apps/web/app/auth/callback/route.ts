@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { createClient } from "@cofounderai/core/db/server";
 import { safeRedirectPath } from "../../../lib/safe-redirect";
+import { mainAddressLanding } from "../../../lib/sign-in-landing";
 import { refuseNonMemberOnOrgAddress } from "../../../lib/org-sign-in-gate";
 
 /**
@@ -42,6 +43,12 @@ function readableReason(message: string): string {
   return message;
 }
 
+/** PLATFORM-P1-10.16: a sign-in that asked for no particular page lands a platform admin
+ * on the console (main address only). A page that was asked for is left alone. */
+async function landing(supabase: unknown, next: string): Promise<string> {
+  return next === "/dashboard" ? mainAddressLanding(supabase) : next;
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
@@ -67,7 +74,7 @@ export async function GET(request: Request) {
     if (error) return fail(error.message);
     const refused = await refuseNonMemberOnOrgAddress(supabase);
     if (refused) return fail(refused);
-    return NextResponse.redirect(`${origin}${next}`);
+    return NextResponse.redirect(`${origin}${await landing(supabase, next)}`);
   }
 
   if (code) {
@@ -78,7 +85,7 @@ export async function GET(request: Request) {
     // members keep the new session.
     const refused = await refuseNonMemberOnOrgAddress(supabase);
     if (refused) return fail(refused);
-    return NextResponse.redirect(`${origin}${next}`);
+    return NextResponse.redirect(`${origin}${await landing(supabase, next)}`);
   }
 
   return fail("That link is missing its confirmation code. Request a new one.");

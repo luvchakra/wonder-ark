@@ -27,6 +27,8 @@ vi.mock("@cofounderai/core/privacy/legal-acceptance", () => ({ recordSignupAccep
 const gate = vi.hoisted(() => ({ orgAddressClosedReason: vi.fn(), refuseNonMemberOnOrgAddress: vi.fn(), onOrgAddress: vi.fn() }));
 vi.mock("@/lib/org-sign-in-gate", () => ({ orgAddressClosedReason: gate.orgAddressClosedReason, refuseNonMemberOnOrgAddress: gate.refuseNonMemberOnOrgAddress }));
 vi.mock("@/lib/org-host", () => ({ onOrgAddress: gate.onOrgAddress }));
+// The same module as the main-address landing (lib/sign-in-landing.ts) reaches it.
+vi.mock("../../lib/org-host", () => ({ onOrgAddress: gate.onOrgAddress }));
 
 const {
   login,
@@ -127,6 +129,20 @@ describe("login — back to the help page that sent you here", () => {
     mockAuth();
 
     expect(await captureRedirect(() => login(null, form({ email: "a@b.com", password: "pw", next: "/business" })))).toBe("/business");
+  });
+
+  // PLATFORM-P1-10.16: the owner signs in on the main address and lands on the console.
+  it("lands a platform admin on the console when they sign in on the main address", async () => {
+    process.env.PLATFORM_ADMIN_EMAILS = "owner@vendor.example";
+    try {
+      mockAuth({ getUser: vi.fn().mockResolvedValue({ data: { user: { email: "owner@vendor.example" } } }) });
+      expect(await captureRedirect(() => login(null, form({ email: "owner@vendor.example", password: "pw" })))).toBe("/platform");
+
+      mockAuth({ getUser: vi.fn().mockResolvedValue({ data: { user: { email: "member@tenant.example" } } }) });
+      expect(await captureRedirect(() => login(null, form({ email: "member@tenant.example", password: "pw" })))).toBe("/dashboard");
+    } finally {
+      delete process.env.PLATFORM_ADMIN_EMAILS;
+    }
   });
 
   // PLATFORM-P1-10.16: "Platform admin" from an organization's address signs in on the main
