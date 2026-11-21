@@ -454,7 +454,7 @@ Source: [`docs/plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md`](./plan/09-PLATFORM-ADM
 | `PLATFORM-P1-10.13` | Organization Announcements | ✅ Done | `apps/web/app/(dashboard)/layout.tsx` +8 |
 | `PLATFORM-P1-10.14` | Organization Onboarding | ✅ Done | `apps/web/app/(dashboard)/dashboard/actions.ts` +6 |
 | `PLATFORM-P1-10.15` | New Business Lands On Its Own Address | ✅ Done | `apps/web/app/(auth)/actions.test.ts` +4 |
-| `PLATFORM-P1-10.16` | Platform Admin Signs In On The Main Address | ✅ Done | `apps/web/app/(auth)/actions.test.ts` +10 |
+| `PLATFORM-P1-10.16` | Platform Admin Signs In On The Main Address | ✅ Done | `apps/web/app/(auth)/actions.test.ts` +15 |
 | `PLATFORM-P1-10.17` | Separate Variables For Business Admin And Platform Admin | ✅ Done | `packages/core/src/rbac/platform-admin-emails.test.ts` +3 |
 
 ### MCP Server (added 2026-10-14)

@@ -1950,7 +1950,8 @@ Creating a business sends its founder to the new address's sign-in and back to `
 ## PLATFORM-P1-10.16 — Platform Admin Signs In On The Main Address (owner, 2026-11-21)
 
 The main address is the landing page and WonderArk's own console. A platform admin who signs
-in there lands on `/platform` (`/go` sends them; the proxy then asks for the second factor).
+in there lands on `/platform` (the sign-in itself sends them, `mainAddressLanding()`, and so
+does `/go` in landing-only mode; the proxy then asks for the second factor).
 The console's header has **Your business** (`/go?to=business`) and **Sign out**. From any
 organization's address, the avatar menu shows **Platform admin** to an email in
 `PLATFORM_ADMIN_EMAILS`; it leads to the console on the main address, where the person signs

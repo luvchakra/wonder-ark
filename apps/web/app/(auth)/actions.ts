@@ -6,6 +6,7 @@ import { createClient } from "@cofounderai/core/db/server";
 import { recordSignupAcceptance } from "@cofounderai/core/privacy/legal-acceptance";
 import { orgAddressClosedReason, refuseNonMemberOnOrgAddress } from "@/lib/org-sign-in-gate";
 import { onOrgAddress } from "@/lib/org-host";
+import { mainAddressLanding } from "../../lib/sign-in-landing";
 import { signInReturnPath } from "@cofounderai/core/help/access";
 import {
   OAUTH_PROVIDER_LABELS,
@@ -47,7 +48,8 @@ export async function login(
   // back to that page. Only a fixed list qualifies (core/help/access.ts), so the form field
   // can't send anyone anywhere else.
   const back = signInReturnPath(String(formData.get("next") ?? ""));
-  redirect(back ?? ((await onOrgAddress()) ? "/" : "/dashboard"));
+  // PLATFORM-P1-10.16: on the main address a platform admin lands on the console.
+  redirect(back ?? ((await onOrgAddress()) ? "/" : await mainAddressLanding(supabase)));
 }
 
 export async function signup(
