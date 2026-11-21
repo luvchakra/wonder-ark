@@ -211,7 +211,7 @@ test.describe("SEC-PLAT platform administration", () => {
 
   // PLATFORM-P0-01.2: a layout that redirects does not stop its page from rendering, and
   // what the page rendered used to go out in the body of the redirect. Read the raw answer,
-  // without following it: a redirect to the dashboard and nothing else.
+  // without following it: a redirect to the dashboard, with no page in its body.
   test("a tenant owner's request for a /platform page is answered with a redirect and no page", async ({ page }) => {
     await loginAs(page, "ownerA");
     const leaked: string[] = [];
@@ -220,7 +220,8 @@ test.describe("SEC-PLAT platform administration", () => {
       const location = response.headers()["location"] ?? "";
       const body = await response.text();
       const redirected = response.status() >= 300 && response.status() < 400 && new URL(location, "http://x").pathname === "/dashboard";
-      if (!redirected || body.length > 0) leaked.push(`${path} (${response.status()} → ${location || "no redirect"}, ${body.length} bytes)`);
+      // A redirect's body is at most its destination ("/dashboard"): never markup.
+      if (!redirected || body.length > 64 || body.includes("<")) leaked.push(`${path} (${response.status()} → ${location || "no redirect"}, ${body.length} bytes)`);
     }
     expect(leaked, "platform pages that answered a tenant owner with something other than a bare redirect").toEqual([]);
   });
