@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 /**
  * DISC-DATA-P0-02.1/02.2: the WorksLake gateway client -- Discovery's one outside data
@@ -463,6 +464,20 @@ export function isGatewayConfigured(env: NodeJS.ProcessEnv = process.env): boole
   return readGatewayConfig(env) !== null;
 }
 
+/**
+ * PLATFORM-P1-14.1: the two settings as the running application reads them: the values
+ * saved on the Platform Admin portal's Keys page, else the deployment's variables.
+ */
+export async function resolveGatewayConfig(): Promise<GatewayConfig | null> {
+  const [url, key] = await Promise.all([platformKey(GATEWAY_URL_ENV), platformKey(GATEWAY_KEY_ENV)]);
+  return readGatewayConfig({ ...process.env, [GATEWAY_URL_ENV]: url, [GATEWAY_KEY_ENV]: key });
+}
+
+/** Whether the gateway is set up, on the platform or in the deployment. No request is made. */
+export async function isGatewayReady(): Promise<boolean> {
+  return (await resolveGatewayConfig()) !== null;
+}
+
 // ---------------------------------------------------------------------------------------
 // Transport
 // ---------------------------------------------------------------------------------------
@@ -493,7 +508,7 @@ async function request(
   path: string,
   body: unknown,
 ): Promise<GatewayResult<unknown>> {
-  const config = readGatewayConfig();
+  const config = await resolveGatewayConfig();
   if (!config) return failure("needs_setup", "NOT_CONFIGURED", false);
   // A missing or malformed tenant is a bug in the caller, not something to send and let
   // the gateway refuse: every request is counted against a tenant.

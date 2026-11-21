@@ -11,6 +11,7 @@ import { createClient as createFsmClient } from "../../db/server";
 import { generatePortalToken, hashPortalToken, resolvePortalToken } from "../portal-tokens/tokens";
 import type { Opportunity } from "../opportunities/types";
 import type { AddChargeLineInput, UpdateChargeLineInput } from "./types";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 // Untyped like every other `.from(table)` caller against these schemas (Database = any).
 type QueryClient = any;
@@ -273,8 +274,8 @@ export async function sendEstimate(businessId: string, opportunityId: string, es
   const { data: business } = await core.from("businesses").select("name, website").eq("id", businessId).maybeSingle();
   const brandName = business?.name ?? "Your service provider";
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromAddress = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !fromAddress) {
     throw new Error("Email sending isn't configured yet -- set RESEND_API_KEY and RESEND_FROM_EMAIL.");
   }

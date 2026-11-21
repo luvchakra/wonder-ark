@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { helpReturnPath, isHelpPath, signInReturnPath } from "../help/access";
 import { moduleRegistry } from "@cofounderai/module-registry";
 import { MODULE_VIEW_PERMISSION } from "../rbac/module-permissions";
+import { isPlatformAdminEmail } from "../rbac/platform-admin-emails";
 import {
   APP_TOP_SEGMENTS,
   baseAppHost,
@@ -230,6 +231,39 @@ export function findPlatformDisabledModuleForRoute(pathname: string, disabledMod
  * Refreshes the Supabase auth session cookie on every request and enforces the
  * authenticated/unauthenticated route boundary. Called from apps/web/proxy.ts.
  */
+/**
+ * PLATFORM-P0-01.2: who may be served a `/platform` page, decided before any of it renders.
+ *
+ * The portal's layouts check the same two things, but a layout and its page render side by
+ * side: a layout that redirects does not stop the page from fetching and rendering, and what
+ * the page rendered went out in the body of the redirect. So a signed-in person who is not a
+ * SUPERADMIN could read the platform dashboard, and a SUPERADMIN who had not passed the
+ * second factor could read any page. Refusing here means nothing is rendered at all.
+ *
+ * Returns where to send the caller, or null to serve the page. Anything that cannot be
+ * confirmed is a refusal.
+ */
+export async function platformGateRedirect(
+  path: string,
+  claims: { email?: unknown; aal?: unknown },
+  isSuperadminInDatabase: () => Promise<boolean>,
+): Promise<"/dashboard" | "/platform/mfa" | null> {
+  if (path !== "/platform" && !path.startsWith("/platform/")) return null;
+  const email = typeof claims.email === "string" ? claims.email : null;
+  let allowed = isPlatformAdminEmail(email);
+  if (!allowed) {
+    try {
+      allowed = await isSuperadminInDatabase();
+    } catch {
+      allowed = false;
+    }
+  }
+  if (!allowed) return "/dashboard";
+  const onMfaPage = path === "/platform/mfa" || path.startsWith("/platform/mfa/");
+  if (!onMfaPage && claims.aal !== "aal2") return "/platform/mfa";
+  return null;
+}
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
@@ -384,6 +418,34 @@ export async function updateSession(request: NextRequest) {
 
   if (!user) {
     return respond();
+  }
+
+  // PLATFORM-P0-01.2: the vendor console is refused here, before a page of it renders.
+  const platformRedirect = await platformGateRedirect(effectivePath, user, async () => {
+    const platformClient = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      {
+        db: { schema: "platform" },
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll() {},
+        },
+      },
+    );
+    const { data, error } = await platformClient.rpc("is_superadmin");
+    if (error) throw error;
+    return data === true;
+  });
+  if (platformRedirect) {
+    const url = request.nextUrl.clone();
+    url.pathname = platformRedirect;
+    url.search = "";
+    const response = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) => response.cookies.set(cookie));
+    return response;
   }
 
   // A read-only client for the two lookups below -- session cookie refresh is already

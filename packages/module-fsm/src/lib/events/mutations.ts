@@ -5,6 +5,7 @@ import { requireModule } from "@cofounderai/core/licensing/queries";
 import { createClient } from "../../db/server";
 import { reserveJobParts } from "../inventory-integration/mutations";
 import type { CreateEventInput, RescheduleEventInput } from "./types";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 function coreClient() {
   return createCoreClient({ schema: "core" });
@@ -182,8 +183,8 @@ async function tryNotifyCustomerOnTheWay(businessId: string, eventId: string): P
     const { data: business } = await core.from("businesses").select("name, website").eq("id", businessId).maybeSingle();
     const brandName = business?.name ?? "Your service provider";
 
-    const apiKey = process.env.RESEND_API_KEY;
-    const fromAddress = process.env.RESEND_FROM_EMAIL;
+    const apiKey = await platformKey("RESEND_API_KEY");
+    const fromAddress = await platformKey("RESEND_FROM_EMAIL");
     if (!apiKey || !fromAddress) return;
 
     const resend = new Resend(apiKey);

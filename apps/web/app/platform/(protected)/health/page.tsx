@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import {
   ALERT_THRESHOLDS,
-  collectHealthSnapshot,
+  getHealthSnapshot,
   deriveComponents,
   type ComponentStatus,
   type HealthSnapshot,
@@ -146,7 +146,7 @@ function ReleasePanel({ release }: { release: ReleaseInfo }) {
 }
 
 export default async function SystemHealthPage() {
-  const [snapshot, alerts] = await Promise.all([collectHealthSnapshot(), listOpsAlerts()]);
+  const [snapshot, alerts] = await Promise.all([getHealthSnapshot(), listOpsAlerts()]);
   const components = deriveComponents(snapshot);
   const open = alerts.filter((a) => !a.resolvedAt);
   const resolved = alerts.filter((a) => a.resolvedAt);

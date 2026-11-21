@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyMetaSignature, verifyMetaSubscription } from "@cofounderai/module-crm/lib/webhooks/verify-meta-signature";
 import { ingestInboundInstagramComment, ingestInboundSocialMessage } from "@cofounderai/module-crm/lib/social/ingest-inbound-message";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 /**
  * Combined Instagram DM + Facebook Page Messenger webhook (docs/design/
@@ -22,7 +23,7 @@ import { ingestInboundInstagramComment, ingestInboundSocialMessage } from "@cofo
 
 /** Meta's one-time webhook-registration handshake -- see verify-meta-signature.ts. */
 export async function GET(request: Request) {
-  const verifyToken = process.env.CRM_META_WEBHOOK_VERIFY_TOKEN;
+  const verifyToken = await platformKey("CRM_META_WEBHOOK_VERIFY_TOKEN");
   if (!verifyToken) {
     return NextResponse.json({ error: "Webhook not configured" }, { status: 401 });
   }
@@ -58,7 +59,7 @@ type MetaWebhookPayload = {
 };
 
 export async function POST(request: Request) {
-  const appSecret = process.env.CRM_META_APP_SECRET;
+  const appSecret = await platformKey("CRM_META_APP_SECRET");
   if (!appSecret) {
     return NextResponse.json({ error: "Webhook not configured" }, { status: 401 });
   }

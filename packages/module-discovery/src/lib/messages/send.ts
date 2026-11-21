@@ -11,6 +11,7 @@ import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render
 import { prepareOutreachEmail } from "@cofounderai/core/privacy/suppression";
 import { INVALID_ADDRESS_MESSAGE, emailSendCheck, unconfirmedAddressMessage } from "./email-status";
 import type { Message } from "./types";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 /** Sends an approved outbound email via Resend and records the real outcome on the
  * message row (docs/prospects-pipeline-redesign-requirements.md R1/R2) -- status
@@ -107,8 +108,8 @@ export async function sendMessage(
   // Reading it needs the service role (a member cannot read the password); the person's
   // right to send is established by the claim below, which goes through their session.
   const mailbox = await loadMailboxForSending(message.workspace_id);
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromAddress = mailbox?.fromEmail ?? process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const fromAddress = mailbox?.fromEmail ?? (await platformKey("RESEND_FROM_EMAIL"));
   if (!mailbox && (!apiKey || !fromAddress)) {
     throw new Error(
       "Email sending isn't configured yet -- set RESEND_API_KEY and RESEND_FROM_EMAIL.",

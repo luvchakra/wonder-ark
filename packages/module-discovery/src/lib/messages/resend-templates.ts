@@ -1,4 +1,5 @@
 import { Resend } from "resend";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 export type ResendTemplateSummary = { id: string; name: string };
 
@@ -15,8 +16,8 @@ export type ResendTemplateDetail = {
   variables: ResendTemplateVariable[];
 };
 
-function resendClient(): Resend {
-  const apiKey = process.env.RESEND_API_KEY;
+async function resendClient(): Promise<Resend> {
+  const apiKey = await platformKey("RESEND_API_KEY");
   if (!apiKey) {
     throw new Error("Email sending isn't configured yet -- set RESEND_API_KEY.");
   }
@@ -32,7 +33,7 @@ function resendClient(): Resend {
  * same set -- there's no per-workspace template ownership to enforce here.
  */
 export async function listResendTemplates(): Promise<ResendTemplateSummary[]> {
-  const resend = resendClient();
+  const resend = await resendClient();
   const { data, error } = await resend.templates.list();
   if (error) throw new Error(error.message);
   return (data?.data ?? [])
@@ -44,7 +45,7 @@ export async function listResendTemplates(): Promise<ResendTemplateSummary[]> {
  * supplied variable list) right before generating a message from it, so the AI fills in
  * exactly the keys/types Resend will actually substitute at send time. */
 export async function getResendTemplate(templateId: string): Promise<ResendTemplateDetail | null> {
-  const resend = resendClient();
+  const resend = await resendClient();
   const { data, error } = await resend.templates.get(templateId);
   if (error) {
     if (error.name === "not_found") return null;

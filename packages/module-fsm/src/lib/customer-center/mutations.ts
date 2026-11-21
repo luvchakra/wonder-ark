@@ -7,6 +7,7 @@ import { requireModule } from "@cofounderai/core/licensing/queries";
 import { createClient as createFsmClient } from "../../db/server";
 import { generatePortalToken, hashPortalToken, resolveCenterToken } from "../portal-tokens/tokens";
 import { approveEstimateByToken, declineEstimateByToken } from "../estimates/mutations";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 function coreClient() {
   return createCoreClient({ schema: "core" });
@@ -35,8 +36,8 @@ export async function sendCustomerCenterAccess(businessId: string, partyId: stri
   const { data: party } = await core.from("parties").select("email").eq("id", partyId).eq("business_id", businessId).maybeSingle();
   if (!party?.email) throw new Error("No email on file for this customer -- add one before sending Customer Center access.");
 
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromAddress = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !fromAddress) throw new Error("Email sending isn't configured yet -- set RESEND_API_KEY and RESEND_FROM_EMAIL.");
 
   const { data: business } = await core.from("businesses").select("name, website").eq("id", businessId).maybeSingle();

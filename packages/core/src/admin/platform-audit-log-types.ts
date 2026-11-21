@@ -43,7 +43,10 @@ export type AuditResourceType =
   | "organization_profile"
   // PLATFORM-P1-13.2 -- the WonderJobs career-site key saved or cleared, written by
   // platform.set_careers_key()/clear_careers_key() (last four characters only).
-  | "careers_connection";
+  | "careers_connection"
+  // PLATFORM-P1-14.1 -- a platform key set, replaced or removed, written by
+  // platform.set_platform_key()/remove_platform_key() (hint and fingerprint only).
+  | "platform_key";
 
 export type AuditLogEntry = {
   id: string;
@@ -90,6 +93,7 @@ export const AUDIT_RESOURCE_TYPE_OPTIONS: { key: AuditResourceType; label: strin
   { key: "organization_plan", label: "Organization Plan" },
   { key: "organization_profile", label: "Organization Details" },
   { key: "careers_connection", label: "Careers Connection" },
+  { key: "platform_key", label: "Platform Key" },
   { key: "billing_provider", label: "Billing Provider" },
   { key: "billing_settings", label: "Billing Settings" },
   { key: "feature_flag", label: "Feature Flag" },
@@ -132,6 +136,7 @@ const RESOURCE_SEVERITY: Record<Exclude<AuditResourceType, "announcement">, Audi
   organization_plan: "high",
   organization_profile: "normal",
   careers_connection: "high",
+  platform_key: "high",
   billing_provider: "high",
   billing_settings: "high",
   feature_flag: "high",

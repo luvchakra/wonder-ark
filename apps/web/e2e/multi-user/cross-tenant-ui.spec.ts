@@ -209,6 +209,23 @@ test.describe("SEC-PLAT platform administration", () => {
     expect(leaked, "platform pages a tenant owner stayed on").toEqual([]);
   });
 
+  // PLATFORM-P0-01.2: a layout that redirects does not stop its page from rendering, and
+  // what the page rendered used to go out in the body of the redirect. Read the raw answer,
+  // without following it: a redirect to the dashboard, with no page in its body.
+  test("a tenant owner's request for a /platform page is answered with a redirect and no page", async ({ page }) => {
+    await loginAs(page, "ownerA");
+    const leaked: string[] = [];
+    for (const path of [...PLATFORM_PAGES, "/platform/health", "/platform/keys", "/platform/mfa"]) {
+      const response = await page.request.get(path, { maxRedirects: 0 });
+      const location = response.headers()["location"] ?? "";
+      const body = await response.text();
+      const redirected = response.status() >= 300 && response.status() < 400 && new URL(location, "http://x").pathname === "/dashboard";
+      // A redirect's body is at most its destination ("/dashboard"): never markup.
+      if (!redirected || body.length > 64 || body.includes("<")) leaked.push(`${path} (${response.status()} → ${location || "no redirect"}, ${body.length} bytes)`);
+    }
+    expect(leaked, "platform pages that answered a tenant owner with something other than a bare redirect").toEqual([]);
+  });
+
   test("enrolling a second factor does not make a tenant owner a platform admin", async ({ page }) => {
     test.setTimeout(480_000); // 23 full page loads, each waiting out a client-side redirect
     const t = loadTenants();

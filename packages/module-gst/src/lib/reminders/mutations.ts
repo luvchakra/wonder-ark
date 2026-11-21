@@ -7,6 +7,7 @@ import { generateMonthlyPeriods, generateQrmpQuarters, generateFinancialYears, t
 import { gstr1DueDate, gstr3bDueDate, gstr9DueDate, type Gstr1DueDateRuleValue, type Gstr3bDueDateRuleValue, type Gstr9DueDateRuleValue } from "../calendar/due-dates";
 import type { ReturnType as GstReturnType } from "../returns/lifecycle/types";
 import { pendingReminderLeadDays } from "./schedule";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 /**
  * COMPLY-P0-09.3 (Reminder Engine): the cron entry point -- call this from
@@ -160,8 +161,8 @@ async function sendReminderEmail(
   obligation: { returnType: GstReturnType; period: Period; dueDate: string },
   leadDays: number,
 ): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromAddress = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
   // Same documented gap every other Resend-sending mutation in this platform has --
   // nothing to send without it, and a cron run shouldn't throw over missing config.
   if (!apiKey || !fromAddress) return false;

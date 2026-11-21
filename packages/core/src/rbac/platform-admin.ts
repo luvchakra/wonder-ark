@@ -1,4 +1,5 @@
 import { createClient } from "../db/server";
+import { isPlatformAdminEmail } from "./platform-admin-emails";
 
 /**
  * Gate for the platform-admin tools under /dashboard/admin (currently just the demo
@@ -11,20 +12,7 @@ import { createClient } from "../db/server";
  * separated emails, matched case-insensitively). No DB table, no role to manage --
  * matches the original's own reasoning for keeping this a pure env-var check.
  */
-function platformAdminEmails(): string[] {
-  return (process.env.PLATFORM_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-}
-
-/** Pure, side-effect-free check -- for a caller that already has the user's email on
- * hand (e.g. the dashboard layout's own auth.getUser() call) and just needs to decide
- * whether to render the admin nav link. Not itself a security boundary. */
-export function isPlatformAdminEmail(email: string | null | undefined): boolean {
-  const admins = platformAdminEmails();
-  return Boolean(email) && admins.length > 0 && admins.includes(email!.toLowerCase());
-}
+export { isPlatformAdminEmail };
 
 /** The actual security boundary -- every admin server action calls this first, so a
  * non-admin can't reach the seeding/deletion endpoints no matter what the client

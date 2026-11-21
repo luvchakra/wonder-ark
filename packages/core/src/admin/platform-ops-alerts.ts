@@ -1,8 +1,10 @@
 import { createAdminClient } from "../db/admin";
+import { requireSuperadmin } from "../rbac/platform-admin";
 import { renderEmailHtml, renderEmailText } from "../email/render";
 import { BRAND_NAME } from "../lib/brand";
 import { SITE_URL } from "../site";
 import { collectHealthSnapshot, evaluateAlerts, type OpsAlert } from "./platform-health";
+import { platformKey } from "./platform-key-store";
 
 /**
  * PLATFORM-P1-07.4 ("Operational Alerts"): runs the health checks, records each alert
@@ -38,8 +40,8 @@ async function operatorEmails(): Promise<string[]> {
 
 /** Sends one email per opened episode. Returns null when sent, otherwise why it wasn't. */
 async function emailOperators(alert: OpenedAlert, to: string[]): Promise<string | null> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const from = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !from) return "Email isn't configured (RESEND_API_KEY / RESEND_FROM_EMAIL).";
   if (to.length === 0) return "No platform operator has an email address.";
 
@@ -98,10 +100,11 @@ export type OpsAlertRow = {
   notifyError: string | null;
 };
 
-/** Open episodes plus the most recently resolved ones, newest first. Caller must be a
- * superadmin (the /platform layout); read through the service role like the rest of the
+/** Open episodes plus the most recently resolved ones, newest first, to a SUPERADMIN only
+ * (checked here, PLATFORM-P0-01.2); read through the service role like the rest of the
  * health page. */
 export async function listOpsAlerts(limit = 20): Promise<OpsAlertRow[]> {
+  await requireSuperadmin();
   const { data, error } = await createAdminClient({ schema: "platform" })
     .from("ops_alerts")
     .select("id, alert_key, severity, message, opened_at, last_seen_at, resolved_at, notified_at, notify_error")

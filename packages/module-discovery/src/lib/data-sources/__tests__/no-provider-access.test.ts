@@ -116,9 +116,15 @@ describe("no provider access", () => {
   it("only the gateway client reads the gateway's settings", () => {
     const readers = productFiles.filter((path) => /WORKSLAKE_GATEWAY_(URL|API_KEY)/.test(readFileSync(path, "utf8")));
 
-    expect(readers.map((path) => relative(ROOT, path))).toEqual([
-      join("packages", "module-discovery", "src", "lib", "data-sources", "workslake-client.ts"),
-    ]);
+    // PLATFORM-P1-14.1: the two names are also listed in the platform's key registry, so
+    // they can be set on Platform Admin → Keys. The registry is data (labels and names);
+    // the gateway client is still the only code that reads the values and calls the gateway.
+    expect(readers.map((path) => relative(ROOT, path)).sort()).toEqual(
+      [
+        join("packages", "core", "src", "admin", "platform-key-registry.ts"),
+        join("packages", "module-discovery", "src", "lib", "data-sources", "workslake-client.ts"),
+      ].sort(),
+    );
   });
 
   it("no client component imports the gateway client's code", () => {

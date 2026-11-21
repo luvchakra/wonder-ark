@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { ingestSendStatus } from "@cofounderai/module-discovery/lib/messages/ingest-send-status";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 /**
  * Resend delivery-status webhook (docs/prospects-pipeline-redesign-requirements.md
@@ -38,7 +39,7 @@ type ResendWebhookPayload = {
 };
 
 export async function POST(request: Request) {
-  const secret = process.env.RESEND_WEBHOOK_SECRET;
+  const secret = await platformKey("RESEND_WEBHOOK_SECRET");
   if (!secret) {
     return NextResponse.json({ error: "Webhook not configured" }, { status: 401 });
   }

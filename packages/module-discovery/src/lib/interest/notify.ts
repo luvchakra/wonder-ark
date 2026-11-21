@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import { BRAND_NAME } from "@cofounderai/core/lib/brand";
+import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 const NOTIFY_EMAIL = "kunalc.iit@gmail.com";
 
@@ -14,8 +15,8 @@ const NOTIFY_EMAIL = "kunalc.iit@gmail.com";
  * be resent by querying interest_signups directly if needed.
  */
 export async function notifyInterestSignup(email: string): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromAddress = process.env.RESEND_FROM_EMAIL;
+  const apiKey = await platformKey("RESEND_API_KEY");
+  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
   if (!apiKey || !fromAddress) {
     console.error(
       `[interest] RESEND_API_KEY/RESEND_FROM_EMAIL not configured -- skipped notification for ${email}`,

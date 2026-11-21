@@ -12,6 +12,7 @@ const h = vi.hoisted(() => ({
   getClaims: vi.fn(),
   getUser: vi.fn(),
   createServerClient: vi.fn(),
+  rpc: vi.fn(),
 }));
 
 vi.mock("@supabase/ssr", () => ({ createServerClient: h.createServerClient }));
@@ -30,8 +31,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   process.env.NEXT_PUBLIC_SUPABASE_URL = "https://project.supabase.co";
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = "publishable";
+  delete process.env.PLATFORM_ADMIN_EMAILS;
+  h.rpc.mockResolvedValue({ data: false, error: null });
   h.createServerClient.mockReturnValue({
     auth: { getClaims: h.getClaims, getUser: h.getUser },
+    rpc: h.rpc,
     from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null }) }) }) }),
   });
 });
@@ -136,5 +140,82 @@ describe("updateSession — the help guides are signed-in only", () => {
     const response = await updateSession(request("/dashboard"));
 
     expect(response.headers.get("location")).toBe("https://app.example.com/login");
+  });
+});
+
+// PLATFORM-P0-01.2: the portal's layouts redirect too, but a layout does not stop its page
+// from rendering, and the rendered page used to travel in the redirect's body. The refusal
+// has to happen here, before anything renders.
+describe("updateSession — the platform admin portal is refused before it renders", () => {
+  it("sends a signed-in person who is not a superadmin to their dashboard", async () => {
+    signedIn({ sub: "user-1", email: "owner@tenant.example", aal: "aal2" });
+
+    const response = await updateSession(request("/platform"));
+
+    expect(response.status).toBe(307);
+    expect(response.headers.get("location")).toBe("https://app.example.com/dashboard");
+    expect(h.rpc).toHaveBeenCalledWith("is_superadmin");
+  });
+
+  it("refuses every page under /platform the same way, the second-factor page included", async () => {
+    signedIn({ sub: "user-1", email: "owner@tenant.example", aal: "aal1" });
+
+    for (const path of ["/platform/health", "/platform/keys", "/platform/organizations/abc", "/platform/mfa"]) {
+      const response = await updateSession(request(path));
+      expect(response.headers.get("location"), path).toBe("https://app.example.com/dashboard");
+    }
+  });
+
+  it("refuses when the database cannot confirm the role", async () => {
+    signedIn({ sub: "user-1", email: "owner@tenant.example", aal: "aal2" });
+    h.rpc.mockResolvedValue({ data: null, error: { message: "connection refused" } });
+
+    const response = await updateSession(request("/platform"));
+
+    expect(response.headers.get("location")).toBe("https://app.example.com/dashboard");
+  });
+
+  it("sends a superadmin who has not passed the second factor to it, and serves that page", async () => {
+    h.rpc.mockResolvedValue({ data: true, error: null });
+    signedIn({ sub: "admin-1", email: "admin@vendor.example", aal: "aal1" });
+
+    const refused = await updateSession(request("/platform/audit?q=1"));
+    expect(refused.headers.get("location")).toBe("https://app.example.com/platform/mfa");
+
+    const served = await updateSession(request("/platform/mfa"));
+    expect(served.headers.get("location")).toBeNull();
+    expect(served.status).toBe(200);
+  });
+
+  it("serves a superadmin who has passed the second factor", async () => {
+    h.rpc.mockResolvedValue({ data: true, error: null });
+    signedIn({ sub: "admin-1", email: "admin@vendor.example", aal: "aal2" });
+
+    const response = await updateSession(request("/platform/health"));
+
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.status).toBe(200);
+  });
+
+  it("accepts the bootstrap email list without asking the database, and still wants the second factor", async () => {
+    process.env.PLATFORM_ADMIN_EMAILS = "Admin@Vendor.example";
+    signedIn({ sub: "admin-1", email: "admin@vendor.example", aal: "aal2" });
+
+    const served = await updateSession(request("/platform"));
+    expect(served.headers.get("location")).toBeNull();
+    expect(h.rpc).not.toHaveBeenCalled();
+
+    signedIn({ sub: "admin-1", email: "admin@vendor.example", aal: "aal1" });
+    const refused = await updateSession(request("/platform"));
+    expect(refused.headers.get("location")).toBe("https://app.example.com/platform/mfa");
+  });
+
+  it("does not ask who is a superadmin on any other page", async () => {
+    signedIn({ sub: "user-1", email: "owner@tenant.example" });
+
+    await updateSession(request("/dashboard"));
+    await updateSession(request("/platformish"));
+
+    expect(h.rpc).not.toHaveBeenCalled();
   });
 });
