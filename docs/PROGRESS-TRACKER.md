@@ -190,7 +190,7 @@ Source: [`docs/plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md`](./plan/09-PLATFORM-ADM
 | ID | Story | Status | Evidence / note |
 |---|---|---|---|
 | `PLATFORM-P0-01.1` | Create SUPERADMIN Role | ✅ Done | `supabase/migrations/20260911004400_platform_superadmin.sql` |
-| `PLATFORM-P0-01.2` | Platform Authorization | ✅ Done | `apps/web/app/platform/layout.tsx` +2 |
+| `PLATFORM-P0-01.2` | Platform Authorization | ✅ Done | `apps/web/app/platform/layout.tsx` +9 |
 | `PLATFORM-P0-01.3` | Platform Session Context | ✅ Done | `apps/web/app/platform/layout.tsx` |
 | `PLATFORM-P0-01.4` | No Tenant Context Required | ✅ Done | `supabase/migrations/20260911004400_platform_superadmin.sql` |
 

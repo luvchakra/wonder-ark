@@ -1,4 +1,5 @@
 import { createAdminClient } from "../db/admin";
+import { requireSuperadmin } from "../rbac/platform-admin";
 import { renderEmailHtml, renderEmailText } from "../email/render";
 import { BRAND_NAME } from "../lib/brand";
 import { SITE_URL } from "../site";
@@ -99,10 +100,11 @@ export type OpsAlertRow = {
   notifyError: string | null;
 };
 
-/** Open episodes plus the most recently resolved ones, newest first. Caller must be a
- * superadmin (the /platform layout); read through the service role like the rest of the
+/** Open episodes plus the most recently resolved ones, newest first, to a SUPERADMIN only
+ * (checked here, PLATFORM-P0-01.2); read through the service role like the rest of the
  * health page. */
 export async function listOpsAlerts(limit = 20): Promise<OpsAlertRow[]> {
+  await requireSuperadmin();
   const { data, error } = await createAdminClient({ schema: "platform" })
     .from("ops_alerts")
     .select("id, alert_key, severity, message, opened_at, last_seen_at, resolved_at, notified_at, notify_error")

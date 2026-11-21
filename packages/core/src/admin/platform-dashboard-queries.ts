@@ -1,12 +1,14 @@
 import { createAdminClient } from "../db/admin";
+import { requireSuperadmin } from "../rbac/platform-admin";
 
 /**
  * PLATFORM-P0-02: data for the `/platform` control-plane dashboard
  * (docs/plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md §6). Every query here reads across every
  * tenant by design -- the service-role client is correct here (same reasoning
- * `admin/queries.ts`'s own docstring gives), and the only authorization check is
- * `requireSuperadmin()` in `apps/web/app/platform/layout.tsx`, which every `/platform/*`
- * page sits under.
+ * `admin/queries.ts`'s own docstring gives), so every function here checks
+ * `requireSuperadmin()` itself before it reads (PLATFORM-P0-01.2). The layout's check is
+ * not enough on its own: a layout and its page render side by side, so a layout that
+ * redirects does not stop the page from fetching.
  */
 
 export type PlatformOverview = {
@@ -26,6 +28,7 @@ export type PlatformOverview = {
  * `core` prices a license or a plan yet (`core.business_settings.plan` is a free-text
  * label, not a billing entity) -- fabricating a number would be worse than omitting it. */
 export async function getPlatformOverview(): Promise<PlatformOverview> {
+  await requireSuperadmin();
   const supabase = createAdminClient({ schema: "core" });
 
   const [businesses, accountMembers, licenses, aiRuns, apiKeys, rateLimitCounters, failedEvents] =
@@ -89,6 +92,7 @@ export type ConfigHealthItem = {
  * instead of being folded into "configured", since it isn't the platform-wide internal
  * provider registry PLATFORM-P0-09 will add. */
 export async function getConfigurationHealth(): Promise<ConfigHealthItem[]> {
+  await requireSuperadmin();
   const supabase = createAdminClient({ schema: "core" });
   const { count, error } = await supabase
     .from("ai_provider_credentials")
@@ -131,6 +135,7 @@ export type GlobalChange = {
  * PLATFORM-P0-15) once those exist; this does not fabricate a generic events table ahead
  * of that need. */
 export async function getRecentGlobalChanges(limit = 20): Promise<GlobalChange[]> {
+  await requireSuperadmin();
   const supabase = createAdminClient({ schema: "core" });
   const { data: events, error } = await supabase
     .from("license_events")

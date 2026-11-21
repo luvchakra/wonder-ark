@@ -180,6 +180,8 @@ platform-level authorization
 
 Never rely only on hiding navigation.
 
+Never rely only on a layout either (2026-11-21): a layout's redirect does not stop its page from rendering, and the rendered page went out in the redirect's body to a signed-in non-admin. The request proxy now refuses `/platform` before anything renders (`platformGateRedirect()`: not a SUPERADMIN → `/dashboard`; no second factor → `/platform/mfa`), and the dashboard's and health page's service-role reads check `requireSuperadmin()` themselves.
+
 ## PLATFORM-P0-01.3 — Platform Session Context
 
 When a SUPERADMIN enters the portal, the UI must clearly indicate:

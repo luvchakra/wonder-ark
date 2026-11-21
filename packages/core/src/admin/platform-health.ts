@@ -1,4 +1,5 @@
 import { createAdminClient } from "../db/admin";
+import { requireSuperadmin } from "../rbac/platform-admin";
 import { platformKey } from "./platform-key-store";
 
 /**
@@ -13,8 +14,10 @@ import { platformKey } from "./platform-key-store";
  * platform-dashboard-queries.ts gives); `deriveComponents()` and `evaluateAlerts()` are pure
  * so the status and alert rules are unit-tested on their own.
  *
- * Callers authorize: the /platform pages sit under requireSuperadmin() (+ MFA), and the
- * ops-alerts cron checks CRON_SECRET.
+ * Two callers. The health page reads through `getHealthSnapshot()`, which refuses anyone
+ * but a SUPERADMIN itself (PLATFORM-P0-01.2: a page's data is never protected by its layout
+ * alone). The ops-alerts cron, which has no signed-in person, checks CRON_SECRET and calls
+ * `collectHealthSnapshot()`.
  */
 
 const HOUR = 60 * 60 * 1000;
@@ -219,6 +222,13 @@ async function collectQueues(core: Client, platform: Client): Promise<QueueRow[]
   ];
 }
 
+/** The health page's read: a SUPERADMIN only. */
+export async function getHealthSnapshot(): Promise<HealthSnapshot> {
+  await requireSuperadmin();
+  return collectHealthSnapshot();
+}
+
+/** Unchecked: only for a caller that has authorized another way (the cron's CRON_SECRET). */
 export async function collectHealthSnapshot(): Promise<HealthSnapshot> {
   const core = createAdminClient({ schema: "core" });
   const platform = createAdminClient({ schema: "platform" });

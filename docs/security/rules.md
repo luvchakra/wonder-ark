@@ -5,6 +5,7 @@ Rules from the 2026-10-01 security and compliance review (Epic 8 `SEC-*`, Epic 9
 From the 2026-10-01 review (Epic 8 `SEC-*`, Epic 9 `PRIV-*`, `docs/plan/04-CLAUDE-CODE-BACKLOG.md`). Don't reintroduce these.
 
 - `SECURITY DEFINER` functions granted to `authenticated` authorise their own inputs: membership via `core.user_business_ids()`, actor forced to `auth.uid()`. Internal helpers such as `core.append_audit_log()` are `service_role` only (SEC-2).
+- A layout is not a gate (PLATFORM-P0-01.2, 2026-11-21). A layout and its page render side by side, so `redirect()` in a layout does not stop the page from fetching, and what the page rendered goes out in the redirect's body. Refuse in the request proxy (`platformGateRedirect()` in `packages/core/src/db/middleware.ts`) and in the function that reads the data: every service-role read in `packages/core/src/admin/` checks `requireSuperadmin()` itself (`platform-page-data-auth.test.ts` lists the exceptions and why). A page that changes something as it renders (the second-factor page enrols a factor) checks the caller first.
 - Redirect targets from input are paths, never URLs: pass `?next=` through `safeRedirectPath()` (`apps/web/lib/safe-redirect.ts`) (SEC-8). `@evil.example` becomes the host if you glue input onto the origin.
 - Compare secrets with `secretsEqual()` or `bearerTokenMatches()` (`@cofounderai/core/lib/timing-safe`), never `!==` (SEC-3).
 - CI fails on high or critical production advisories; Dependabot proposes fixes (SEC-1, SEC-5).

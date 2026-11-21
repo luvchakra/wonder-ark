@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@cofounderai/core/db/server";
+import { requireSuperadmin } from "@cofounderai/core/rbac/platform-admin";
 import { Card, CardContent, CardHeader, CardTitle } from "@cofounderai/core/ui/card";
 import { MfaVerifyForm } from "./mfa-verify-form";
 
@@ -23,6 +24,14 @@ import { MfaVerifyForm } from "./mfa-verify-form";
  *    factor.
  */
 export default async function PlatformMfaPage() {
+  // PLATFORM-P0-01.2: this page enrols a second factor on the caller's account as it
+  // renders, so it checks who is asking itself. The layout's redirect would not stop it.
+  try {
+    await requireSuperadmin();
+  } catch {
+    redirect("/dashboard");
+  }
+
   const supabase = await createClient();
 
   const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
