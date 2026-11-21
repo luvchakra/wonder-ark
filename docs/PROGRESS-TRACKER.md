@@ -19,19 +19,19 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 632 |
+| ✅ Done | 635 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
 | ⬜ Not started | 0 |
-| **Total** | **715** |
+| **Total** | **718** |
 
 | Backlog | Done | Set aside | Remaining | Total |
 |---|---|---|---|---|
 | [Platform build-out](./plan/04-CLAUDE-CODE-BACKLOG.md) | 74 | 1 | 0 | 75 |
-| [Platform Administration Portal](./plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md) | 131 | 7 | 0 | 138 |
+| [Platform Administration Portal](./plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md) | 134 | 7 | 0 | 141 |
 | [Discovery — offering-centric upgrade](./plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md) | 56 | 1 | 1 | 58 |
 | [Discovery — opportunity intelligence](./plan/08-DISCOVERY-OPPORTUNITY-INTELLIGENCE-BACKLOG.md) | 0 | 30 | 0 | 30 |
 | [Compliance / Finance — global tax](./plan/11-COMPLIANCE-GLOBAL-TAX-BACKLOG.md) | 87 | 41 | 0 | 128 |
@@ -441,7 +441,7 @@ Source: [`docs/plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md`](./plan/09-PLATFORM-ADM
 |---|---|---|---|
 | `PLATFORM-P1-10.1` | Organization Address | ✅ Done | `apps/web/app/(dashboard)/layout.tsx` +12 |
 | `PLATFORM-P1-10.2` | Address Sign-in | ✅ Done | `apps/web/app/(auth)/actions.test.ts` +9 |
-| `PLATFORM-P1-10.3` | Main Address Landing | ✅ Done | `apps/web/app/go/route.ts` +2 |
+| `PLATFORM-P1-10.3` | Main Address Landing | ✅ Done | `apps/web/app/go/route.test.ts` +3 |
 | `PLATFORM-P1-10.4` | Environments | ✅ Done | `packages/core/src/lib/org-address.ts` +1 |
 | `PLATFORM-P1-10.5` | Environment Colours and Switching | ✅ Done | `apps/web/app/(dashboard)/layout.tsx` +3 |
 | `PLATFORM-P1-10.6` | One Plan per Organization | ✅ Done | `packages/core/src/admin/platform-organizations.ts` +3 |
@@ -453,6 +453,9 @@ Source: [`docs/plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md`](./plan/09-PLATFORM-ADM
 | `PLATFORM-P1-10.12` | Organization Details | ✅ Done | `apps/web/app/platform/(protected)/organizations/actions.ts` +4 |
 | `PLATFORM-P1-10.13` | Organization Announcements | ✅ Done | `apps/web/app/(dashboard)/layout.tsx` +8 |
 | `PLATFORM-P1-10.14` | Organization Onboarding | ✅ Done | `apps/web/app/(dashboard)/dashboard/actions.ts` +6 |
+| `PLATFORM-P1-10.15` | New Business Lands On Its Own Address | ✅ Done | `apps/web/app/(auth)/actions.test.ts` +4 |
+| `PLATFORM-P1-10.16` | Platform Admin Signs In On The Main Address | ✅ Done | `apps/web/app/(auth)/actions.test.ts` +10 |
+| `PLATFORM-P1-10.17` | Separate Variables For Business Admin And Platform Admin | ✅ Done | `packages/core/src/rbac/platform-admin-emails.test.ts` +3 |
 
 ### MCP Server (added 2026-10-14)
 

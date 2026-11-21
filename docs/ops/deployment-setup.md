@@ -21,7 +21,8 @@ every variable. Grouped by purpose:
 | BYOK key encryption | `API_KEY_ENCRYPTION_SECRET` — a 32-byte base64 secret; **never rotate this once customers have connected keys**, it makes every stored key permanently undecryptable. It also signs the unsubscribe links in outreach email (outreach won't send without it, and rotating it invalidates links already sent) |
 | Platform-wide AI fallback | `PLATFORM_AI_API_KEY` — optional; lets accounts without their own key still use AI features, against their normal usage caps. A key set on the superadmin portal's **AI Providers** page takes precedence over this variable, and needs no redeploy |
 | Scheduled jobs | `CRON_SECRET` — checked on the background event-drain endpoint |
-| Internal demo-data tool | `PLATFORM_ADMIN_EMAILS` — comma-separated allowlist for `/dashboard/admin` (distinct from the `/platform` superadmin portal) |
+| Platform admins | `PLATFORM_ADMIN_EMAILS` — comma-separated emails that may open the `/platform` portal (WonderArk's own console) and see **Platform admin** in the avatar menu. Signing in on the main address lands them on the portal. They may also use the demo-data tool |
+| Business admins | `BUSINESS_ADMIN_EMAILS` — optional; comma-separated emails that may use only the demo-data tool at `/dashboard/admin`, which acts on any business account. No portal access |
 | CRM channel webhooks | `CRM_META_APP_SECRET`, `CRM_META_WEBHOOK_VERIFY_TOKEN`, `CRM_WHATSAPP_APP_SECRET`, `CRM_WHATSAPP_WEBHOOK_VERIFY_TOKEN` — see the [CRM guide](/help/crm#connecting-a-channel-whatsapp-instagram-facebook) |
 | Organization addresses | `BASE_APP_HOST` — turns on `<prefix>.<host>` addresses (for example `ark.wonderapps.biz`); `ORG_ADDRESS_REQUIRED` — makes the main address the landing page only |
 | Environment payments | `BILLING_TEST_PAYMENTS` — test-mode payments for **Add an environment** |

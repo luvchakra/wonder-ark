@@ -27,13 +27,15 @@ export function helpReturnPath(next: string | null | undefined): string | null {
  * an organization's own address: `/business`, where a business just created from its
  * website is reviewed. Signing in on a new organization's address is the first thing its
  * founder does there (session cookies belong to one address), so creating a business sends
- * them to `<new address>/login?next=/business`. Still a fixed list: `next` can never name
- * another host or an arbitrary page.
+ * them to `<new address>/login?next=/business`. PLATFORM-P1-10.16 adds `/platform`: a
+ * platform admin who follows "Platform admin" from an organization's address signs in on
+ * the main one and lands on the console (the proxy still decides who is served it). Still
+ * a fixed list: `next` can never name another host or an arbitrary page.
  */
-const ORG_RETURN_PAGES = new Set(["/business"]);
+const RETURN_PAGES = new Set(["/business", "/platform"]);
 
 export function signInReturnPath(next: string | null | undefined): string | null {
-  return helpReturnPath(next) ?? (next && ORG_RETURN_PAGES.has(next) ? next : null);
+  return helpReturnPath(next) ?? (next && RETURN_PAGES.has(next) ? next : null);
 }
 
 /** `/login?next=<help page>` for a signed-out visitor who asked for `pathname`. */

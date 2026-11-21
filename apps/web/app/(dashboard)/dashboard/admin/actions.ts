@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@cofounderai/core/db/server";
-import { requirePlatformAdmin } from "@cofounderai/core/rbac/platform-admin";
+import { requireBusinessAdmin } from "@cofounderai/core/rbac/platform-admin";
 import { seedDemoData, deleteDemoData } from "@cofounderai/module-inventory/lib/admin/seed";
 
 function adminPath(userId: string, businessId: string) {
@@ -10,7 +10,7 @@ function adminPath(userId: string, businessId: string) {
 }
 
 export async function seedDemoDataAction(userId: string, businessId: string) {
-  await requirePlatformAdmin();
+  await requireBusinessAdmin();
 
   const supabase = await createClient();
   const {
@@ -23,7 +23,7 @@ export async function seedDemoDataAction(userId: string, businessId: string) {
 }
 
 export async function deleteDemoDataAction(userId: string, businessId: string) {
-  await requirePlatformAdmin();
+  await requireBusinessAdmin();
 
   const result = await deleteDemoData(businessId);
   redirect(`${adminPath(userId, businessId)}&deletedRecords=${result.deletedRecords}&deletedBatches=${result.deletedBatches}`);

@@ -1,29 +1,29 @@
 import { createClient } from "../db/server";
-import { isPlatformAdminEmail } from "./platform-admin-emails";
+import { isBusinessAdminEmail, isPlatformAdminEmail } from "./platform-admin-emails";
 
 /**
- * Gate for the platform-admin tools under /dashboard/admin (currently just the demo
- * seed-data page). Deliberately separate from core.business_members' own role column --
- * those roles are scoped to a single business, while /admin can act across every
- * business on the platform, so it needs its own, narrower gate. Ported from
- * stockpilot-ai-ops's lib/admin-auth.ts.
+ * Gate for the account tools under /dashboard/admin (currently just the demo seed-data
+ * page). Deliberately separate from core.business_members' own role column -- those roles
+ * are scoped to a single business, while /dashboard/admin can act on any business account,
+ * so it needs its own, narrower gate. Ported from stockpilot-ai-ops's lib/admin-auth.ts.
  *
- * Access is controlled purely by the server-side PLATFORM_ADMIN_EMAILS env var (comma-
- * separated emails, matched case-insensitively). No DB table, no role to manage --
- * matches the original's own reasoning for keeping this a pure env-var check.
+ * PLATFORM-P1-10.17: access comes from the server-side BUSINESS_ADMIN_EMAILS variable, or
+ * from PLATFORM_ADMIN_EMAILS (a platform admin may use these tools too). No DB table, no
+ * role to manage. It is not the Platform Administration portal's gate: that is
+ * `requireSuperadmin()` below.
  */
-export { isPlatformAdminEmail };
+export { isBusinessAdminEmail, isPlatformAdminEmail };
 
 /** The actual security boundary -- every admin server action calls this first, so a
  * non-admin can't reach the seeding/deletion endpoints no matter what the client
  * renders. */
-export async function requirePlatformAdmin(): Promise<void> {
+export async function requireBusinessAdmin(): Promise<void> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!isPlatformAdminEmail(user?.email)) {
-    throw new Error("Forbidden: this account does not have platform admin access.");
+  if (!isBusinessAdminEmail(user?.email)) {
+    throw new Error("Forbidden: this account does not have business admin access.");
   }
 }
 

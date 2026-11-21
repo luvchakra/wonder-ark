@@ -43,11 +43,16 @@ export interface ShellUser {
   name: string;
   email: string;
   avatarUrl?: string;
-  /** Gates the account menu's "Admin" link -- a cross-tenant, environment-controlled
-   * gate (PLATFORM_ADMIN_EMAILS), unrelated to any business's own membership/role. Not
-   * itself a security boundary: the /dashboard/admin page and its server actions each
-   * re-check requirePlatformAdmin() regardless of what this renders. */
-  isPlatformAdmin?: boolean;
+  /** Shows the account menu's "Demo data" link: the account tools at /dashboard/admin,
+   * an environment-controlled gate (BUSINESS_ADMIN_EMAILS, or a platform admin),
+   * unrelated to any business's own membership/role. Not itself a security boundary: the
+   * page and its server actions each re-check requireBusinessAdmin(). */
+  isBusinessAdmin?: boolean;
+  /** PLATFORM-P1-10.16: where the account menu's "Platform admin" link leads, set only for
+   * an email in PLATFORM_ADMIN_EMAILS. On an organization's address it is the console's
+   * full address on the main one. Not a security boundary: the proxy and every /platform
+   * read check the caller themselves. */
+  platformAdminUrl?: string | null;
 }
 
 export interface ShellBusiness {

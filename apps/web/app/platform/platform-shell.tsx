@@ -10,6 +10,7 @@ import { WonderArkLogo } from "@cofounderai/core/shell/wonderark-logo";
 import { Badge } from "@cofounderai/core/ui/badge";
 import { cn } from "@cofounderai/core/lib/utils";
 import { PLATFORM_NAV_GROUPS } from "./platform-nav";
+import { signOut } from "../(auth)/actions";
 
 /**
  * PLATFORM-P0-19.1 ("Dedicated Admin Layout", docs/plan/09-PLATFORM-ADMIN-PORTAL-
@@ -68,7 +69,21 @@ export function PlatformShell({
           <span className="text-sm font-semibold tracking-wide">{BRAND_NAME} Platform Administration</span>
           <Badge variant="destructive">SUPERADMIN</Badge>
         </div>
-        {userEmail ? <span className="text-xs text-zinc-400">{userEmail}</span> : null}
+        {/* PLATFORM-P1-10.16: the console had no way out. A platform admin who signs in on
+            the main address lands here, so their own business and sign-out are one tap away. */}
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+          {userEmail ? <span className="text-zinc-400">{userEmail}</span> : null}
+          {/* /go is a route that redirects to another address, not a page to render in place. */}
+          {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+          <a href="/go?to=business" className="font-medium text-zinc-200 underline-offset-4 hover:text-white hover:underline">
+            Your business
+          </a>
+          <form action={signOut}>
+            <button type="submit" className="font-medium text-zinc-200 underline-offset-4 hover:text-white hover:underline">
+              Sign out
+            </button>
+          </form>
+        </div>
       </header>
 
       <div className="flex flex-1">

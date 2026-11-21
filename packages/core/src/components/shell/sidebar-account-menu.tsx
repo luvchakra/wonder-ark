@@ -2,7 +2,7 @@
 
 import { useRef, useState } from "react";
 import Link from "next/link";
-import { BarChart3, ChevronsUpDown, CreditCard, LifeBuoy, LogOut, Shield, ShieldCheck, SunMoon, User } from "lucide-react";
+import { BarChart3, ChevronsUpDown, CreditCard, Database, LifeBuoy, LogOut, Shield, ShieldCheck, SunMoon, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage, avatarToneClass } from "../ui/avatar";
 import { SubmitButton } from "../ui/submit-button";
 import { useDismiss } from "../../hooks/use-dismiss";
@@ -123,9 +123,9 @@ export function SidebarAccountMenu({
           </Link>
 
           {/* Labelled for what it actually is rather than "Admin" a second time -- this
-              is the env-gated platform tool at /dashboard/admin, whose own page is
+              is the env-gated account tool at /dashboard/admin, whose own page is
               titled "Demo data", not the Admin row above it. */}
-          {user.isPlatformAdmin ? (
+          {user.isBusinessAdmin ? (
             <Link
               href="/dashboard/admin"
               role="menuitem"
@@ -135,9 +135,27 @@ export function SidebarAccountMenu({
               }}
               className="flex items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
             >
-              <ShieldCheck className="size-4 text-muted-foreground" aria-hidden="true" />
+              <Database className="size-4 text-muted-foreground" aria-hidden="true" />
               Demo data
             </Link>
+          ) : null}
+
+          {/* PLATFORM-P1-10.16: WonderArk's own console. A plain anchor, not a Link: from
+              an organization's address it is on another host, where the person signs in
+              again (a session belongs to one address). */}
+          {user.platformAdminUrl ? (
+            <a
+              href={user.platformAdminUrl}
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                onNavigate();
+              }}
+              className="flex items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
+            >
+              <ShieldCheck className="size-4 text-muted-foreground" aria-hidden="true" />
+              Platform admin
+            </a>
           ) : null}
 
           <div className="my-1 border-t" />

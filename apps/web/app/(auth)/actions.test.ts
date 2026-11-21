@@ -129,10 +129,18 @@ describe("login — back to the help page that sent you here", () => {
     expect(await captureRedirect(() => login(null, form({ email: "a@b.com", password: "pw", next: "/business" })))).toBe("/business");
   });
 
+  // PLATFORM-P1-10.16: "Platform admin" from an organization's address signs in on the main
+  // one and lands on the console's front page. The proxy still decides who is served it.
+  it("returns to the console's front page when sign-in was asked for from it", async () => {
+    mockAuth();
+
+    expect(await captureRedirect(() => login(null, form({ email: "a@b.com", password: "pw", next: "/platform" })))).toBe("/platform");
+  });
+
   it("ignores a `next` that isn't a help page", async () => {
     mockAuth();
 
-    for (const next of ["https://evil.example", "//evil.example", "/platform", "/help/../platform", "/business/../platform", "/business/x", "//business"]) {
+    for (const next of ["https://evil.example", "//evil.example", "/platform/keys", "/help/../platform", "/business/../platform", "/business/x", "//business", "//platform"]) {
       expect(await captureRedirect(() => login(null, form({ email: "a@b.com", password: "pw", next }))), next).toBe("/dashboard");
     }
   });
