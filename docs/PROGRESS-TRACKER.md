@@ -605,7 +605,7 @@ Source: [`docs/plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md`](./plan/10-DISCOVE
 | `DISC-OFFER-P0-09.1` | Website URL Business Onboarding | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/actions.ts` +10 |
 | `DISC-OFFER-P0-09.2` | Website Crawl & Content Discovery | ✅ Done | `packages/module-discovery/src/components/website-onboarding/website-onboarding-panel.tsx` +16 |
 | `DISC-OFFER-P0-09.3` | AI Offering Extraction | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/actions.ts` +11 |
-| `DISC-OFFER-P0-09.4` | Offering Review Before Activation | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/actions.ts` +7 |
+| `DISC-OFFER-P0-09.4` | Offering Review Before Activation | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/actions.ts` +9 |
 
 ### P0 EPIC — One-Click Autonomous Offering Discovery
 
