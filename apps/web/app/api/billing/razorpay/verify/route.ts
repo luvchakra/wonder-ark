@@ -32,7 +32,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing payment details" }, { status: 400 });
   }
 
-  const valid = verifyRazorpayPaymentSignature(body.razorpayOrderId, body.razorpayPaymentId, body.razorpaySignature);
+  const valid = await verifyRazorpayPaymentSignature(body.razorpayOrderId, body.razorpayPaymentId, body.razorpaySignature);
   if (!valid) return NextResponse.json({ error: "Invalid payment signature" }, { status: 400 });
 
   // The signature proves a payment against *this order* -- so the purchase credited is

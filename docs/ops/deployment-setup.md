@@ -17,7 +17,7 @@ every variable. Grouped by purpose:
 | Branding | `NEXT_PUBLIC_BRAND_NAME` (defaults to "WonderArk") |
 | Outbound email | `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `RESEND_WEBHOOK_SECRET` |
 | Inbound email | `EMAIL_INBOUND_WEBHOOK_SECRET` |
-| AI credit purchases | `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` — optional; leaving these unset just disables the "buy credits" flow |
+| AI credit purchases | Not needed: buying credits uses Razorpay's keys saved on **Platform Admin → Billing → Providers**. `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `RAZORPAY_WEBHOOK_SECRET` are only a fallback |
 | BYOK key encryption | `API_KEY_ENCRYPTION_SECRET` — a 32-byte base64 secret; **never rotate this once customers have connected keys**, it makes every stored key permanently undecryptable. It also signs the unsubscribe links in outreach email (outreach won't send without it, and rotating it invalidates links already sent) |
 | Platform-wide AI fallback | `PLATFORM_AI_API_KEY` — optional; lets accounts without their own key still use AI features, against their normal usage caps. A key set on the superadmin portal's **AI Providers** page takes precedence over this variable, and needs no redeploy |
 | Scheduled jobs | `CRON_SECRET` — checked on the background event-drain endpoint |
@@ -162,3 +162,19 @@ People who sign in with Microsoft or LinkedIn are treated like those who use
 Google: a first sign-in creates the account and lands on the dashboard
 (an invitee goes back to their invitation), and there is no password
 on the account until they set one through **Forgot password?**.
+
+## What must stay in Vercel (2026-11-21)
+
+Everything else is set on the Platform Admin portal (Keys, AI Providers, Billing → Providers, Careers). Eight variables stay, each because the portal cannot hold it:
+
+| Variable | Why it stays |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Where the database is; built into the browser's pages |
+| `SUPABASE_SERVICE_ROLE_KEY` | The key the server reads the portal's saved keys with |
+| `API_KEY_ENCRYPTION_SECRET` | Decrypts every saved key; kept apart from the database it protects |
+| `CRON_SECRET` | Vercel's scheduler sends it with each scheduled job and reads it only from here |
+| `BASE_APP_HOST`, `ORG_ADDRESS_REQUIRED` | Read on every request before the database, to tell an organization's address from the main one |
+| `PLATFORM_ADMIN_EMAILS` | Who may open the portal; kept outside it so a mistake there cannot lock everyone out |
+
+`BUSINESS_ADMIN_EMAILS` is optional. Vercel sets `VERCEL_URL` and `VERCEL_PROJECT_PRODUCTION_URL` itself.
+
