@@ -1,9 +1,9 @@
 /**
  * DISC-OFFER-P0-09.2's own "Respect access/robots restrictions." A minimal, standards-
- * enough robots.txt reader -- no new dependency (CLAUDE.md dev principle #2): this only
- * ever needs a flat list of `Disallow` prefixes for one user-agent group, not the full
- * spec (crawl-delay, sitemap directives, wildcard/`$` path matching are all out of scope
- * for a same-domain crawl bounded to a handful of pages).
+ * enough robots.txt reader -- no new dependency (CLAUDE.md dev principle #2): one
+ * user-agent group's Allow and Disallow rules, with RFC 9309's matching (`*`, `$`, longest
+ * match wins, Allow wins ties). Crawl-delay and sitemap directives are out of scope for a
+ * same-domain crawl bounded to a handful of pages.
  *
  * Parsing itself (parseRobotsTxt/isPathAllowed) is pure and deterministic (dev principle
  * #4); fetchRobotsRules is the one network-touching, best-effort wrapper around it.
@@ -11,19 +11,24 @@
 
 const AGENT_TOKEN = "cofounderai";
 
-export type RobotsRules = { disallow: string[] };
+/**
+ * DISC-OFFER-P0-09.4: one group's rules, Allow as well as Disallow. The first reader kept
+ * only Disallow lines, so a site that blocks everything except its front page
+ * (`Allow: /$` then `Disallow: /`, a common shape that lets link previews and search see
+ * the homepage) read as blocked outright, and "Let AI Auto-Populate Info" refused a site
+ * that allows exactly the page it reads first.
+ */
+export type RobotsRules = { allow: string[]; disallow: string[] };
 
 /**
- * Parses robots.txt into the effective Disallow list for our own agent -- falling back to
- * the wildcard `User-agent: *` group when no group names our own token specifically (the
- * overwhelming common case). Groups are separated by `User-agent:` lines; only `Disallow`
- * lines are read (an `Allow` override is a corner case this minimal reader doesn't need to
- * get exactly right for a same-domain, human-curated-looking page list).
+ * Parses robots.txt into the rules for our own agent (RFC 9309): the groups that name our
+ * token, merged, or else the wildcard `User-agent: *` groups, merged. Consecutive
+ * `User-agent:` lines share the rules that follow them.
  */
 export function parseRobotsTxt(text: string, agentToken: string = AGENT_TOKEN): RobotsRules {
   const lines = text.split(/\r?\n/).map((line) => line.replace(/#.*$/, "").trim());
 
-  type Group = { agents: string[]; disallow: string[] };
+  type Group = { agents: string[]; allow: string[]; disallow: string[] };
   const groups: Group[] = [];
   let current: Group | null = null;
 
@@ -35,29 +40,51 @@ export function parseRobotsTxt(text: string, agentToken: string = AGENT_TOKEN): 
     const value = rest.join(":").trim();
 
     if (key === "user-agent") {
-      if (!current || current.disallow.length > 0) {
-        current = { agents: [value.toLowerCase()], disallow: [] };
+      if (!current || current.allow.length > 0 || current.disallow.length > 0) {
+        current = { agents: [value.toLowerCase()], allow: [], disallow: [] };
         groups.push(current);
       } else {
         current.agents.push(value.toLowerCase());
       }
     } else if (key === "disallow" && current) {
       if (value) current.disallow.push(value);
+    } else if (key === "allow" && current) {
+      if (value) current.allow.push(value);
     }
   }
 
-  const named = groups.find((g) => g.agents.some((a) => a !== "*" && agentToken.toLowerCase().includes(a)));
-  if (named) return { disallow: named.disallow };
-
-  const wildcard = groups.find((g) => g.agents.includes("*"));
-  return { disallow: wildcard?.disallow ?? [] };
+  const token = agentToken.toLowerCase();
+  const merge = (picked: Group[]): RobotsRules => ({
+    allow: picked.flatMap((g) => g.allow),
+    disallow: picked.flatMap((g) => g.disallow),
+  });
+  const named = groups.filter((g) => g.agents.some((a) => a !== "*" && token.includes(a)));
+  if (named.length > 0) return merge(named);
+  return merge(groups.filter((g) => g.agents.includes("*")));
 }
 
-/** True unless `path` starts with one of the disallowed prefixes -- the same simple
- * prefix-match rule robots.txt's own spec defines for a plain (non-wildcard) Disallow
- * value, which is all `parseRobotsTxt` ever collects. */
+/** How much of `path` a rule matches, or -1: `*` matches any run of characters and a
+ * trailing `$` anchors the end, as RFC 9309 defines. The length is the rule's own, which
+ * is how the most specific rule is chosen. */
+function matchLength(rule: string, path: string): number {
+  const anchored = rule.endsWith("$");
+  const body = anchored ? rule.slice(0, -1) : rule;
+  const pattern = body
+    .split("*")
+    .map((part) => part.replace(/[.+?^${}()|[\]\\]/g, "\\$&"))
+    .join(".*");
+  return new RegExp(`^${pattern}${anchored ? "$" : ""}`).test(path) ? rule.length : -1;
+}
+
+/** RFC 9309: the matching rule with the longest path wins, and an Allow wins a tie. No
+ * matching rule allows. `/robots.txt` itself is always allowed. */
 export function isPathAllowed(rules: RobotsRules, path: string): boolean {
-  return !rules.disallow.some((prefix) => prefix !== "" && path.startsWith(prefix));
+  if (path === "/robots.txt") return true;
+  let allowAt = -1;
+  for (const rule of rules.allow) allowAt = Math.max(allowAt, matchLength(rule, path));
+  let disallowAt = -1;
+  for (const rule of rules.disallow) disallowAt = Math.max(disallowAt, matchLength(rule, path));
+  return disallowAt < 0 || allowAt >= disallowAt;
 }
 
 /**
@@ -72,9 +99,9 @@ export async function fetchRobotsRules(origin: string): Promise<RobotsRules> {
       signal: AbortSignal.timeout(5000),
       headers: { "User-Agent": "Mozilla/5.0 (compatible; CofounderAI-Onboarding/1.0)" },
     });
-    if (!response.ok) return { disallow: [] };
+    if (!response.ok) return { allow: [], disallow: [] };
     return parseRobotsTxt(await response.text());
   } catch {
-    return { disallow: [] };
+    return { allow: [], disallow: [] };
   }
 }
