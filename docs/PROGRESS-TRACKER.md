@@ -19,19 +19,19 @@ file is stale, so it cannot quietly drift out of date.
 
 | | Stories |
 |---|---|
-| ✅ Done | 635 |
+| ✅ Done | 636 |
 | 🟡 In progress | 0 |
 | ⏸️ Deferred | 52 |
 | 🔁 Superseded | 30 |
 | ❔ Unverified | 1 |
 | ⛔ Blocked | 0 |
 | ⬜ Not started | 0 |
-| **Total** | **718** |
+| **Total** | **719** |
 
 | Backlog | Done | Set aside | Remaining | Total |
 |---|---|---|---|---|
 | [Platform build-out](./plan/04-CLAUDE-CODE-BACKLOG.md) | 74 | 1 | 0 | 75 |
-| [Platform Administration Portal](./plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md) | 134 | 7 | 0 | 141 |
+| [Platform Administration Portal](./plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md) | 135 | 7 | 0 | 142 |
 | [Discovery — offering-centric upgrade](./plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md) | 56 | 1 | 1 | 58 |
 | [Discovery — opportunity intelligence](./plan/08-DISCOVERY-OPPORTUNITY-INTELLIGENCE-BACKLOG.md) | 0 | 30 | 0 | 30 |
 | [Compliance / Finance — global tax](./plan/11-COMPLIANCE-GLOBAL-TAX-BACKLOG.md) | 87 | 41 | 0 | 128 |
@@ -485,6 +485,7 @@ Source: [`docs/plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md`](./plan/09-PLATFORM-ADM
 | `PLATFORM-P1-13.2` | Career-site key | ✅ Done | `apps/web/app/platform/(protected)/careers/actions.ts` +9 |
 | `PLATFORM-P1-14.1` | Platform Keys | ✅ Done | `apps/web/.env.example` +18 |
 | `PLATFORM-P1-14.2` | Import from deployment | ✅ Done | `apps/web/app/platform/(protected)/keys/actions.ts` +4 |
+| `PLATFORM-P1-14.3` | Minimum Deployment Variables | ✅ Done | `packages/core/src/billing/razorpay.test.ts` +1 |
 
 ## Discovery — offering-centric upgrade
 
