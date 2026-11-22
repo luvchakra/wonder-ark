@@ -69,7 +69,7 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: s
   {
     id: "prospects",
     label: "Reach",
-    hint: "Your picked prospects: research, score and write to each, or reach many with a campaign.",
+    hint: "Your picked prospects, grouped by what to do next. Work from the top.",
     pages: [
       { slug: "prospects", label: "All" },
       // DISC-CAMP-P0-05.1: outreach campaigns to the offering's prospects.

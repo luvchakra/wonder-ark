@@ -5,18 +5,12 @@ import {
   getProduct,
   getWorkspaceForProduct,
 } from "@cofounderai/module-discovery/lib/tenancy/queries";
-import {
-  countProspectSuggestions,
-  listProspects,
-  listProspectIndustries,
-} from "@cofounderai/module-discovery/lib/prospects/queries";
+import { listProspects } from "@cofounderai/module-discovery/lib/prospects/queries";
 import { listCampaignTasks } from "@cofounderai/module-discovery/lib/campaigns/tasks";
-import { buildTodayList } from "@cofounderai/module-discovery/lib/prospects/today";
 import { TodayList } from "@cofounderai/module-discovery/components/prospects/today-list";
-import type { ProspectStatus } from "@cofounderai/module-discovery/lib/prospects/types";
-import type { ProspectStage } from "@cofounderai/module-discovery/lib/prospects/pipeline";
 import { ProspectToolbarActions } from "@cofounderai/module-discovery/components/prospects/prospect-toolbar-actions";
-import { ProspectsBoard } from "@cofounderai/module-discovery/components/prospects/prospects-board";
+import { ReachList } from "@cofounderai/module-discovery/components/prospects/reach-list";
+import { MoreActions } from "@cofounderai/module-discovery/components/ui/more-actions";
 import { AutoPopulateStepBanner } from "@cofounderai/module-discovery/components/tenancy/auto-populate-step-banner";
 import { AutoPopulateCompleteDialog } from "@cofounderai/module-discovery/components/tenancy/auto-populate-complete-dialog";
 import {
@@ -25,12 +19,11 @@ import {
   bulkResearchAction,
   bulkScoreAction,
   autoDiscoverOneProspectAction,
-  unshortlistProspectsAction,
 } from "./actions";
 import { markTaskDoneAction } from "../campaigns/actions";
 import Link from "next/link";
 import { audienceTypeOf } from "@cofounderai/module-discovery/lib/icp/audience";
-import { countNewSignups, listLeads } from "@cofounderai/module-discovery/lib/audience/leads";
+import { listLeads } from "@cofounderai/module-discovery/lib/audience/leads";
 import { getSignupPage } from "@cofounderai/module-discovery/lib/audience/pages";
 import { defaultConsentText } from "@cofounderai/module-discovery/lib/audience/rules";
 import { PeopleList } from "@cofounderai/module-discovery/components/audience/people-list";
@@ -41,7 +34,6 @@ import { getBusiness } from "@cofounderai/module-discovery/lib/tenancy/queries";
 import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
 import { listCampaignsWithCounts } from "@cofounderai/module-discovery/lib/campaigns/campaigns";
 import CampaignsPage from "../campaigns/page";
-import OpportunitiesPage from "../opportunities/page";
 
 /** DISC-CONS-P0-05.1/05.2: the lists the Prospects tab offers, by who buys the offering. */
 const LIST_LABEL = { companies: "Companies", channels: "Channels", people: "People" } as const;
@@ -49,7 +41,7 @@ type ProspectList = keyof typeof LIST_LABEL;
 
 /** The campaigns in one line, for their section's summary. */
 function campaignsHint(campaigns: { status: string }[]): string {
-  if (campaigns.length === 0) return "No campaigns yet";
+  if (campaigns.length === 0) return "Or email many at once, on a schedule";
   const running = campaigns.filter((campaign) => campaign.status === "active").length;
   return `${campaigns.length} campaign${campaigns.length === 1 ? "" : "s"}${running ? ` · ${running} running` : ""}`;
 }
@@ -88,12 +80,6 @@ export default async function ProspectsPage({
   if (!businessId) notFound();
   const query = await searchParams;
   const {
-    status,
-    industry,
-    search,
-    stage,
-    sort,
-    due,
     imported,
     skipped,
     duplicates,
@@ -109,8 +95,6 @@ export default async function ProspectsPage({
 
   const workspace = await getWorkspaceForProduct(product.id);
   if (!workspace) notFound();
-
-  const sortMode = sort === "stage" || sort === "priority" ? sort : "recent";
 
   // DISC-CONS-P0-05.1: a consumer offering's prospects are channels; one sold to both
   // has companies and channels, one list at a time. A business offering is unchanged.
@@ -130,56 +114,29 @@ export default async function ProspectsPage({
     ? await Promise.all([listLeads(workspace.id), getSignupPage(workspace.id), getBusiness(businessId)])
     : [[], null, null];
 
-  // `search` filters client-side (ProspectsBoard) against this already-fetched list, not
-  // the DB query -- the Advanced fields (status/stage/industry/sort) still need a fresh
-  // server-side fetch, since sort order and stage are computed server-side.
-  // DISC-NAV-P0-01.2: `due=1` is the Today list's "follow-ups due" link.
-  const followUpDue = due === "1";
-  const hasListFilters = Boolean(status || industry || stage || followUpDue);
-  const [prospects, industries, suggestionCount, campaignTasks, campaigns] = await Promise.all([
-    listProspects(
-      workspace.id,
-      {
-        status: (status as ProspectStatus) || undefined,
-        industry: industry || undefined,
-        stage: (stage as ProspectStage) || undefined,
-        followUpDue,
-        kind,
-        shortlisted: true,
-      },
-      sortMode,
-    ),
-    listProspectIndustries(workspace.id),
-    countProspectSuggestions(workspace.id),
+  // DISC-NAV-P0-01.13: the list is a to-do list grouped by what to do next (ReachList), so
+  // it needs no filters or sort; the old filter addresses still open it, unfiltered.
+  const [prospects, campaignTasks, campaigns] = await Promise.all([
+    listProspects(workspace.id, { kind, shortlisted: true }),
     // DISC-CAMP-P0-06.1: the running campaigns' call, WhatsApp and LinkedIn steps that are due.
     listCampaignTasks(workspace.id),
     listCampaignsWithCounts(workspace.id),
   ]);
 
   const basePath = `/${businessSlug}/discovery/offerings/${productId}/prospects`;
-  const hasActiveFilters = Boolean(status || industry || search || stage || sort || followUpDue);
-  const hasAdvancedFilters = Boolean(status || stage || industry || sort || followUpDue);
-
-  // The Today list counts across every prospect of the offering, whatever the list below
-  // is filtered to. Unfiltered, the list just loaded is that set; filtered, it is read
-  // once more without the filters.
-  const today = buildTodayList({
-    prospects: hasListFilters ? await listProspects(workspace.id) : prospects,
-    suggestionCount,
-    prospectsPath: basePath,
-    newSignups: lists.includes("people") ? await countNewSignups(workspace.id) : undefined,
-  });
+  // Campaigns email companies only, so they are offered on the Companies list alone.
+  const showCampaigns = currentList === "companies";
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Prospects</h1>
-        {/* DISC-NAV-P0-01.1: Import and Discover moved to the Find tab; Add is this page's
-            one primary action. */}
-        <div className="flex flex-wrap items-center justify-end gap-2">
-          <ExportMenu exportId="discovery.prospects" businessSlug={businessSlug} params={{ ...query, productId }} />
+        {/* DISC-NAV-P0-01.13: the page's actions are the list's own; adding by hand and the
+            export are rare, so they sit under More. */}
+        <MoreActions>
           <ProspectToolbarActions createAction={createProspectAction.bind(null, businessId, productId, workspace.id)} />
-        </div>
+          <ExportMenu exportId="discovery.prospects" businessSlug={businessSlug} params={{ productId, list: currentList }} />
+        </MoreActions>
       </div>
 
       {lists.length > 1 ? (
@@ -210,14 +167,10 @@ export default async function ProspectsPage({
         </p>
       ) : null}
 
-      <TodayList rows={today} tasks={campaignTasks} taskAction={(enrollmentId) => markTaskDoneAction.bind(null, businessId, productId, enrollmentId)} />
+      {/* DISC-NAV-P0-01.13: the Next line and the list say what to do with prospects; this
+          shows only campaign steps due by hand (calls, WhatsApp, LinkedIn). */}
+      <TodayList rows={[]} tasks={campaignTasks} taskAction={(enrollmentId) => markTaskDoneAction.bind(null, businessId, productId, enrollmentId)} />
 
-
-      {followUpDue ? (
-        <p className="rounded-md border bg-muted p-3 text-sm">
-          Showing prospects with a follow-up due. Clear the filters to see every prospect.
-        </p>
-      ) : null}
 
       <AutoPopulateStepBanner
         step="prospects"
@@ -253,7 +206,7 @@ export default async function ProspectsPage({
       ) : null}
       {query.shortlisted ? (
         <p className="rounded-md border bg-muted p-3 text-sm">
-          Picked {query.shortlisted}. Research, score or add them to a campaign here.
+          Picked {query.shortlisted}. They are below, under what to do next.
         </p>
       ) : null}
       {query.unshortlisted ? (
@@ -283,35 +236,22 @@ export default async function ProspectsPage({
           <PeopleList leads={leads} basePath={`${basePath}/people`} />
         </div>
       ) : (
-      <ProspectsBoard
+      <ReachList
         prospects={prospects}
         basePath={basePath}
-        initialSearch={search ?? ""}
-        status={status ?? ""}
-        stage={stage ?? ""}
-        industry={industry ?? ""}
-        sort={sort ?? "recent"}
-        industries={industries}
-        defaultAdvancedOpen={hasAdvancedFilters}
-        hasActiveFilters={hasActiveFilters}
+        channels={currentList === "channels"}
         bulkResearchAction={bulkResearchAction.bind(null, businessId, productId, workspace.id)}
         bulkScoreAction={bulkScoreAction.bind(null, businessId, productId, workspace.id)}
-        channels={currentList === "channels"}
-        list={currentList}
-        backToSelectAction={unshortlistProspectsAction.bind(null, businessId, productId, workspace.id)}
       />
       )}
 
-      {/* DISC-NAV-P0-01.4/01.9: the Prospects tab's other pages, folded below the list, which is
-          what this tab is for. */}
-      <div className="flex flex-col gap-3">
+      {/* DISC-NAV-P0-01.13: one other way to reach them, many at once: a campaign. Opportunities
+          is no longer a section here; its page keeps its address. */}
+      {showCampaigns ? (
         <SectionFold id="campaigns" title="Campaigns" done={campaigns.some((campaign) => campaign.status === "active")} hint={campaignsHint(campaigns)}>
           <CampaignsPage params={params} />
         </SectionFold>
-        <SectionFold id="opportunities" title="Opportunities" hint="Prospects showing a reason to buy now">
-          <OpportunitiesPage params={params} />
-        </SectionFold>
-      </div>
+      ) : null}
     </div>
   );
 }

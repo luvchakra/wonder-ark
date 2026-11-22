@@ -106,7 +106,7 @@ section to open it.
 |---|---|---|
 | **1 Define** | Who buys it, if not answered yet | **Offering** (definition quality, who buys it, website, description, sources), **Ideal customer** (your ICP and buyer personas) |
 | **2 Find** | Search, what it found under **To review**, and imports under **Imported, to pick** | **Import**, **Automatic discovery** (the AI run, its schedule, saved criteria and definitions), **History** |
-| **3 Reach** | Your picked prospects (Companies, Channels and People chips) | **Campaigns**, **Opportunities** |
+| **3 Reach** | Your picked prospects, grouped by what to do next (Companies, Channels and People chips) | **Campaigns** (Companies list only) |
 | **4 Results** | Performance, and discovery effectiveness once there are opportunities | **Conversions**, **What people say** |
 
 Under the steps, a **Next** line names the one thing to do now, toward new customers, and
@@ -271,32 +271,28 @@ Everything that brings companies in is under the **Find** tab.
 goes straight to **Reach**. A file you import arrives unpicked: it waits on **Find** under
 **Imported, to pick** until you tick the ones you want and press **Pick these**. **Reach**
 holds only picked prospects, as **Companies**, **Channels** or **People** chips when the
-offering has more than one; campaigns reach only those. **Back to Find** unpicks ticked ones.
-A prospect you add by hand with **Add** is already picked.
+offering has more than one. To unpick one, open it and choose **Move back to Find** under
+**More**. A prospect you add by hand (**More** → **Add**) is already picked.
 
-When you tick prospects on **Reach**, the bar offers only what applies: **Research** for
-those not researched yet and **Score** for those researched and not scored. Afterwards it
-says what was done and why any were not.
+### Reach: what to do next
 
-### Today
+**Reach** lists your picked prospects grouped by what to do next, closest to a customer
+first, under the same words as the **Next** line: **Answer replies**, **Follow up with**
+(no reply and no activity for 7 days), **Send ready messages**, **Write to**, **Score**,
+**Research**; then **Waiting for a reply** and **Closed**. The first group is always the
+one the **Next** line names. Tap a prospect to open it at that step. **Research** and
+**Score** groups have one button for the whole group (**Research all**, **Score all**);
+afterwards the page says what was done and why any were not. A fit score shows once a
+prospect is scored, and a search box appears once the list is longer than ten.
 
-**Reach** opens with a short **Today** list of what is waiting for you, counted
-from your own prospects and suggestions:
+On the **Companies** list, **Campaigns** below the list is the other way to reach them:
+email many at once, on a schedule. Campaigns email companies only, so the **Channels** list
+has no Campaigns section and the Next line never suggests one there.
 
-- **Replies waiting for your answer** — prospects whose latest conversation needs a
-  response. **Answer** opens the list filtered to them.
-- **Follow-ups due** — prospects you sent a message to, with no reply and no activity for
-  7 days. **Follow up** opens the list filtered to them.
-- **Suggestions waiting for review** — what a search found and you haven't approved or
-  discarded yet. **Review** opens **To review** under Find.
-
-- **Campaign tasks** — a running campaign's calls, WhatsApp messages and
-  LinkedIn messages that are due, one line per prospect, oldest first and five at a time.
-  Each shows who, the number or page to use, and the draft with that prospect's details
-  filled in. **Mark done** records how it went.
-
-A line appears only when it has something in it. When nothing is waiting, the list says
-so.
+A running campaign's **Call**, **WhatsApp** and **LinkedIn** steps that are due are listed
+at the top of **Reach**, one line per prospect, oldest first and five at a time. Each shows
+who, the number or page to use, and the draft with that prospect's details filled in.
+**Mark done** records how it went. The list appears only when a step is due.
 
 ### A prospect's details and contacts
 
@@ -393,7 +389,6 @@ everyone here signed up on your page or was on a list you imported and confirmed
   something your Ideal user is missing, **Update Ideal user** opens the ideal customer page
   with the suggestion: **Accept** adds it as your edit (the ideal customer goes back to
   draft for you to approve), **Reject** changes nothing.
-- **Today** shows how many new sign-ups haven't been contacted yet.
 
 ### Campaigns
 
@@ -479,11 +474,11 @@ mailbox. Nothing is written or sent until you ask for it.
   is no "delivered" figure: your own mailbox doesn't report delivery. A send whose outcome
   isn't known is shown as failed with "Outcome unknown" and is never sent again
   automatically.
-- A prospect in a running campaign is not also listed under **Follow-ups due** on Today.
+- A prospect in a running campaign is not also listed under **Follow up with** on Reach.
 - **Steps you do yourself.** A **Call**, **WhatsApp** or **LinkedIn** step is never sent or
   dialled by WonderArk. **Write messages** drafts it with the emails: talking points for a
   call, a short message for WhatsApp or LinkedIn, labelled and editable like any other
-  text. When the step is due for a prospect it appears on **Today** with the draft
+  text. When the step is due for a prospect it appears at the top of **Reach** with the draft
   and the phone number or LinkedIn page. A WhatsApp number opens a chat with the draft
   filled in only when it is stored with its country code (starting with "+"); if no
   LinkedIn page is stored, the line says so. Do the step yourself, then press **Mark done**
@@ -502,7 +497,7 @@ messages them first.
 
 ### Opportunities (Today's Opportunities)
 
-The **Opportunities** section of **Prospects** sorts the offering's active opportunities into bins,
+The **Opportunities** page (open it from a prospect's opportunity or its own address) sorts the offering's active opportunities into bins,
 and shows a bin only when it has something in it: **Hot**, **Needs Review**,
 **New**, **Watching** and **Insufficient Evidence**. Each row shows the
 company, score, priority, why the offering fits, why now, the primary contact,

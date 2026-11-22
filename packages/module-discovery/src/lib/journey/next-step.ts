@@ -45,24 +45,47 @@ export type NextStepInput = {
 
 const n = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 
-/** Each group: which prospects, what to call doing it, and the Reach list filter that shows them. */
-const REACH_STEPS: { match: (p: Prospect) => boolean; label: (c: number, channels: boolean) => string; filter: Record<string, string> }[] = [
-  { match: (p) => p.nextAction === "Generate reply", label: (c) => `Answer ${n(c, "reply", "replies")}`, filter: { stage: "replied" } },
-  { match: (p) => isFollowUpDue(p), label: (c) => `Follow up with ${n(c, "prospect", "prospects")}`, filter: { stage: "sent", due: "1" } },
+const noun = (count: number, channels: boolean) => (channels ? n(count, "channel", "channels") : n(count, "prospect", "prospects"));
+
+/** DISC-NAV-P0-01.13: the Reach tasks, closest to a customer first. The Next line names the
+ * first one with prospects in it, and the Reach list shows its prospects under the same words,
+ * in the same order, so the line and the list never disagree. */
+export type ReachTaskId = "answer" | "follow-up" | "send" | "write" | "score" | "research";
+export const REACH_TASKS: { id: ReachTaskId; match: (p: Prospect) => boolean; label: (c: number, channels: boolean) => string }[] = [
+  { id: "answer", match: (p) => p.nextAction === "Generate reply", label: (c) => `Answer ${n(c, "reply", "replies")}` },
+  { id: "follow-up", match: (p) => isFollowUpDue(p), label: (c, channels) => `Follow up with ${noun(c, channels)}` },
+  { id: "send", match: (p) => p.nextAction === "Review message" || p.nextAction === "Retry send", label: (c) => `Send ${n(c, "ready message", "ready messages")}` },
   {
-    match: (p) => p.nextAction === "Review message" || p.nextAction === "Retry send",
-    label: (c) => `Send ${n(c, "ready message", "ready messages")}`,
-    filter: { stage: "messaged" },
-  },
-  {
+    id: "write",
     match: (p) => p.nextAction === "Generate strategy" || p.nextAction === "Approve strategy" || p.nextAction === "Generate message",
-    label: (c, channels) => (channels ? `Write to ${n(c, "channel", "channels")}` : `Write to ${n(c, "prospect", "prospects")}`),
-    // These sit at two stages (scored, strategized); the list ordered by next action shows them first.
-    filter: { sort: "priority" },
+    label: (c, channels) => `Write to ${noun(c, channels)}`,
   },
-  { match: (p) => p.nextAction === "Score", label: (c) => `Score ${n(c, "prospect", "prospects")}`, filter: { stage: "researched" } },
-  { match: (p) => p.nextAction === "Research", label: (c) => `Research ${n(c, "prospect", "prospects")}`, filter: { stage: "new" } },
+  { id: "score", match: (p) => p.nextAction === "Score", label: (c, channels) => `Score ${noun(c, channels)}` },
+  { id: "research", match: (p) => p.nextAction === "Research", label: (c, channels) => `Research ${noun(c, channels)}` },
 ];
+
+export type ReachGroup<T> = { id: ReachTaskId | "waiting" | "closed"; title: string; prospects: T[] };
+
+/** The Reach list, grouped by what to do next. Each prospect sits in the first task it
+ * matches; the rest are waiting for a reply, or closed. */
+export function reachGroups<T extends Prospect>(prospects: T[]): ReachGroup<T>[] {
+  const left = new Set(prospects);
+  const take = (match: (p: T) => boolean) => {
+    const hit = [...left].filter(match);
+    for (const p of hit) left.delete(p);
+    return hit;
+  };
+  const groups: ReachGroup<T>[] = [];
+  for (const task of REACH_TASKS) {
+    const hit = take(task.match);
+    if (hit.length) groups.push({ id: task.id, title: task.label(hit.length, hit.every((p) => p.kind === "channel")), prospects: hit });
+  }
+  const closed = take((p) => p.stage === "closed");
+  const waiting = [...left];
+  if (waiting.length) groups.push({ id: "waiting", title: `Waiting for a reply (${waiting.length})`, prospects: waiting });
+  if (closed.length) groups.push({ id: "closed", title: `Closed (${closed.length})`, prospects: closed });
+  return groups;
+}
 
 export function nextStep(input: NextStepInput): NextStep {
   const { basePath } = input;
@@ -70,16 +93,17 @@ export function nextStep(input: NextStepInput): NextStep {
   if (input.icpStatus === null) return { step: "define", label: "Define your ideal customer", href: `${basePath}/icp` };
   if (input.icpStatus === "draft") return { step: "define", label: "Approve your ideal customer", href: `${basePath}/icp` };
 
-  for (const group of REACH_STEPS) {
-    const matched = input.picked.filter(group.match);
+  for (const task of REACH_TASKS) {
+    const matched = input.picked.filter(task.match);
     if (matched.length === 0) continue;
     const channels = matched.every((p) => p.kind === "channel");
     if (matched.length === 1) {
       const only = matched[0]!;
       const anchor = only.nextAction ? NEXT_ACTION_ANCHOR[only.nextAction] : undefined;
-      return { step: "reach", label: group.label(1, channels), href: `${basePath}/prospects/${only.id}${anchor ? `#${anchor}` : ""}` };
+      return { step: "reach", label: task.label(1, channels), href: `${basePath}/prospects/${only.id}${anchor ? `#${anchor}` : ""}` };
     }
-    return { step: "reach", label: group.label(matched.length, channels), href: `${basePath}/prospects?${new URLSearchParams(group.filter)}` };
+    // The Reach list's group with the same title; channels are their own list.
+    return { step: "reach", label: task.label(matched.length, channels), href: `${basePath}/prospects${channels ? "?list=channels" : ""}#reach-${task.id}` };
   }
 
   if (input.suggestionCount > 0) {
@@ -89,7 +113,10 @@ export function nextStep(input: NextStepInput): NextStep {
     return { step: "find", label: `Pick from ${n(input.waitingToPick, "imported prospect", "imported prospects")}`, href: `${basePath}/prospects/discover#to-pick` };
   }
   if (input.picked.length === 0) return { step: "find", label: "Find prospects", href: `${basePath}/prospects/discover` };
-  if (!input.hasCampaign) return { step: "reach", label: "Start a campaign to reach them all", href: `${basePath}/prospects#campaigns` };
+  // Campaigns email companies only, so a channel-only list is never told to start one.
+  if (!input.hasCampaign && input.picked.some((p) => (p.kind ?? "company") === "company")) {
+    return { step: "reach", label: "Start a campaign to reach them all", href: `${basePath}/prospects#campaigns` };
+  }
   return { step: "find", label: "Find more prospects", href: `${basePath}/prospects/discover` };
 }
 
