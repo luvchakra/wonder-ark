@@ -15,7 +15,7 @@ export default async function OfferingPage({
   searchParams,
 }: {
   params: Promise<{ businessSlug: string; productId: string }>;
-  searchParams: Promise<{ open?: string; suggest?: string; autorun?: string; approved?: string; duplicates?: string }>;
+  searchParams: Promise<{ open?: string; suggest?: string; autorun?: string; approved?: string; duplicates?: string; searched?: string; weekly?: string; searchNote?: string }>;
 }) {
   const { businessSlug, productId } = await params;
   const query = await searchParams;
@@ -30,5 +30,5 @@ export default async function OfferingPage({
   if (!setupDone || query.open || query.suggest || query.autorun) {
     return <SetupView params={params} searchParams={Promise.resolve(query)} />;
   }
-  return <TodoView businessId={businessId} businessSlug={businessSlug} productId={productId} approved={query.approved} duplicates={query.duplicates} />;
+  return <TodoView businessId={businessId} businessSlug={businessSlug} productId={productId} approved={query.approved} duplicates={query.duplicates} searched={query.searched} weekly={query.weekly === "1"} searchNote={query.searchNote} />;
 }

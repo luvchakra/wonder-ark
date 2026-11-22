@@ -2,7 +2,8 @@
 
 import { businessPath } from "@/lib/business-path";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
+import { redirect, unstable_rethrow } from "next/navigation";
+import { runFirstSearch } from "@cofounderai/module-discovery/lib/data-sources/first-search";
 import { generateIcp } from "@cofounderai/module-discovery/lib/ai/generate-icp";
 import {
   updateIcpProfile,
@@ -12,11 +13,11 @@ import {
 } from "@cofounderai/module-discovery/lib/icp/mutations";
 import { invalidateDownstreamStages } from "@cofounderai/module-discovery/lib/pipeline/invalidate";
 import { autoPopulateIcp } from "@cofounderai/module-discovery/lib/ai-approval/auto-populate";
-import { getWorkspaceForProduct } from "@cofounderai/module-discovery/lib/tenancy/queries";
+import { getProduct, getWorkspaceForProduct } from "@cofounderai/module-discovery/lib/tenancy/queries";
 import { runAiAction, type AiActionState } from "@cofounderai/core/actions/ai-action-state";
 import { createBuyerPersona, updateBuyerPersona, deleteBuyerPersona } from "@cofounderai/module-discovery/lib/personas/mutations";
 import type { PersonaPriority, PersonaRole } from "@cofounderai/module-discovery/lib/personas/types";
-import { IDEAL_USER_LIST_FIELDS } from "@cofounderai/module-discovery/lib/icp/audience";
+import { IDEAL_USER_LIST_FIELDS, audienceTypeOf } from "@cofounderai/module-discovery/lib/icp/audience";
 import { acceptThemeSuggestion } from "@cofounderai/module-discovery/lib/audience/themes";
 
 /** DISC-CONS-P0-01.2: the Ideal user's fields, when the form carries them (it marks
@@ -124,12 +125,22 @@ export async function approveIcpAction(
   productId: string,
   icpId: string,
 ) {
-  await approveIcpProfile(icpId);
+  const icp = await approveIcpProfile(icpId);
   revalidatePath(await icpPath(businessId, productId));
-  // DISC-NAV-P0-01.7: approving the ideal customer is the end of that step, so the next
-  // one opens: Find, where prospects matching it are searched for. Called last:
-  // redirect() throws to navigate.
-  redirect(`${await businessPath(businessId)}/discovery/offerings/${productId}/prospects/discover`);
+  // DISC-AUTO-P0-02.1: approving the ideal customer starts the first search for prospects
+  // that match it (and makes a free WorksLake search repeat weekly). What it finds waits on
+  // To do for approval. A search that can't run never blocks the approval: To do says why.
+  let note: string;
+  try {
+    const product = await getProduct(productId);
+    const result = await runFirstSearch(icp.workspace_id, icp, audienceTypeOf(product));
+    note = result.status === "searched" ? `searched=${result.added}${result.weekly ? "&weekly=1" : ""}` : `searchNote=${encodeURIComponent(result.message)}`;
+  } catch (error) {
+    unstable_rethrow(error);
+    note = `searchNote=${encodeURIComponent(`The first search didn't run: ${error instanceof Error ? error.message : "unknown error"}`)}`;
+  }
+  // The offering now opens on To do. Called last: redirect() throws to navigate.
+  redirect(`${await businessPath(businessId)}/discovery/offerings/${productId}?${note}`);
 }
 
 /**

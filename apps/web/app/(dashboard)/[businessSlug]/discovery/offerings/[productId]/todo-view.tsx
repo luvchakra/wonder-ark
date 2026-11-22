@@ -26,12 +26,19 @@ export async function TodoView({
   productId,
   approved,
   duplicates,
+  searched,
+  weekly,
+  searchNote,
 }: {
   businessId: string;
   businessSlug: string;
   productId: string;
   approved?: string;
   duplicates?: string;
+  /** DISC-AUTO-P0-02.1: the first search, run when the ideal customer was approved. */
+  searched?: string;
+  weekly?: boolean;
+  searchNote?: string;
 }) {
   const workspace = await getWorkspaceForProduct(productId);
   if (!workspace) return null;
@@ -54,6 +61,14 @@ export async function TodoView({
         <p role="status" className="rounded-md border bg-muted p-3 text-sm">
           Approved {approved}. {approved === "0" ? "" : "WonderArk is preparing them: research, score and a first message for you to send."}
           {duplicates && duplicates !== "0" ? ` Skipped ${duplicates} already in your prospects.` : ""}
+        </p>
+      ) : null}
+
+      {searched !== undefined || searchNote ? (
+        <p role="status" className="rounded-md border bg-muted p-3 text-sm">
+          {searchNote
+            ? `Ideal customer approved. ${searchNote}`
+            : `Ideal customer approved. The first search found ${searched === "1" ? "1 new prospect" : `${searched} new prospects`} for you to approve${weekly ? "; it runs again every week" : ""}.`}
         </p>
       ) : null}
 
