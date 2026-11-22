@@ -4,7 +4,7 @@
  * the step there is to score them.
  */
 import { describe, expect, it } from "vitest";
-import { nextStep, stepsDone, type NextStepInput } from "./next-step";
+import { nextStep, reachGroups, stepsDone, type NextStepInput } from "./next-step";
 
 const BASE = "/acme/discovery/offerings/o1";
 const p = (id: string, stage: string, nextAction: string | null, extra: Record<string, unknown> = {}) =>
@@ -20,7 +20,7 @@ describe("nextStep", () => {
 
   it("says to score researched channels, as in the owner's report", () => {
     const picked = Array.from({ length: 10 }, (_, i) => p(`c${i}`, "researched", "Score", { kind: "channel" }));
-    expect(nextStep({ ...base, picked })).toEqual({ step: "reach", label: "Score 10 prospects", href: `${BASE}/prospects?stage=researched` });
+    expect(nextStep({ ...base, picked })).toEqual({ step: "reach", label: "Score 10 channels", href: `${BASE}/prospects?list=channels#reach-score` });
   });
 
   it("works on those closest to becoming customers first", () => {
@@ -36,6 +36,27 @@ describe("nextStep", () => {
   it("says write to channels for channels", () => {
     const picked = [p("a", "scored", "Generate strategy", { kind: "channel" }), p("b", "scored", "Generate strategy", { kind: "channel" })];
     expect(nextStep({ ...base, picked }).label).toBe("Write to 2 channels");
+  });
+
+  // DISC-NAV-P0-01.13
+  it("never suggests a campaign for channels, which campaigns can't email", () => {
+    expect(nextStep({ ...base, picked: [p("a", "sent", null, { kind: "channel" })] })).toMatchObject({ label: "Find more prospects" });
+  });
+
+  it("groups the Reach list under the Next line's own words, in its order", () => {
+    const groups = reachGroups([
+      p("a", "researched", "Score", { kind: "channel" }),
+      p("b", "scored", "Generate strategy", { kind: "channel" }),
+      p("c", "researched", "Score", { kind: "channel" }),
+      p("d", "sent", null),
+      p("e", "closed", null),
+    ]);
+    expect(groups.map((g) => [g.id, g.title, g.prospects.length])).toEqual([
+      ["write", "Write to 1 channel", 1],
+      ["score", "Score 2 channels", 2],
+      ["waiting", "Waiting for a reply (1)", 1],
+      ["closed", "Closed (1)", 1],
+    ]);
   });
 
   it("follows up only on prospects not already in a running campaign", () => {

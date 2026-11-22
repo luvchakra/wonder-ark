@@ -94,6 +94,7 @@ import {
   writeChannelDraftAction,
   markChannelPostPostedAction,
 } from "./actions";
+import { unshortlistProspectsAction } from "../actions";
 import { ProspectProgress } from "@cofounderai/module-discovery/components/prospects/prospect-progress";
 import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
 import { MoreActions } from "@cofounderai/module-discovery/components/ui/more-actions";
@@ -508,6 +509,15 @@ export default async function ProspectDetailPage({
               removeAction={removeFromWatchlistAction.bind(null, businessId, productId, prospect.id, watchlistEntry?.id ?? "")}
             />
             <ExportMenu exportId="discovery.prospect" businessSlug={businessSlug} params={{ productId, prospectId }} kind="report" />
+            {/* DISC-NAV-P0-01.13: un-picking moved here from the Reach list's checkboxes. */}
+            {prospect.shortlisted_at ? (
+              <form action={unshortlistProspectsAction.bind(null, businessId, productId, workspace.id)}>
+                <input type="hidden" name="ids" value={prospect.id} />
+                <SubmitButton size="sm" variant="ghost" pendingText="Moving...">
+                  Move back to Find
+                </SubmitButton>
+              </form>
+            ) : null}
           </MoreActions>
         </div>
 
