@@ -126,6 +126,10 @@ export async function approveIcpAction(
 ) {
   await approveIcpProfile(icpId);
   revalidatePath(await icpPath(businessId, productId));
+  // DISC-NAV-P0-01.7: approving the ideal customer is the end of that step, so the next
+  // one opens: Find, where prospects matching it are searched for. Called last:
+  // redirect() throws to navigate.
+  redirect(`${await businessPath(businessId)}/discovery/offerings/${productId}/prospects/discover`);
 }
 
 /**

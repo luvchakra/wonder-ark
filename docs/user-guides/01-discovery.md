@@ -188,7 +188,7 @@ exclusions, revenue range, business model, tech stack, growth stage, and
 existing tools. The ICP has one overall **Confidence** percentage and an **Evidence** list.
 Tap **Edit** beside **Evidence** to change it, one item per line. Saving any change keeps
 your Evidence and clears the Confidence, which was the AI's score for its own draft.
-It needs an offering profile first. **Save changes** only saves; **Save & Run Downstream**
+It needs an offering profile first. **Approve** takes you straight on to **Find**. **Save changes** only saves; **Save & Run Downstream**
 also re-runs prospecting and scoring. Earlier versions are under **Version history**. Buyer
 Personas are managed on the same page, whether or not an ICP exists yet.
 
