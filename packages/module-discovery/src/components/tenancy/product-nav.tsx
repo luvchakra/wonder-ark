@@ -28,6 +28,7 @@ type StageId = "overview" | "icp" | "prospects" | "conversions";
 export function ProductNav({
   basePath,
   completed,
+  next,
 }: {
   basePath: string;
   /** Real workflow progress (profile generated, ICP exists, prospects added) -- reached
@@ -35,6 +36,8 @@ export function ProductNav({
    * one. Conversions has no completion concept, so it's omitted here and stays neutral
    * unless it's the current step. */
   completed?: Partial<Record<StageId, boolean>>;
+  /** DISC-NAV-P0-01.11: the one next step toward new customers, shown on every step. */
+  next?: { label: string; href: string } | null;
 }) {
   const pathname = useAppPathname();
   const { activeStage } = useAutoPopulateProgress();
@@ -94,6 +97,7 @@ export function ProductNav({
         </nav>
         {/* DISC-NAV-P0-01.8: one line saying what this stage is for. */}
         {active ? <p className="px-1 text-sm text-muted-foreground">{active.tab.hint}</p> : null}
+        {next ? <NextStepLink next={next} /> : null}
       </div>
     );
   }
@@ -174,6 +178,20 @@ export function ProductNav({
         })}
       </nav>
       {activeHint ? <p className="px-1 text-sm text-muted-foreground">{activeHint}</p> : null}
+      {next ? <NextStepLink next={next} /> : null}
     </div>
+  );
+}
+
+/** The one next step, as a single link: "Next: Score 10 prospects →". */
+function NextStepLink({ next }: { next: { label: string; href: string } }) {
+  return (
+    <Link
+      href={next.href}
+      className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm hover:bg-primary/10"
+    >
+      <span className="text-muted-foreground">Next</span>
+      <span className="font-medium text-primary">{next.label} &rarr;</span>
+    </Link>
   );
 }

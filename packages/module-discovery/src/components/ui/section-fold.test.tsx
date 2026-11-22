@@ -2,7 +2,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { SectionFold } from "./section-fold";
-import { icpHint, NextStepLine } from "../offerings/offering-overview-summary";
+import { icpHint } from "../offerings/offering-overview-summary";
 import type { IcpProfile } from "../../lib/icp/types";
 
 const BASE = "/acme/discovery/offerings/p1";
@@ -51,16 +51,10 @@ describe("the Setup tab's summaries", () => {
     expect(icpHint(icp({ status: "approved" }))).toBe("Approved · 2 of 12 fields");
   });
 
-  it("points the next step at the Ideal customer section, opened, while it needs work", () => {
-    const html = renderToStaticMarkup(<NextStepLine basePath={BASE} icp={icp()} personas={[]} prospectCounts={{ total: 0 } as never} />);
-    expect(html).toContain("Review and approve your ideal customer");
-    expect(html).toContain(`href="${BASE}?open=icp#icp"`);
-  });
-
-  it("points at Find once the setup is done and there are no prospects", () => {
-    const html = renderToStaticMarkup(
-      <NextStepLine basePath={BASE} icp={icp({ status: "approved" })} personas={[{ id: "x" } as never]} prospectCounts={{ total: 0 } as never} />,
-    );
-    expect(html).toContain(`href="${BASE}/prospects/discover"`);
+  // DISC-NAV-P0-01.11: a consumer offering is described by its Ideal user ("0 of 12 fields"
+  // read as nothing defined).
+  it("counts the Ideal user's fields for an offering sold to consumers", () => {
+    const withUser = icp({ status: "approved", audience: { who: "Parents of school-age children", interests: ["homework"], pain_points: [] } });
+    expect(icpHint(withUser, "consumer")).toMatch(/^Approved · 2 of \d+ fields$/);
   });
 });

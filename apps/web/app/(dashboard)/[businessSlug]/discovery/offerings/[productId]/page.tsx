@@ -12,15 +12,10 @@ import { ProductOverviewShell } from "@cofounderai/module-discovery/components/t
 import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
 import {
   icpHint,
-  NextStepLine,
   offeringHint,
   OfferingQuality,
 } from "@cofounderai/module-discovery/components/offerings/offering-overview-summary";
-import { RunAiDiscoveryPanel } from "@cofounderai/module-discovery/components/pipeline/run-ai-discovery-panel";
-import { RediscoverySchedule } from "@cofounderai/module-discovery/components/pipeline/rediscovery-schedule";
-import { SavedDiscoveryCriteria } from "@cofounderai/module-discovery/components/pipeline/saved-discovery-criteria";
 import { TopOpportunityGate } from "@cofounderai/module-discovery/components/opportunities/top-opportunity-gate";
-import { listPipelineStages, getLastCompletedPipelineRun } from "@cofounderai/module-discovery/lib/pipeline/queries";
 import { getTopGateOpportunity } from "@cofounderai/module-discovery/lib/opportunities/dashboard-queries";
 import { getBuyerIntelligenceForProspect } from "@cofounderai/module-discovery/lib/buyer-intelligence/queries";
 import { computeBuyerFitScores } from "@cofounderai/module-discovery/lib/buyer-intelligence/scoring";
@@ -38,20 +33,17 @@ import {
   updateSourceAction,
   sendTopOpportunityToCrmAction,
   updateTopOpportunityStatusAction,
-  updateRediscoveryIntervalAction,
-  updateDiscoveryCriteriaAction,
   regenerateIcpFromOverviewAction,
   setAudienceTypeAction,
 } from "./actions";
 import IcpPage from "./icp/page";
-import DiscoveryDefinitionsPage from "./discovery/page";
 
 function icpPath(businessSlug: string, productId: string) {
   return `/${businessSlug}/discovery/offerings/${productId}/icp`;
 }
 
 /** DISC-NAV-P0-01.4: the Setup tab's sections, in order; `?open=<id>` opens one. */
-const SETUP_SECTIONS = ["offering", "icp", "discovery"] as const;
+const SETUP_SECTIONS = ["offering", "icp"] as const;
 
 export default async function ProductPage({
   params,
@@ -82,8 +74,6 @@ export default async function ProductPage({
   const [icp, personas, prospectCounts] = product.product_profile
     ? await Promise.all([getIcpProfile(workspace.id), listBuyerPersonas(workspace.id), getProspectCounts(workspace.id)])
     : [null, [], null];
-  const pipelineStages = await listPipelineStages(workspace.id);
-  const lastRun = await getLastCompletedPipelineRun(workspace.id);
   // DISC-AI-APPROVAL-01: shown where the AI flows start; each flow re-reads it itself.
   const aiApprovalMode = await getAiApprovalMode(businessId);
   const aiApprovalSettingsHref = `/${businessSlug}/business#ai-approvals`;
@@ -127,8 +117,6 @@ export default async function ProductPage({
 
   const basePath = `/${businessSlug}/discovery/offerings/${productId}`;
   const opened = SETUP_SECTIONS.find((id) => id === query.open) ?? (product.product_profile ? null : "offering");
-  const lastRunAt = lastRun?.completed_at ? new Date(lastRun.completed_at).toLocaleDateString("en-IN", { day: "numeric", month: "short" }) : null;
-  const discoveryHint = `${lastRunAt ? `Last run ${lastRunAt}` : "Never run"} · ${workspace.rediscovery_interval === "off" ? "not scheduled" : `repeats ${workspace.rediscovery_interval}`}`;
 
   return (
     // DISC-NAV-P0-01.4: the Setup tab is one short page. The next step and any decision
@@ -139,9 +127,6 @@ export default async function ProductPage({
     // keep their own addresses and render the same content.
     <div className="flex flex-col gap-4">
       {audienceConfirmed ? null : audienceForm}
-      {product.product_profile && prospectCounts ? (
-        <NextStepLine basePath={basePath} icp={icp} personas={personas} prospectCounts={prospectCounts} />
-      ) : null}
       {topGateRow && topGateContext ? (
         <TopOpportunityGate
           businessId={businessId}
@@ -191,27 +176,10 @@ export default async function ProductPage({
         />
       </SectionFold>
 
-      <SectionFold id="icp" title="Ideal customer" hint={icpHint(icp)} open={opened === "icp"}>
+      <SectionFold id="icp" title="Ideal customer" hint={icpHint(icp, audienceTypeOf(product))} open={opened === "icp"}>
         <IcpPage params={params} searchParams={Promise.resolve({ suggest: query.suggest })} />
       </SectionFold>
 
-      <SectionFold id="discovery" title="Discovery" hint={discoveryHint} open={opened === "discovery"}>
-        <RunAiDiscoveryPanel
-          businessSlug={businessSlug}
-          productId={productId}
-          initialStages={pipelineStages}
-          aiApprovalMode={aiApprovalMode}
-          aiApprovalSettingsHref={aiApprovalSettingsHref}
-        />
-        <RediscoverySchedule
-          interval={workspace.rediscovery_interval}
-          nextDiscoveryAt={workspace.next_discovery_at}
-          lastDiscoveryAt={lastRun?.completed_at ?? null}
-          updateIntervalAction={updateRediscoveryIntervalAction.bind(null, businessId, productId, workspace.id)}
-        />
-        <SavedDiscoveryCriteria workspace={workspace} updateCriteriaAction={updateDiscoveryCriteriaAction.bind(null, businessId, productId, workspace.id)} />
-        <DiscoveryDefinitionsPage params={params} />
-      </SectionFold>
     </div>
   );
 }

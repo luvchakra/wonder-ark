@@ -33,6 +33,8 @@ export function TodayList({
   taskAction?: (enrollmentId: string) => (outcome: TaskOutcome) => Promise<AiActionState>;
 }) {
   const due = taskAction ? (tasks?.tasks ?? []) : [];
+  // DISC-NAV-P0-01.11: an empty Today is left out; the Next line says what to do.
+  if (rows.length === 0 && due.length === 0) return null;
   return (
     <section aria-labelledby="today-heading" className="rounded-lg border bg-card">
       <h2 id="today-heading" className="border-b px-4 py-2 text-sm font-medium">

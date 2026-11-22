@@ -5,11 +5,14 @@
  * at the path it always had (docs/plan/12-DISCOVERY-EXPANSION-SPEC.md §0.1: no renamed
  * route, no dead deep link); what changes is only which tab it is reached from:
  *
- *   Define     Overview, Ideal customer (the ICP page, which also holds buyer personas),
- *              Definitions
- *   Find       Find (with "To review" on the same page), Import, History
- *   Prospects  All prospects, Campaigns, Opportunities, Watchlist
+ *   Define     Overview, Ideal customer (the ICP page, which also holds buyer personas)
+ *   Find       Find (with "To review" on the same page), Import, Definitions (automatic
+ *              discovery), History
+ *   Reach      All prospects, Campaigns, Opportunities, Watchlist
  *   Results    Performance, Conversions, Usage, What people say
+ *
+ * DISC-NAV-P0-01.11: Watchlist and Usage keep their pages but are no longer sections of
+ * their tab; neither leads to a new customer.
  *
  * DISC-NAV-P0-01.4: the tab bar shows the four tabs only, with no second row. Each tab
  * opens one page, its first, which shows the tab's other pages as sections folded behind
@@ -49,7 +52,6 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: s
     pages: [
       { slug: "", label: "Overview" },
       { slug: "icp", label: "Ideal customer" },
-      { slug: "discovery", label: "Definitions" },
     ],
   },
   {
@@ -59,6 +61,8 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: s
     pages: [
       { slug: "prospects/discover", label: "Search" },
       { slug: "prospects/import", label: "Import" },
+      // DISC-NAV-P0-01.11: automatic discovery and its definitions find prospects.
+      { slug: "discovery", label: "Definitions" },
       { slug: "history", label: "History" },
     ],
   },

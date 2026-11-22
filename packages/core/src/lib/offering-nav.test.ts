@@ -58,7 +58,7 @@ describe("activeOfferingNav", () => {
     expect(active("/prospects/import")).toBe("find:prospects/import");
     expect(active("/history")).toBe("find:history");
     // DISC-NAV-P0-01.4: Definitions is a section of Setup.
-    expect(active("/discovery")).toBe("setup:discovery");
+    expect(active("/discovery")).toBe("find:discovery");
     expect(active("/prospects")).toBe("prospects:prospects");
     expect(active("/opportunities")).toBe("prospects:opportunities");
     expect(active("/watchlist")).toBe("prospects:watchlist");

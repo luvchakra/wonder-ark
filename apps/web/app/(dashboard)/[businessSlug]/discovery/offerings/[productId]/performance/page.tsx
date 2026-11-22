@@ -10,7 +10,6 @@ import { OutcomeFunnelSummary } from "@cofounderai/module-discovery/components/o
 import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
 import ConversionsPage from "../conversions/page";
 import PeopleSayPage from "../people-say/page";
-import UsagePage from "../usage/page";
 
 export default async function PerformanceAnalysisPage({
   params,
@@ -51,9 +50,6 @@ export default async function PerformanceAnalysisPage({
         </SectionFold>
         <SectionFold id="people-say" title="What people say" hint="Themes across the feedback you have logged">
           <PeopleSayPage params={params} />
-        </SectionFold>
-        <SectionFold id="usage" title="Usage" hint="AI use this month, by operation">
-          <UsagePage params={params} />
         </SectionFold>
       </div>
     </div>

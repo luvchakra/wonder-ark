@@ -104,10 +104,18 @@ section to open it.
 
 | Tab | Open on the page | Sections |
 |---|---|---|
-| **1 Define** | The next step | **Offering** (definition quality, who buys it, website, description, sources), **Ideal customer** (your ICP and buyer personas), **Discovery** (the AI discovery run, its schedule, saved criteria and definitions) |
-| **2 Find** | Search, what it found under **To review**, and imports under **Imported, to pick** | **Import**, **History** |
-| **3 Reach** | Your picked prospects (Companies, Channels and People chips) | **Campaigns**, **Opportunities**, **Watchlist** |
-| **4 Results** | Performance, and discovery effectiveness once there are opportunities | **Conversions**, **What people say**, **Usage** |
+| **1 Define** | Who buys it, if not answered yet | **Offering** (definition quality, who buys it, website, description, sources), **Ideal customer** (your ICP and buyer personas) |
+| **2 Find** | Search, what it found under **To review**, and imports under **Imported, to pick** | **Import**, **Automatic discovery** (the AI run, its schedule, saved criteria and definitions), **History** |
+| **3 Reach** | Your picked prospects (Companies, Channels and People chips) | **Campaigns**, **Opportunities** |
+| **4 Results** | Performance, and discovery effectiveness once there are opportunities | **Conversions**, **What people say** |
+
+Under the steps, a **Next** line names the one thing to do now, toward new customers, and
+links to it. It is worked out from the offering itself, so after anything you do it moves on:
+finish **Define**; then answer replies, follow up, send ready messages, write to, score and
+research your picked prospects, in that order; then review what **Find** found, pick
+imports or search for more; and start a campaign once you have prospects. The **Watchlist**
+(on each prospect's **More**) and AI **Usage** keep their own pages but are no longer sections
+of a step.
 
 They aren't a checklist: use them in any order. Every page keeps the address it had, so
 old links and bookmarks still open it on its own. (Before a profile exists you instead get a
