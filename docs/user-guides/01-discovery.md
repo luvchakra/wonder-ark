@@ -113,7 +113,11 @@ Under the steps, a **Next** line names the one thing to do now, toward new custo
 links to it. It is worked out from the offering itself, so after anything you do it moves on:
 finish **Define**; then answer replies, follow up, send ready messages, write to, score and
 research your picked prospects, in that order; then review what **Find** found, pick
-imports or search for more; and start a campaign once you have prospects. The **Watchlist**
+imports or search for more; and start a campaign once you have prospects. A step that is
+done shows a green tick in place of its number: **Define** once the ideal customer is
+approved, **Find** once you have picked a prospect, **Reach** once one has been written to,
+and **Results** once a deal is won. Sections that are done get the same tick (for example
+**Offering**, **Ideal customer**, and **Campaigns** while one is running). The **Watchlist**
 (on each prospect's **More**) and AI **Usage** keep their own pages but are no longer sections
 of a step.
 
@@ -122,9 +126,12 @@ old links and bookmarks still open it on its own. (Before a profile exists you i
 short step-by-step bar for setting the offering up: Overview, Ideal customer, Prospects,
 Conversions.)
 
-A prospect's own page works the same way: its steps (**Research**, **Score**, **Outreach
-strategy**, **Messages**) and its **Research brief**, **Buyer intelligence** and
-**Conversations** are sections, and the first step not done yet is open.
+A prospect's own page works the same way. At the top, a row of ticks shows how far it has
+got (**Research**, **Score**, **Write**, **Send**, **Reply**, **Won**), with its next action
+below. Then come its sections: **Contacts** (with **Buyer intelligence** for those people),
+**Research** (with the **Research brief**), **Score**, **Outreach strategy**, **Messages**,
+**Conversations** and **Feedback**. A section that is done has a green tick, and the first
+step not done yet is open.
 
 ### Setup
 
@@ -562,7 +569,7 @@ Sending a message (or marking it sent) starts a **Conversation** thread. Use
 **Log reply** to record what the prospect said, **Generate reply** for an AI
 draft of your response, and **Won** or **Lost** to close the conversation.
 
-The **Feedback** box on a prospect lets you record how it went — Good
+The **Feedback** section on a prospect lets you record how it went — Good
 prospect, Bad prospect, Wrong person, Wrong timing, Good message, Bad message,
 Interested, Not interested, Already customer, Not relevant or Spam — with an
 optional note. Feedback is kept as a history, newest first. Replies that arrive by email

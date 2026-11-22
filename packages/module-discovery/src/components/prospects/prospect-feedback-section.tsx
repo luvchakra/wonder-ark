@@ -16,8 +16,8 @@ export function ProspectFeedbackSection({
   addAction: (formData: FormData) => Promise<void>;
 }) {
   return (
-    <section id="feedback" className="flex scroll-mt-4 flex-col gap-3 rounded-md border p-4">
-      <h2 className="font-medium">Feedback</h2>
+    // DISC-NAV-P0-01.12: shown inside the page's Feedback section, which carries the title.
+    <div className="flex flex-col gap-3">
 
       <form action={addAction} className="flex flex-col gap-2 sm:flex-row sm:items-end">
         <div className="flex flex-col gap-1.5 sm:w-56">
@@ -52,6 +52,6 @@ export function ProspectFeedbackSection({
           ))}
         </ul>
       )}
-    </section>
+    </div>
   );
 }

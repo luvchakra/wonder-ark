@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "lucide-react";
 import { cn } from "@cofounderai/core/lib/utils";
 
 /**
@@ -18,6 +18,7 @@ export function SectionFold({
   title,
   hint,
   open = false,
+  done = false,
   className,
   children,
 }: {
@@ -25,6 +26,8 @@ export function SectionFold({
   title: string;
   hint?: string | null;
   open?: boolean;
+  /** DISC-NAV-P0-01.12: the section's work is done; a green tick sits before the title. */
+  done?: boolean;
   className?: string;
   children: React.ReactNode;
 }) {
@@ -32,7 +35,11 @@ export function SectionFold({
     <details id={id} open={open} className={cn("group scroll-mt-4 rounded-lg border border-border bg-card px-4 md:px-5", className)}>
       <summary className="flex min-h-[52px] cursor-pointer list-none items-center gap-3 py-3 [&::-webkit-details-marker]:hidden">
         <span className="min-w-0 flex-1">
-          <span className="block text-[15px] font-semibold">{title}</span>
+          <span className="flex items-center gap-1.5 text-[15px] font-semibold">
+            {done ? <Check aria-hidden="true" className="size-4 shrink-0 text-emerald-600" strokeWidth={3} /> : null}
+            {title}
+            {done ? <span className="sr-only"> (done)</span> : null}
+          </span>
           {hint ? <span className="block truncate text-xs text-muted-foreground">{hint}</span> : null}
         </span>
         <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />

@@ -46,7 +46,7 @@ export default async function ProductLayout({
   };
 
   // DISC-NAV-P0-01.11: whatever was just done, the line under the steps says what is next.
-  const next = workspace
+  const journey = workspace
     ? await loadNextStep({
         workspaceId: workspace.id,
         basePath,
@@ -91,7 +91,7 @@ export default async function ProductLayout({
             offerings={offerings.map((o) => ({ id: o.id, name: o.name }))}
           />
         </div>
-        <ProductNav basePath={basePath} completed={completed} next={next} />
+        <ProductNav basePath={basePath} completed={completed} next={journey?.next ?? null} done={journey?.done} />
         {children}
       </AutoPopulateProgressProvider>
     </main>

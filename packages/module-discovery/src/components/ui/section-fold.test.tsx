@@ -21,6 +21,14 @@ describe("SectionFold", () => {
     expect(html).toContain("<svg");
   });
 
+  // DISC-NAV-P0-01.12
+  it("shows a tick, said as done, only when its work is done", () => {
+    const done = renderToStaticMarkup(<SectionFold title="Research" done>x</SectionFold>);
+    expect(done).toContain("text-emerald-600");
+    expect(done).toContain("(done)");
+    expect(renderToStaticMarkup(<SectionFold title="Research">x</SectionFold>)).not.toContain("(done)");
+  });
+
   it("opens when asked", () => {
     expect(renderToStaticMarkup(<SectionFold title="Ideal customer" open>x</SectionFold>)).toMatch(/<details[^>]*\sopen=""/);
   });

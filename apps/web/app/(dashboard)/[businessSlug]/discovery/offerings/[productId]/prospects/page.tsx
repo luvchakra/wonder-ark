@@ -305,7 +305,7 @@ export default async function ProspectsPage({
       {/* DISC-NAV-P0-01.4/01.9: the Prospects tab's other pages, folded below the list, which is
           what this tab is for. */}
       <div className="flex flex-col gap-3">
-        <SectionFold id="campaigns" title="Campaigns" hint={campaignsHint(campaigns)}>
+        <SectionFold id="campaigns" title="Campaigns" done={campaigns.some((campaign) => campaign.status === "active")} hint={campaignsHint(campaigns)}>
           <CampaignsPage params={params} />
         </SectionFold>
         <SectionFold id="opportunities" title="Opportunities" hint="Prospects showing a reason to buy now">
