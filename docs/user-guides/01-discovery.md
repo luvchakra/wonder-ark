@@ -125,8 +125,8 @@ The offering's hub page:
 - **Next step** — the single next step WonderArk suggests
   (define your ideal customer, approve it, add buyer personas, find prospects, or
   review them).
-- **Top Opportunity Gate** — one AI-recommended opportunity to act on now, with **Edit
-  Recommendation**, **Send to CRM**, **Watch** and **Dismiss**.
+- **Top Opportunity Gate** — one AI-recommended opportunity to act on now, with **Send to
+  CRM**. **More** holds **Edit Recommendation**, **Watch** and **Dismiss**.
 - **Offering** section — **Definition quality**, a score out of 100 for how completely the
   offering, its ICP and its buyer personas are defined, and a "Less certain about" line
   with a **Research further** button that regenerates the ICP. Below it, who buys the
@@ -189,8 +189,9 @@ exclusions, revenue range, business model, tech stack, growth stage, and
 existing tools. The ICP has one overall **Confidence** percentage and an **Evidence** list.
 Tap **Edit** beside **Evidence** to change it, one item per line. Saving any change keeps
 your Evidence and clears the Confidence, which was the AI's score for its own draft.
-It needs an offering profile first. **Approve** takes you straight on to **Find**. **Save changes** only saves; **Save & Run Downstream**
-also re-runs prospecting and scoring. Earlier versions are under **Version history**. Buyer
+It needs an offering profile first. **Approve** takes you straight on to **Find**. **Save changes** only saves; **Save & Run Downstream**,
+under **More** beside it, also re-runs prospecting and scoring. **Regenerate**, **Clone** and
+the export are under **More** beside **Approve**. Earlier versions are under **Version history**. Buyer
 Personas are managed on the same page, whether or not an ICP exists yet.
 
 For an offering sold to consumers (or to both), the page also has an **Ideal user**: who
@@ -260,6 +261,11 @@ hand with **Add** goes straight to your list.
 When you tick prospects on your list, the bar offers only what applies: **Research** for
 those not researched yet and **Score** for those researched and not scored. Afterwards it
 says what was done and why any were not.
+
+Each stage shows its main action and folds the rest under **More**, so you can move
+through quickly. On the **Prospects** tab the list comes first; **Campaigns**,
+**Opportunities** and **Watchlist** are folded below it. On a prospect's page, **Contacts** is
+a folded section with its count.
 
 ### Today
 
@@ -513,7 +519,8 @@ Each prospect that clears your bar becomes a scored opportunity, with:
 ### Handing off to CRM
 
 From an opportunity, **Send to CRM** hands the lead to the CRM module; on a prospect's page
-the button is **Promote to CRM**. WonderArk checks first whether the contact is already
+the button is **Promote to CRM**, under **More** beside its name with its status, the
+watchlist and the export. WonderArk checks first whether the contact is already
 there ("Already promoted to CRM", or an **Already in CRM** badge) instead of creating a
 duplicate. If CRM isn't licensed, the button still shows and says "CRM module not licensed
 for this business."; nothing else changes.

@@ -209,18 +209,6 @@ export default async function ProspectsPage({
 
       <TodayList rows={today} tasks={campaignTasks} taskAction={(enrollmentId) => markTaskDoneAction.bind(null, businessId, productId, enrollmentId)} />
 
-      {/* DISC-NAV-P0-01.4: the Prospects tab's other pages, folded above the list. */}
-      <div className="flex flex-col gap-3">
-        <SectionFold id="campaigns" title="Campaigns" hint={campaignsHint(campaigns)}>
-          <CampaignsPage params={params} />
-        </SectionFold>
-        <SectionFold id="opportunities" title="Opportunities" hint="Prospects showing a reason to buy now">
-          <OpportunitiesPage params={params} />
-        </SectionFold>
-        <SectionFold id="watchlist" title="Watchlist" hint="Accounts you are keeping an eye on">
-          <WatchlistPage params={params} />
-        </SectionFold>
-      </div>
 
       {followUpDue ? (
         <p className="rounded-md border bg-muted p-3 text-sm">
@@ -315,6 +303,20 @@ export default async function ProspectsPage({
         backToSelectAction={selecting ? undefined : unshortlistProspectsAction.bind(null, businessId, productId, workspace.id)}
       />
       )}
+
+      {/* DISC-NAV-P0-01.4/01.9: the Prospects tab's other pages, folded below the list, which is
+          what this tab is for. */}
+      <div className="flex flex-col gap-3">
+        <SectionFold id="campaigns" title="Campaigns" hint={campaignsHint(campaigns)}>
+          <CampaignsPage params={params} />
+        </SectionFold>
+        <SectionFold id="opportunities" title="Opportunities" hint="Prospects showing a reason to buy now">
+          <OpportunitiesPage params={params} />
+        </SectionFold>
+        <SectionFold id="watchlist" title="Watchlist" hint="Accounts you are keeping an eye on">
+          <WatchlistPage params={params} />
+        </SectionFold>
+      </div>
     </div>
   );
 }

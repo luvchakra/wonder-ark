@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Badge } from "@cofounderai/core/ui/badge";
 import { SubmitButton } from "@cofounderai/core/ui/submit-button";
+import { MoreActions } from "../ui/more-actions";
 import { effectiveRecommendedAction } from "../../lib/opportunities/next-best-action";
 import { NEXT_BEST_ACTION_LABEL, type Opportunity } from "../../lib/opportunities/types";
 import type { Prospect } from "../../lib/prospects/types";
@@ -114,24 +115,27 @@ export function TopOpportunityGate({
         </span>
       </div>
 
-      <div className="mt-1 flex flex-wrap items-center gap-2">
-        <Link
-          href={`${opportunityPath}#recommended-action`}
-          className="inline-flex h-8 items-center rounded-md border border-input px-3 text-sm font-medium hover:bg-accent"
-        >
-          Edit Recommendation
-        </Link>
+      {/* DISC-NAV-P0-01.9: one action in view; the rest folded under More. */}
+      <div className="mt-1 flex flex-wrap items-start gap-2">
         <SendToCrmButton hasParty={hasParty} relationship={relationship} sendAction={sendToCrmAction} />
-        <form action={watchAction}>
-          <SubmitButton size="sm" variant="outline" pendingText="Saving...">
-            Watch
-          </SubmitButton>
-        </form>
-        <form action={dismissAction}>
-          <SubmitButton size="sm" variant="outline" pendingText="Saving...">
-            Dismiss
-          </SubmitButton>
-        </form>
+        <MoreActions>
+          <Link
+            href={`${opportunityPath}#recommended-action`}
+            className="inline-flex h-8 items-center rounded-md border border-input px-3 text-sm font-medium hover:bg-accent"
+          >
+            Edit Recommendation
+          </Link>
+          <form action={watchAction}>
+            <SubmitButton size="sm" variant="outline" pendingText="Saving...">
+              Watch
+            </SubmitButton>
+          </form>
+          <form action={dismissAction}>
+            <SubmitButton size="sm" variant="outline" pendingText="Saving...">
+              Dismiss
+            </SubmitButton>
+          </form>
+        </MoreActions>
       </div>
     </section>
   );
