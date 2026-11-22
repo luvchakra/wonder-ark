@@ -5,7 +5,7 @@
  * at the path it always had (docs/plan/12-DISCOVERY-EXPANSION-SPEC.md §0.1: no renamed
  * route, no dead deep link); what changes is only which tab it is reached from:
  *
- *   Setup      Overview, Ideal customer (the ICP page, which also holds buyer personas),
+ *   Define     Overview, Ideal customer (the ICP page, which also holds buyer personas),
  *              Definitions
  *   Find       Find (with "To review" on the same page), Import, History
  *   Prospects  All prospects, Campaigns, Opportunities, Watchlist
@@ -44,8 +44,8 @@ export type OfferingNavTab = {
 export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: string; pages: readonly { slug: string; label: string }[] }[] = [
   {
     id: "setup",
-    label: "Setup",
-    hint: "Say what you sell and who buys it. AI drafts both from your website; you edit and approve.",
+    label: "Define",
+    hint: "Say what you sell and who buys it, then approve. AI drafts both from your website.",
     pages: [
       { slug: "", label: "Overview" },
       { slug: "icp", label: "Ideal customer" },
@@ -55,7 +55,7 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: s
   {
     id: "find",
     label: "Find",
-    hint: "Search for businesses or channels that match your ideal customer, and pick the ones to keep.",
+    hint: "Search for prospects that match, then approve the ones to work on.",
     pages: [
       { slug: "prospects/discover", label: "Search" },
       { slug: "prospects/import", label: "Import" },
@@ -64,8 +64,8 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: s
   },
   {
     id: "prospects",
-    label: "Prospects",
-    hint: "Pick the ones to work on under Select, then research, score and reach them, one by one or in a campaign.",
+    label: "Reach",
+    hint: "Your picked prospects: research, score and write to each, or reach many with a campaign.",
     pages: [
       { slug: "prospects", label: "All" },
       // DISC-CAMP-P0-05.1: outreach campaigns to the offering's prospects.

@@ -356,62 +356,67 @@ export async function approveProspectSuggestionsWithProspects(
     accepted.push(suggestion);
   }
 
+  const pickedAt = new Date().toISOString();
+  const suggestionRow = (s: ProspectSuggestion) => {
+    // DISC-CONS-P0-02.1: a channel takes its type and audience size, with their
+    // sources; it has no organisation contact points.
+    if (s.kind === "channel") {
+      const channel = channelProspectFields(s);
+      return {
+        workspace_id: workspaceId,
+        ...toRow({
+          companyName: s.company_name,
+          industry: s.industry ?? undefined,
+          location: s.location ?? undefined,
+          description: s.description ?? undefined,
+        }),
+        kind: "channel" as const,
+        source: s.source ?? null,
+        source_name: s.source_name ?? null,
+        source_ref: s.source_url ?? s.source_ref ?? null,
+        phone: null,
+        channel_type: channel.channel_type,
+        audience_size: channel.audience_size,
+        field_sources: channel.field_sources,
+      };
+    }
+    const fromGateway = isGatewaySuggestion(s);
+    const contact = fromGateway ? gatewayContactPoints(s.payload) : { phone: null, email: null };
+    const row = toRow({
+      companyName: s.company_name,
+      website: s.website ?? undefined,
+      industry: s.industry ?? undefined,
+      companySize: s.company_size ?? undefined,
+      location: s.location ?? undefined,
+      description: s.description ?? undefined,
+      companyEmail: contact.email ?? undefined,
+    });
+    return {
+      workspace_id: workspaceId,
+      ...row,
+      kind: s.kind ?? "company",
+      source: s.source ?? null,
+      source_name: s.source_name ?? null,
+      source_ref: s.source_ref ?? null,
+      phone: contact.phone,
+      field_sources: fromGateway
+        ? fieldSourcesFor(
+            { ...row, phone: contact.phone },
+            { source: s.source as string, source_name: s.source_name ?? null, source_ref: s.source_ref ?? null },
+            s.payload,
+          )
+        : {},
+    };
+  };
+
   let inserted: Prospect[] = [];
   if (accepted.length > 0) {
     const { data, error: insertError } = await supabase
       .from("prospects")
       .insert(
-        accepted.map((s) => {
-          // DISC-CONS-P0-02.1: a channel takes its type and audience size, with their
-          // sources; it has no organisation contact points.
-          if (s.kind === "channel") {
-            const channel = channelProspectFields(s);
-            return {
-              workspace_id: workspaceId,
-              ...toRow({
-                companyName: s.company_name,
-                industry: s.industry ?? undefined,
-                location: s.location ?? undefined,
-                description: s.description ?? undefined,
-              }),
-              kind: "channel" as const,
-              source: s.source ?? null,
-              source_name: s.source_name ?? null,
-              source_ref: s.source_url ?? s.source_ref ?? null,
-              phone: null,
-              channel_type: channel.channel_type,
-              audience_size: channel.audience_size,
-              field_sources: channel.field_sources,
-            };
-          }
-          const fromGateway = isGatewaySuggestion(s);
-          const contact = fromGateway ? gatewayContactPoints(s.payload) : { phone: null, email: null };
-          const row = toRow({
-            companyName: s.company_name,
-            website: s.website ?? undefined,
-            industry: s.industry ?? undefined,
-            companySize: s.company_size ?? undefined,
-            location: s.location ?? undefined,
-            description: s.description ?? undefined,
-            companyEmail: contact.email ?? undefined,
-          });
-          return {
-            workspace_id: workspaceId,
-            ...row,
-            kind: s.kind ?? "company",
-            source: s.source ?? null,
-            source_name: s.source_name ?? null,
-            source_ref: s.source_ref ?? null,
-            phone: contact.phone,
-            field_sources: fromGateway
-              ? fieldSourcesFor(
-                  { ...row, phone: contact.phone },
-                  { source: s.source as string, source_name: s.source_name ?? null, source_ref: s.source_ref ?? null },
-                  s.payload,
-                )
-              : {},
-          };
-        }),
+        // DISC-NAV-P0-01.10: approving on Find is the pick -- the prospect goes straight to
+        // Reach, with no second choice to make.
+        accepted.map((s) => ({ ...suggestionRow(s), shortlisted_at: pickedAt })),
       )
       .select();
     if (insertError) throw insertError;

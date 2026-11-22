@@ -4,7 +4,9 @@ import {
   getProduct,
   getWorkspaceForProduct,
 } from "@cofounderai/module-discovery/lib/tenancy/queries";
-import { listProspectSuggestions } from "@cofounderai/module-discovery/lib/prospects/queries";
+import { listProspectSuggestions, listProspects } from "@cofounderai/module-discovery/lib/prospects/queries";
+import { ProspectsCards } from "@cofounderai/module-discovery/components/prospects/prospects-cards";
+import { bulkResearchAction, bulkScoreAction, shortlistProspectsAction } from "../actions";
 import { getIcpProfile } from "@cofounderai/module-discovery/lib/icp/queries";
 import { listDataSources } from "@cofounderai/module-discovery/lib/data-sources/index";
 import { getSavedSearch, summariseSavedSearch } from "@cofounderai/module-discovery/lib/data-sources/saved-searches";
@@ -79,11 +81,14 @@ export default async function DiscoverProspectsPage({
   const workspace = await getWorkspaceForProduct(product.id);
   if (!workspace) notFound();
 
-  const [suggestions, icp, list, savedSearch] = await Promise.all([
+  const [suggestions, icp, list, savedSearch, toPick] = await Promise.all([
     listProspectSuggestions(workspace.id),
     getIcpProfile(workspace.id),
     listDataSources(workspace.id),
     getSavedSearch(workspace.id),
+    // DISC-NAV-P0-01.10: prospects that arrived without being picked (an import, another
+    // module); picking them here is the same step as approving a search result.
+    listProspects(workspace.id, { shortlisted: false }),
   ]);
   const weekly = summariseSavedSearch(savedSearch);
 
@@ -150,6 +155,20 @@ export default async function DiscoverProspectsPage({
         approveAction={approveSuggestionsAction.bind(null, businessId, productId, workspace.id)}
         discardAction={discardSuggestionsAction.bind(null, businessId, productId, workspace.id)}
       />
+
+      {toPick.length > 0 ? (
+        <section id="to-pick" className="flex flex-col gap-3">
+          <h2 className="font-medium">Imported, to pick ({toPick.length})</h2>
+          <ProspectsCards
+            prospects={toPick}
+            basePath={`/${businessSlug}/discovery/offerings/${productId}/prospects`}
+            bulkResearchAction={bulkResearchAction.bind(null, businessId, productId, workspace.id)}
+            bulkScoreAction={bulkScoreAction.bind(null, businessId, productId, workspace.id)}
+            selectAction={shortlistProspectsAction.bind(null, businessId, productId, workspace.id, null)}
+            channels={toPick.every((p) => p.kind === "channel")}
+          />
+        </section>
+      ) : null}
 
       {/* DISC-NAV-P0-01.4: the Find tab's other pages, folded below the search. */}
       <div className="flex flex-col gap-3">

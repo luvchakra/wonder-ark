@@ -113,10 +113,10 @@ export function ProspectsBoard({
           {query || hasActiveFilters
             ? `No ${channels ? "channels" : "prospects"} match these filters.`
             : selectAction
-              ? "Nothing to pick. What you approve on Find waits here until you choose it."
+              ? "Nothing waiting to be picked."
               : channels
-                ? "No channels picked yet. Pick them on the Select tab, or find them on Find."
-                : "No prospects picked yet. Pick them on the Select tab, or find them on Find."}
+                ? "No channels yet. Find them on the Find tab."
+                : "No prospects yet. Find them on the Find tab."}
         </p>
       ) : (
         <ProspectsCards

@@ -142,5 +142,5 @@ export async function unshortlistProspectsAction(
   const ids = formData.getAll("ids").map(String);
   const moved = await setProspectsShortlisted(workspaceId, ids, false);
   revalidatePath(await prospectsPath(businessId, productId));
-  redirect(`${await prospectsPath(businessId, productId)}?list=select&unshortlisted=${moved}`);
+  redirect(`${await prospectsPath(businessId, productId)}?unshortlisted=${moved}`);
 }
