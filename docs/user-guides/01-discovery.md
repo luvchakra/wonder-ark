@@ -80,7 +80,7 @@ it says "This AI feature is temporarily unavailable. Please try again later."
 
 On the **Business** page, **AI approvals** sets how Discovery's AI flows (Let AI
 Auto-Populate Info and Run AI Discovery) treat their own results, for the whole business:
-**Review each step** (the default) or **Approve automatically**. The **Setup** tab shows the
+**Review each step** (the default) or **Approve automatically**. The **Define** step shows the
 current choice ("AI suggestions wait for your review" or "AI approves steps automatically")
 with a **Change in settings** link. Changing it needs `business.settings.manage` (owners and
 admins by default); every change is recorded in the audit log.
@@ -96,18 +96,18 @@ offerings" panel when the same company turns up under more than one of them.
 
 ## Working an offering
 
-Once an offering has a profile, it has four tabs along the top: **Setup**, **Find**,
-**Prospects** and **Results**. One line under the tabs says what the tab you're on is for.
+Once an offering has a profile, it has four numbered steps along the top: **Define**, **Find**,
+**Reach** and **Results**. One line under the tabs says what the tab you're on is for.
 Each tab is one page. Its main content is open, and
 everything else is a section with a title, a one-line summary and a chevron. Click a
 section to open it.
 
 | Tab | Open on the page | Sections |
 |---|---|---|
-| **Setup** | The next step | **Offering** (definition quality, who buys it, website, description, sources), **Ideal customer** (your ICP and buyer personas), **Discovery** (the AI discovery run, its schedule, saved criteria and definitions) |
-| **Find** | Search, and what it found under **To review** | **Import**, **History** |
-| **Prospects** | Your prospects (Companies, Channels and People) | **Campaigns**, **Opportunities**, **Watchlist** |
-| **Results** | Performance, and discovery effectiveness once there are opportunities | **Conversions**, **What people say**, **Usage** |
+| **1 Define** | The next step | **Offering** (definition quality, who buys it, website, description, sources), **Ideal customer** (your ICP and buyer personas), **Discovery** (the AI discovery run, its schedule, saved criteria and definitions) |
+| **2 Find** | Search, what it found under **To review**, and imports under **Imported, to pick** | **Import**, **History** |
+| **3 Reach** | Your picked prospects (Companies, Channels and People chips) | **Campaigns**, **Opportunities**, **Watchlist** |
+| **4 Results** | Performance, and discovery effectiveness once there are opportunities | **Conversions**, **What people say**, **Usage** |
 
 They aren't a checklist: use them in any order. Every page keeps the address it had, so
 old links and bookmarks still open it on its own. (Before a profile exists you instead get a
@@ -174,7 +174,7 @@ Reviews, Expansion and Multiple Buying Signals — which you can then edit.
 ### Who buys this: companies, consumers or both
 
 **Who buys this?** asks whether an offering is sold to **Companies**, **Consumers** or
-**Both**. Until you answer, it sits at the top of the offering's **Setup** tab, with the
+**Both**. Until you answer, it sits at the top of the offering's **Define** step, with the
 answer your offering profile suggests already chosen; press **Confirm** to keep it or pick
 another. Afterwards you can change it under **Offering setup & sources**. The answer
 decides what the rest of the offering offers: an **Ideal user** on the ideal customer page,
@@ -248,28 +248,24 @@ Everything that brings companies in is under the **Find** tab.
   people's own profiles.
 - **Import** loads a list from CSV, Excel or PDF, or pasted CSV. `company_name` is
   required; a file in another layout is restructured by AI for you to check before import.
-- **Add**, on the **Prospects** tab, creates one prospect by hand.
+- **Add**, on **Reach**, creates one prospect by hand.
 
-### Select first
+### Picking prospects
 
-The **Prospects** tab's first list is **Select**. What you approve on **Find** or import
-waits there. Tick the ones to work on and press **Use these**: they move to your list
-(**Channels** or **Companies**), where you research, score and reach them. Campaigns reach
-only prospects on that list. **Back to Select** moves ticked ones back. A prospect you add by
-hand with **Add** goes straight to your list.
+**Find** is where you choose what to work on: approving a search result picks it, and it
+goes straight to **Reach**. A file you import arrives unpicked: it waits on **Find** under
+**Imported, to pick** until you tick the ones you want and press **Pick these**. **Reach**
+holds only picked prospects, as **Companies**, **Channels** or **People** chips when the
+offering has more than one; campaigns reach only those. **Back to Find** unpicks ticked ones.
+A prospect you add by hand with **Add** is already picked.
 
-When you tick prospects on your list, the bar offers only what applies: **Research** for
+When you tick prospects on **Reach**, the bar offers only what applies: **Research** for
 those not researched yet and **Score** for those researched and not scored. Afterwards it
 says what was done and why any were not.
 
-Each stage shows its main action and folds the rest under **More**, so you can move
-through quickly. On the **Prospects** tab the list comes first; **Campaigns**,
-**Opportunities** and **Watchlist** are folded below it. On a prospect's page, **Contacts** is
-a folded section with its count.
-
 ### Today
 
-The **Prospects** tab opens with a short **Today** list of what is waiting for you, counted
+**Reach** opens with a short **Today** list of what is waiting for you, counted
 from your own prospects and suggestions:
 
 - **Replies waiting for your answer** — prospects whose latest conversation needs a

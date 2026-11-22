@@ -21,7 +21,7 @@ const NINE_TABS = 9;
 function links(html: string): { href: string; text: string; current: string | null }[] {
   return [...html.matchAll(/<a\b([^>]*)>([\s\S]*?)<\/a>/g)].map((match) => ({
     href: /href="([^"]*)"/.exec(match[1]!)?.[1] ?? "",
-    text: match[2]!.replace(/<[^>]+>/g, "").trim(),
+    text: match[2]!.replace(/<span aria-hidden="true"[^>]*>\d+<\/span>/g, "").replace(/<[^>]+>/g, "").trim(),
     current: /aria-current="([^"]*)"/.exec(match[1]!)?.[1] ?? null,
   }));
 }
@@ -39,7 +39,7 @@ describe("ProductNav, once the offering has a profile", () => {
   // DISC-NAV-P0-01.4: four tabs and no second row; each tab's page folds its other pages.
   it("shows the four tabs only, on every page", () => {
     for (const path of ["", "/icp", "/prospects/discover", "/prospects/import", "/history", "/discovery", "/prospects", "/opportunities", "/watchlist", "/campaigns", "/campaigns/abc", "/performance", "/conversions", "/usage", "/people-say", "/prospects/abc"]) {
-      expect(nav(path).map((link) => link.text), path).toEqual(["Setup", "Find", "Prospects", "Results"]);
+      expect(nav(path).map((link) => link.text), path).toEqual(["Define", "Find", "Reach", "Results"]);
     }
   });
 
@@ -48,13 +48,13 @@ describe("ProductNav, once the offering has a profile", () => {
   });
 
   it("marks the tab of the page in view: as the page on the tab's own page, as the section elsewhere", () => {
-    expect(nav("/prospects").find((link) => link.text === "Prospects")!.current).toBe("page");
+    expect(nav("/prospects").find((link) => link.text === "Reach")!.current).toBe("page");
     const found = nav("/prospects/import");
     expect(found.find((link) => link.text === "Find")!.current).toBe("true");
-    expect(found.find((link) => link.text === "Prospects")!.current).toBeNull();
-    expect(nav("/discovery").find((link) => link.text === "Setup")!.current).toBe("true");
-    expect(nav("/campaigns/abc").find((link) => link.text === "Prospects")!.current).toBe("true");
-    expect(nav("/prospects/8d0c").find((link) => link.text === "Prospects")!.current).toBe("true");
+    expect(found.find((link) => link.text === "Reach")!.current).toBeNull();
+    expect(nav("/discovery").find((link) => link.text === "Define")!.current).toBe("true");
+    expect(nav("/campaigns/abc").find((link) => link.text === "Reach")!.current).toBe("true");
+    expect(nav("/prospects/8d0c").find((link) => link.text === "Reach")!.current).toBe("true");
   });
 
   it("shows fewer links than the nine tabs did", () => {
@@ -72,9 +72,9 @@ describe("ProductNav's line about the stage in view", () => {
   };
 
   it("shows exactly one line, for the tab in view", () => {
-    expect(hintOf("")).toEqual([expect.stringMatching(/what you sell and who buys it/)]);
-    expect(hintOf("/prospects/discover")).toEqual([expect.stringMatching(/match your ideal customer, and pick the ones to keep/)]);
-    expect(hintOf("/prospects/p-123")).toEqual([expect.stringMatching(/Pick the ones to work on under Select/)]);
+    expect(hintOf("")).toEqual([expect.stringMatching(/Say what you sell and who buys it, then approve/)]);
+    expect(hintOf("/prospects/discover")).toEqual([expect.stringMatching(/then approve the ones to work on/)]);
+    expect(hintOf("/prospects/p-123")).toEqual([expect.stringMatching(/Your picked prospects/)]);
     expect(hintOf("/conversions")).toEqual([expect.stringMatching(/What your outreach led to/)]);
   });
 

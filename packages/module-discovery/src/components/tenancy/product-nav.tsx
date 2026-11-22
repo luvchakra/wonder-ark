@@ -69,7 +69,7 @@ export function ProductNav({
           aria-label="Offering sections"
           className="grid w-full grid-cols-4 gap-1 rounded-lg border border-border bg-muted p-1"
         >
-          {ongoingTabs.map((tab) => {
+          {ongoingTabs.map((tab, i) => {
             const isActive = tab.id === active?.tab.id;
             return (
               <Link
@@ -83,6 +83,10 @@ export function ProductNav({
                   isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                 )}
               >
+                {/* DISC-NAV-P0-01.10: the four steps in order. */}
+                <span aria-hidden="true" className="mr-1 text-xs tabular-nums opacity-60">
+                  {i + 1}
+                </span>
                 {tab.label}
               </Link>
             );

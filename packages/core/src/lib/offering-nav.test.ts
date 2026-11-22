@@ -17,9 +17,9 @@ const active = (path: string) => {
 describe("buildOfferingNav", () => {
   it("has four tabs, in order, each landing on its first page", () => {
     expect(tabs.map((tab) => [tab.label, tab.href])).toEqual([
-      ["Setup", BASE],
+      ["Define", BASE],
       ["Find", `${BASE}/prospects/discover`],
-      ["Prospects", `${BASE}/prospects`],
+      ["Reach", `${BASE}/prospects`],
       ["Results", `${BASE}/performance`],
     ]);
   });

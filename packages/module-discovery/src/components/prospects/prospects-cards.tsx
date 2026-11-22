@@ -64,7 +64,7 @@ export function ProspectsCards({
   bulkResearchAction: (formData: FormData) => void | Promise<void>;
   bulkScoreAction: (formData: FormData) => void | Promise<void>;
   /** DISC-PROS-P0-08.1: on the Select tab, the one thing to do with ticked prospects is to
-   * pick them for work ("Use these"); research and scoring come after, on the working list. */
+   * pick them for work ("Pick these", on Find); research and scoring come after, on Reach. */
   selectAction?: (formData: FormData) => void | Promise<void>;
   /** On the working list: send ticked prospects back to the Select tab. */
   backToSelectAction?: (formData: FormData) => void | Promise<void>;
@@ -116,7 +116,7 @@ export function ProspectsCards({
             <span className="text-sm font-medium">{selected.size} selected</span>
             {selectAction ? (
               <SubmitButton size="sm" pendingText="Moving...">
-                Use these
+                Pick these
               </SubmitButton>
             ) : (
               <>
@@ -132,7 +132,7 @@ export function ProspectsCards({
                 ) : null}
                 {backToSelectAction ? (
                   <SubmitButton size="sm" variant="ghost" pendingText="Moving..." formAction={backToSelectAction}>
-                    Back to Select
+                    Back to Find
                   </SubmitButton>
                 ) : null}
               </>

@@ -114,6 +114,15 @@ describe("approving a gateway suggestion", () => {
     ]);
   });
 
+  // DISC-NAV-P0-01.10: approving on Find is the pick; there is no second choice on Reach.
+  it("marks what it approves as picked, so it goes straight to Reach", async () => {
+    const supabase = mockApproval([gatewaySuggestion]);
+    await approveProspectSuggestionsDetailed(WORKSPACE, ["s1"]);
+    const [row] = insertedProspects(supabase);
+    expect(typeof row!.shortlisted_at).toBe("string");
+    expect(Number.isNaN(Date.parse(row!.shortlisted_at as string))).toBe(false);
+  });
+
   it("copies the organisation's own phone and mailbox from the stored record", async () => {
     const supabase = mockApproval([gatewaySuggestion]);
 

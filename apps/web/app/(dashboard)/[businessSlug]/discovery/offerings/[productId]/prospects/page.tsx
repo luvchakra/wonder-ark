@@ -25,7 +25,6 @@ import {
   bulkResearchAction,
   bulkScoreAction,
   autoDiscoverOneProspectAction,
-  shortlistProspectsAction,
   unshortlistProspectsAction,
 } from "./actions";
 import { markTaskDoneAction } from "../campaigns/actions";
@@ -46,7 +45,7 @@ import OpportunitiesPage from "../opportunities/page";
 import WatchlistPage from "../watchlist/page";
 
 /** DISC-CONS-P0-05.1/05.2: the lists the Prospects tab offers, by who buys the offering. */
-const LIST_LABEL = { select: "Select", companies: "Companies", channels: "Channels", people: "People" } as const;
+const LIST_LABEL = { companies: "Companies", channels: "Channels", people: "People" } as const;
 type ProspectList = keyof typeof LIST_LABEL;
 
 /** The campaigns in one line, for their section's summary. */
@@ -117,16 +116,13 @@ export default async function ProspectsPage({
   // DISC-CONS-P0-05.1: a consumer offering's prospects are channels; one sold to both
   // has companies and channels, one list at a time. A business offering is unchanged.
   const audienceType = audienceTypeOf(product);
-  // DISC-PROS-P0-08.1: Select comes first. Prospects wait there until they are picked for
-  // work; the working lists (Companies, Channels) hold only the picked ones.
-  const workLists: ProspectList[] =
+  // DISC-NAV-P0-01.10: Reach holds only picked prospects (approved on Find, picked there
+  // from an import, or added here by hand). Companies, Channels and People are chips when
+  // the offering has more than one; picking happens on Find.
+  const lists: ProspectList[] =
     audienceType === "consumer" ? ["channels", "people"] : audienceType === "both" ? ["companies", "channels", "people"] : ["companies"];
-  const lists: ProspectList[] = ["select", ...workLists];
   const waiting = await listProspects(workspace.id, { shortlisted: false });
-  // Opened without a list: Select while something waits there, else the first working list.
-  const currentList: ProspectList =
-    lists.find((entry) => entry === query.list) ?? (waiting.length > 0 ? "select" : workLists[0]!);
-  const selecting = currentList === "select";
+  const currentList: ProspectList = lists.find((entry) => entry === query.list) ?? lists[0]!;
   const kind =
     currentList === "channels" ? ("channel" as const) : currentList === "companies" && audienceType !== "business" ? ("company" as const) : undefined;
   // DISC-CONS-P0-05.2: People are the offering's own list of those who opted in.
@@ -150,7 +146,7 @@ export default async function ProspectsPage({
         stage: (stage as ProspectStage) || undefined,
         followUpDue,
         kind,
-        shortlisted: !selecting,
+        shortlisted: true,
       },
       sortMode,
     ),
@@ -188,7 +184,7 @@ export default async function ProspectsPage({
       </div>
 
       {lists.length > 1 ? (
-        <nav aria-label="Lists" className="flex gap-1 self-start rounded-md bg-muted p-1">
+        <nav aria-label="Lists" className="flex flex-wrap gap-1.5">
           {lists.map((entry) => (
             <Link
               key={entry}
@@ -196,15 +192,23 @@ export default async function ProspectsPage({
               aria-current={entry === currentList ? "page" : undefined}
               className={
                 entry === currentList
-                  ? "rounded bg-background px-3 py-1 text-sm font-medium shadow-sm"
-                  : "rounded px-3 py-1 text-sm text-muted-foreground hover:text-foreground"
+                  ? "rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
+                  : "rounded-full border px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
               }
             >
               {LIST_LABEL[entry]}
-              {entry === "select" && waiting.length > 0 ? ` (${waiting.length})` : ""}
             </Link>
           ))}
         </nav>
+      ) : null}
+      {waiting.length > 0 ? (
+        <p className="text-sm text-muted-foreground">
+          {waiting.length} imported {waiting.length === 1 ? "prospect is" : "prospects are"} waiting to be picked on{" "}
+          <Link href={`${basePath}/discover#to-pick`} className="font-medium text-foreground underline-offset-4 hover:underline">
+            Find
+          </Link>
+          .
+        </p>
       ) : null}
 
       <TodayList rows={today} tasks={campaignTasks} taskAction={(enrollmentId) => markTaskDoneAction.bind(null, businessId, productId, enrollmentId)} />
@@ -250,11 +254,11 @@ export default async function ProspectsPage({
       ) : null}
       {query.shortlisted ? (
         <p className="rounded-md border bg-muted p-3 text-sm">
-          Moved {query.shortlisted} to your list. Research, score or add them to a campaign here.
+          Picked {query.shortlisted}. Research, score or add them to a campaign here.
         </p>
       ) : null}
       {query.unshortlisted ? (
-        <p className="rounded-md border bg-muted p-3 text-sm">Moved {query.unshortlisted} back to Select.</p>
+        <p className="rounded-md border bg-muted p-3 text-sm">Moved {query.unshortlisted} back to Find to pick again.</p>
       ) : null}
       {bulkAction === "research" || bulkAction === "score" ? (
         <p className="rounded-md border bg-muted p-3 text-sm">
@@ -295,12 +299,7 @@ export default async function ProspectsPage({
         bulkScoreAction={bulkScoreAction.bind(null, businessId, productId, workspace.id)}
         channels={currentList === "channels"}
         list={currentList}
-        selectAction={
-          selecting
-            ? shortlistProspectsAction.bind(null, businessId, productId, workspace.id, workLists.find((l) => l !== "people") ?? null)
-            : undefined
-        }
-        backToSelectAction={selecting ? undefined : unshortlistProspectsAction.bind(null, businessId, productId, workspace.id)}
+        backToSelectAction={unshortlistProspectsAction.bind(null, businessId, productId, workspace.id)}
       />
       )}
 
