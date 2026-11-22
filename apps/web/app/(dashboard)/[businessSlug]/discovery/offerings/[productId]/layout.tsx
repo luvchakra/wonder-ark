@@ -16,6 +16,8 @@ import { Breadcrumbs } from "@cofounderai/module-discovery/components/tenancy/br
 import { OfferingContextSelector } from "@cofounderai/module-discovery/components/offerings/offering-context-selector";
 import { renameProductAction } from "./actions";
 import { loadNextStep } from "@cofounderai/module-discovery/lib/journey/load";
+import { PrepRunner } from "@cofounderai/module-discovery/components/prospects/prep-runner";
+import { prepareNextProspectAction } from "./prospects/actions";
 
 export default async function ProductLayout({
   children,
@@ -92,6 +94,14 @@ export default async function ProductLayout({
           />
         </div>
         <ProductNav basePath={basePath} completed={completed} next={journey?.next ?? null} done={journey?.done} />
+        {/* DISC-AUTO-P0-01.1: picked prospects get researched, scored and a first message
+            drafted by themselves while the offering is open. */}
+        {workspace && journey && journey.prepRemaining > 0 ? (
+          <PrepRunner
+            initialRemaining={journey.prepRemaining}
+            prepareAction={prepareNextProspectAction.bind(null, businessId, productId, workspace.id)}
+          />
+        ) : null}
         {children}
       </AutoPopulateProgressProvider>
     </main>
