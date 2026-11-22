@@ -16,8 +16,11 @@ type PrepResult = { remaining: number; did: string | null; failedId?: string; er
 export function PrepRunner({
   initialRemaining,
   prepareAction,
+  autoSend = false,
 }: {
   initialRemaining: number;
+  /** DISC-AUTO-P0-03.1: "Send automatically" is on: first emails go out as they are written. */
+  autoSend?: boolean;
   prepareAction: (skip: string[]) => Promise<PrepResult>;
 }) {
   const router = useRouter();
@@ -95,13 +98,16 @@ export function PrepRunner({
       ) : done ? (
         <span>
           {skipped === 0
-            ? "All picked prospects are prepared. Their first messages are ready for you to send."
+            ? autoSend
+              ? "All picked prospects are prepared. First emails were sent automatically; anything else waits for you on To do."
+              : "All picked prospects are prepared. Their first messages are ready for you to send."
             : `Prepared what could be prepared. ${skipped} couldn't be and will be tried again next time you open this offering.`}
         </span>
       ) : (
         <span className="flex items-center gap-2">
           <Loader2 className="size-4 shrink-0 animate-spin text-primary" aria-hidden="true" />
-          Preparing {remaining} {remaining === 1 ? "prospect" : "prospects"}: research, score, first message (AI). Nothing is sent.
+          Preparing {remaining} {remaining === 1 ? "prospect" : "prospects"}: research, score, first message (AI).{" "}
+          {autoSend ? "Send automatically is on: first emails are sent as they are written." : "Nothing is sent."}
         </span>
       )}
       {last && !done ? <span className="text-xs text-muted-foreground">Last: {last}</span> : null}

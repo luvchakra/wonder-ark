@@ -35,7 +35,10 @@ import {
   updateTopOpportunityStatusAction,
   regenerateIcpFromOverviewAction,
   setAudienceTypeAction,
+  setAutoSendAction,
 } from "./actions";
+import { SubmitButton } from "@cofounderai/core/ui/submit-button";
+import { getAutoSend } from "@cofounderai/module-discovery/lib/auto-send/settings";
 import IcpPage from "./icp/page";
 
 function icpPath(businessSlug: string, productId: string) {
@@ -62,7 +65,7 @@ export async function SetupView({
   const workspace = await getWorkspaceForProduct(product.id);
   if (!workspace) notFound();
 
-  const sources = await listProductKnowledge(workspace.id);
+  const [sources, autoSend] = await Promise.all([listProductKnowledge(workspace.id), getAutoSend(businessId)]);
 
   // DISC-OFFER-P0-03.2's "Offering Discovery Overview" -- only shown once the offering
   // has a profile: before that, the setup wizard below (generate a profile from a
@@ -178,6 +181,25 @@ export async function SetupView({
 
       <SectionFold id="icp" title="Ideal customer" done={icp?.status === "approved"} hint={icpHint(icp, audienceTypeOf(product))} open={opened === "icp"}>
         <IcpPage params={params} searchParams={Promise.resolve({ suggest: query.suggest })} />
+      </SectionFold>
+
+      {/* DISC-AUTO-P0-03.1: one switch for what goes out without a Send press. */}
+      <SectionFold id="sending" title="Sending" hint={autoSend ? "First emails are sent automatically" : "Every message waits for your Send"}>
+        <form action={setAutoSendAction.bind(null, businessId, productId)} className="flex flex-col gap-3 text-sm">
+          <label className="flex items-start gap-2">
+            <input type="checkbox" name="autoSend" defaultChecked={autoSend} className="mt-0.5 size-4" />
+            <span>
+              <span className="font-medium">Send automatically</span>
+              <span className="block text-muted-foreground">
+                The first email to each prospect you approve goes out as soon as it is written, up to your mailbox&apos;s daily
+                limit. Replies, follow-ups and LinkedIn or WhatsApp messages still wait for you.
+              </span>
+            </span>
+          </label>
+          <SubmitButton size="sm" variant="outline" className="self-start" pendingText="Saving...">
+            Save
+          </SubmitButton>
+        </form>
       </SectionFold>
 
     </div>

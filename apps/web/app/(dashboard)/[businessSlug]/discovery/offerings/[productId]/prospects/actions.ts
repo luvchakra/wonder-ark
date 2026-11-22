@@ -17,6 +17,7 @@ import {
 } from "@cofounderai/module-discovery/lib/ai-approval/auto-populate";
 import { listProspects } from "@cofounderai/module-discovery/lib/prospects/queries";
 import { needsAiSetup, prepQueue, prepStepOf, PREP_STEP_LABEL, runPrepStep, stopsTheRun } from "@cofounderai/module-discovery/lib/prospects/prep";
+import { getAutoSend } from "@cofounderai/module-discovery/lib/auto-send/settings";
 
 async function prospectsPath(businessId: string, productId: string) {
   return `${await businessPath(businessId)}/discovery/offerings/${productId}/prospects`;
@@ -174,18 +175,20 @@ export async function prepareNextProspectAction(
   workspaceId: string,
   skip: string[],
 ): Promise<PrepResult> {
-  const queue = prepQueue(await listProspects(workspaceId, { shortlisted: true }), skip);
+  // DISC-AUTO-P0-03.1: read on every call, failing closed, so turning it off takes effect at once.
+  const options = { autoSend: await getAutoSend(businessId) };
+  const queue = prepQueue(await listProspects(workspaceId, { shortlisted: true }), skip, options);
   const next = queue[0];
   if (!next) return { remaining: 0, did: null };
-  const label = PREP_STEP_LABEL[prepStepOf(next)!];
+  const label = PREP_STEP_LABEL[prepStepOf(next, options)!];
   try {
-    await runPrepStep(workspaceId, next);
+    await runPrepStep(workspaceId, next, options);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     if (stopsTheRun(error)) return { remaining: queue.length, did: null, limitReached: true, error: message, needsAiSetup: needsAiSetup(error) };
     return { remaining: queue.length - 1, did: null, failedId: next.id, error: `Couldn't prepare ${next.company_name}: ${message}` };
   }
   revalidatePath(await prospectsPath(businessId, productId));
-  const after = prepQueue(await listProspects(workspaceId, { shortlisted: true }), skip);
+  const after = prepQueue(await listProspects(workspaceId, { shortlisted: true }), skip, options);
   return { remaining: after.length, did: `${label} ${next.company_name}` };
 }

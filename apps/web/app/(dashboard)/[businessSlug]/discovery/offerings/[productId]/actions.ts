@@ -14,6 +14,7 @@ import type { RediscoveryInterval } from "@cofounderai/module-discovery/lib/tena
 import { understandProduct } from "@cofounderai/module-discovery/lib/ai/understand-product";
 import { generateIcp } from "@cofounderai/module-discovery/lib/ai/generate-icp";
 import { setAudienceType } from "@cofounderai/module-discovery/lib/offerings/audience-type";
+import { setAutoSend } from "@cofounderai/module-discovery/lib/auto-send/settings";
 import { setOpportunityStatus, recordOpportunityHandoffFailure } from "@cofounderai/module-discovery/lib/opportunities/mutations";
 import type { OpportunityStatus } from "@cofounderai/module-discovery/lib/opportunities/types";
 import { promoteProspectToCrm } from "@cofounderai/module-crm/contract/index";
@@ -283,4 +284,14 @@ export async function setAudienceTypeAction(businessId: string, productId: strin
   await setAudienceType(productId, String(formData.get("audienceType") ?? ""));
   const path = await productPath(businessId, productId);
   revalidatePath(path, "layout");
+}
+
+/**
+ * DISC-AUTO-P0-03.1: turns "Send automatically" on or off for the business (owner-approved
+ * 2026-11-22, opt-in). `setAutoSend` checks the module and `business.settings.manage`; the
+ * database trigger audits the change. Throws on refusal, so the form never shows it as saved.
+ */
+export async function setAutoSendAction(businessId: string, productId: string, formData: FormData) {
+  await setAutoSend(businessId, formData.get("autoSend") === "on");
+  revalidatePath(await productPath(businessId, productId), "layout");
 }

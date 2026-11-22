@@ -17,6 +17,7 @@ import { OfferingContextSelector } from "@cofounderai/module-discovery/component
 import { renameProductAction } from "./actions";
 import { loadOfferingJourney } from "@cofounderai/module-discovery/lib/journey/load";
 import { PrepRunner } from "@cofounderai/module-discovery/components/prospects/prep-runner";
+import { getAutoSend } from "@cofounderai/module-discovery/lib/auto-send/settings";
 import { prepareNextProspectAction } from "./prospects/actions";
 
 export default async function ProductLayout({
@@ -50,7 +51,9 @@ export default async function ProductLayout({
   // DISC-NAV-P0-02.1: set up means described and its ideal customer approved; then the
   // offering opens on To do, and its count shows on the tab.
   const setupDone = Boolean(product.product_profile) && icp?.status === "approved";
-  const journey = workspace ? await loadOfferingJourney({ workspaceId: workspace.id, setupDone }) : null;
+  // DISC-AUTO-P0-03.1: with Send automatically on, written first emails are sent too.
+  const autoSend = setupDone ? await getAutoSend(businessId) : false;
+  const journey = workspace ? await loadOfferingJourney({ workspaceId: workspace.id, setupDone, autoSend }) : null;
 
   return (
     // max-w-6xl (not the old max-w-2xl): the prospects table and prospect detail page's
@@ -94,6 +97,7 @@ export default async function ProductLayout({
         {workspace && journey && journey.prepRemaining > 0 ? (
           <PrepRunner
             initialRemaining={journey.prepRemaining}
+            autoSend={autoSend}
             prepareAction={prepareNextProspectAction.bind(null, businessId, productId, workspace.id)}
           />
         ) : null}

@@ -7,6 +7,7 @@ import { getLatestOutreachStrategy } from "../outreach/queries";
 import { applyIncrementalSignalUpdate } from "../pipeline/incremental";
 import { UsageLimitExceededError } from "../usage/limits";
 import { AiProviderError } from "../ai/router";
+import { DailySendLimitReached, sendFirstEmailAutomatically } from "../auto-send/send";
 
 /**
  * DISC-AUTO-P0-01.1: preparing a picked prospect by itself (owner, 2026-11-22: "after you
@@ -19,7 +20,7 @@ import { AiProviderError } from "../ai/router";
  * One step per call, so each request stays short; the page's runner calls again until
  * nothing is left. A prospect closest to a draft goes first, so drafts appear early.
  */
-export type PrepStep = "research" | "score" | "strategy" | "approve" | "message";
+export type PrepStep = "research" | "score" | "strategy" | "approve" | "message" | "send";
 
 const STEP_FOR_ACTION: Record<string, PrepStep> = {
   "Generate message": "message",
@@ -28,7 +29,7 @@ const STEP_FOR_ACTION: Record<string, PrepStep> = {
   Score: "score",
   Research: "research",
 };
-const ORDER: PrepStep[] = ["message", "approve", "strategy", "score", "research"];
+const ORDER: PrepStep[] = ["send", "message", "approve", "strategy", "score", "research"];
 
 /** What a finished step is called, before the prospect's name: "Researched Week Plan". */
 export const PREP_STEP_LABEL: Record<PrepStep, string> = {
@@ -37,24 +38,29 @@ export const PREP_STEP_LABEL: Record<PrepStep, string> = {
   strategy: "Planned the message to",
   approve: "Planned the message to",
   message: "Wrote the first message to",
+  send: "Sent the first email to",
 };
 
 type Preppable = { id: string; company_name: string; nextAction: string | null };
 
-export function prepStepOf(p: Preppable): PrepStep | null {
+/** DISC-AUTO-P0-03.1: with "Send automatically" on, a written first message is sent too. */
+export type PrepOptions = { autoSend?: boolean };
+
+export function prepStepOf(p: Preppable, options: PrepOptions = {}): PrepStep | null {
+  if (options.autoSend && p.nextAction === "Review message") return "send";
   return p.nextAction ? (STEP_FOR_ACTION[p.nextAction] ?? null) : null;
 }
 
 /** The picked prospects still to prepare, leaving out any skipped this run (failed once). */
-export function prepQueue<T extends Preppable>(prospects: T[], skip: readonly string[] = []): T[] {
+export function prepQueue<T extends Preppable>(prospects: T[], skip: readonly string[] = [], options: PrepOptions = {}): T[] {
   return prospects
-    .filter((p) => prepStepOf(p) !== null && !skip.includes(p.id))
-    .sort((a, b) => ORDER.indexOf(prepStepOf(a)!) - ORDER.indexOf(prepStepOf(b)!));
+    .filter((p) => prepStepOf(p, options) !== null && !skip.includes(p.id))
+    .sort((a, b) => ORDER.indexOf(prepStepOf(a, options)!) - ORDER.indexOf(prepStepOf(b, options)!));
 }
 
 /** Runs one step for one prospect under the person's own session (RLS scopes it). */
-export async function runPrepStep(workspaceId: string, prospect: Preppable): Promise<PrepStep | null> {
-  const step = prepStepOf(prospect);
+export async function runPrepStep(workspaceId: string, prospect: Preppable, options: PrepOptions = {}): Promise<PrepStep | null> {
+  const step = prepStepOf(prospect, options);
   if (step === "research") {
     await researchProspect(prospect.id);
     // Best-effort, as on the prospect's own Research button.
@@ -63,6 +69,8 @@ export async function runPrepStep(workspaceId: string, prospect: Preppable): Pro
     await scoreProspect(prospect.id);
   } else if (step === "strategy") {
     await generateOutreachStrategy(prospect.id, null);
+  } else if (step === "send") {
+    await sendFirstEmailAutomatically(workspaceId, prospect.id);
   } else if (step === "approve" || step === "message") {
     const strategy = await getLatestOutreachStrategy(prospect.id);
     if (!strategy) throw new Error("No outreach plan to write from.");
@@ -79,7 +87,11 @@ export async function runPrepStep(workspaceId: string, prospect: Preppable): Pro
 const STOPPING_CODES = new Set(["no_provider_connected", "invalid_key", "feature_disabled", "rate_limited", "provider_unavailable"]);
 
 export function stopsTheRun(error: unknown): boolean {
-  return error instanceof UsageLimitExceededError || (error instanceof AiProviderError && STOPPING_CODES.has(error.code));
+  return (
+    error instanceof UsageLimitExceededError ||
+    error instanceof DailySendLimitReached ||
+    (error instanceof AiProviderError && STOPPING_CODES.has(error.code))
+  );
 }
 
 /** Whether the fix is the person's AI key (shown with a link to the AI provider settings). */

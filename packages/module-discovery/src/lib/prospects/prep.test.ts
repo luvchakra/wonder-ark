@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { needsAiSetup, prepQueue, prepStepOf, runPrepStep, stopsTheRun } from "./prep";
 import { AiProviderError } from "../ai/router";
+import { DailySendLimitReached, LeftForPerson } from "../auto-send/send";
 import { UsageLimitExceededError } from "../usage/limits";
 
 // DISC-AUTO-P0-01.1
@@ -28,6 +29,22 @@ vi.mock("../ai/generate-message", () => ({ generateOutreachMessage: vi.fn(async 
 vi.mock("../outreach/mutations", () => ({ approveOutreachStrategy: vi.fn(async (id: string) => calls.push(`approve:${id}`)) }));
 vi.mock("../outreach/queries", () => ({ getLatestOutreachStrategy: vi.fn(async (id: string) => (id === "none" ? null : { id: `s-${id}` })) }));
 vi.mock("../pipeline/incremental", () => ({ applyIncrementalSignalUpdate: vi.fn(async () => { throw new Error("recompute failed"); }) }));
+
+// DISC-AUTO-P0-03.1
+describe("with Send automatically", () => {
+  it("sends a written first message, before anything else; without it, sending stays the person's", () => {
+    expect(prepStepOf(p("a", "Review message"), { autoSend: true })).toBe("send");
+    expect(prepStepOf(p("a", "Review message"))).toBeNull();
+    expect(prepStepOf(p("b", "Retry send"), { autoSend: true })).toBeNull();
+    expect(prepStepOf(p("c", "Generate reply"), { autoSend: true })).toBeNull();
+    expect(prepQueue([p("r", "Research"), p("s", "Review message")], [], { autoSend: true }).map((x) => x.id)).toEqual(["s", "r"]);
+  });
+
+  it("stops the run at the daily send limit", () => {
+    expect(stopsTheRun(new DailySendLimitReached(30))).toBe(true);
+    expect(stopsTheRun(new LeftForPerson("Not an email"))).toBe(false);
+  });
+});
 
 describe("runPrepStep", () => {
   beforeEach(() => {
