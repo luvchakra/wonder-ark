@@ -15,6 +15,8 @@ import {
   autoDiscoverOneProspect,
   type AutoPopulateProspectsResult,
 } from "@cofounderai/module-discovery/lib/ai-approval/auto-populate";
+import { listProspects } from "@cofounderai/module-discovery/lib/prospects/queries";
+import { isUsageLimit, prepQueue, prepStepOf, PREP_STEP_LABEL, runPrepStep } from "@cofounderai/module-discovery/lib/prospects/prep";
 
 async function prospectsPath(businessId: string, productId: string) {
   return `${await businessPath(businessId)}/discovery/offerings/${productId}/prospects`;
@@ -143,4 +145,44 @@ export async function unshortlistProspectsAction(
   const moved = await setProspectsShortlisted(workspaceId, ids, false);
   revalidatePath(await prospectsPath(businessId, productId));
   redirect(`${await prospectsPath(businessId, productId)}?unshortlisted=${moved}`);
+}
+
+/** DISC-AUTO-P0-01.1: what one call of the preparation runner did. */
+export type PrepResult = {
+  /** Prospects still to prepare after this call (not counting skipped ones). */
+  remaining: number;
+  /** "Researched Week Plan", or null when there was nothing to do. */
+  did: string | null;
+  /** The prospect that failed this time; the runner skips it for the rest of the run. */
+  failedId?: string;
+  error?: string;
+  /** AI credits are used up: the runner stops. */
+  limitReached?: boolean;
+};
+
+/**
+ * DISC-AUTO-P0-01.1: prepares the next picked prospect by one step (research, score, plan,
+ * first-message draft) under the person's own session. Called again and again by the
+ * offering's preparation runner until nothing is left. Sends nothing.
+ */
+export async function prepareNextProspectAction(
+  businessId: string,
+  productId: string,
+  workspaceId: string,
+  skip: string[],
+): Promise<PrepResult> {
+  const queue = prepQueue(await listProspects(workspaceId, { shortlisted: true }), skip);
+  const next = queue[0];
+  if (!next) return { remaining: 0, did: null };
+  const label = PREP_STEP_LABEL[prepStepOf(next)!];
+  try {
+    await runPrepStep(workspaceId, next);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    if (isUsageLimit(error)) return { remaining: queue.length, did: null, limitReached: true, error: message };
+    return { remaining: queue.length - 1, did: null, failedId: next.id, error: `Couldn't prepare ${next.company_name}: ${message}` };
+  }
+  revalidatePath(await prospectsPath(businessId, productId));
+  const after = prepQueue(await listProspects(workspaceId, { shortlisted: true }), skip);
+  return { remaining: after.length, did: `${label} ${next.company_name}` };
 }

@@ -276,6 +276,14 @@ offering has more than one. To unpick one, open it and choose **Move back to Fin
 
 ### Reach: what to do next
 
+**Prepared for you.** Once the ideal customer is approved, every prospect you pick is
+prepared by itself while the offering is open: researched, scored, given an outreach plan,
+and given a first message draft (AI-generated). A line under the steps says how many are
+left and what was done last. Nothing is sent: each draft waits for your **Send**. Picking a
+prospect is your go-ahead to spend AI credits on it (about three AI calls each). If a
+prospect can't be prepared, the line says why and moves on; if your AI credits run out, it
+stops and says so. Close the offering and it carries on next time you open it.
+
 **Reach** lists your picked prospects grouped by what to do next, closest to a customer
 first, under the same words as the **Next** line: **Answer replies**, **Follow up with**
 (no reply and no activity for 7 days), **Send ready messages**, **Write to**, **Score**,

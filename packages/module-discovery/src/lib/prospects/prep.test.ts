@@ -1,0 +1,60 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { isUsageLimit, prepQueue, prepStepOf, runPrepStep } from "./prep";
+import { UsageLimitExceededError } from "../usage/limits";
+
+// DISC-AUTO-P0-01.1
+const p = (id: string, nextAction: string | null) => ({ id, company_name: id, nextAction });
+
+describe("prep queue", () => {
+  it("prepares only prospects with a preparation step left; sending and replies stay the person's", () => {
+    expect(prepStepOf(p("a", "Review message"))).toBeNull();
+    expect(prepStepOf(p("b", "Generate reply"))).toBeNull();
+    expect(prepStepOf(p("c", null))).toBeNull();
+    expect(prepStepOf(p("d", "Approve strategy"))).toBe("approve");
+  });
+
+  it("finishes the prospect closest to a draft first, and leaves out skipped ones", () => {
+    const queue = prepQueue([p("new", "Research"), p("scored", "Generate strategy"), p("planned", "Generate message"), p("sent", null)], ["scored"]);
+    expect(queue.map((x) => x.id)).toEqual(["planned", "new"]);
+  });
+});
+
+const calls: string[] = [];
+vi.mock("../ai/research-prospect", () => ({ researchProspect: vi.fn(async (id: string) => calls.push(`research:${id}`)) }));
+vi.mock("../scoring/score-prospect", () => ({ scoreProspect: vi.fn(async (id: string) => calls.push(`score:${id}`)) }));
+vi.mock("../ai/generate-strategy", () => ({ generateOutreachStrategy: vi.fn(async (id: string) => calls.push(`strategy:${id}`)) }));
+vi.mock("../ai/generate-message", () => ({ generateOutreachMessage: vi.fn(async (id: string) => calls.push(`message:${id}`)) }));
+vi.mock("../outreach/mutations", () => ({ approveOutreachStrategy: vi.fn(async (id: string) => calls.push(`approve:${id}`)) }));
+vi.mock("../outreach/queries", () => ({ getLatestOutreachStrategy: vi.fn(async (id: string) => (id === "none" ? null : { id: `s-${id}` })) }));
+vi.mock("../pipeline/incremental", () => ({ applyIncrementalSignalUpdate: vi.fn(async () => { throw new Error("recompute failed"); }) }));
+
+describe("runPrepStep", () => {
+  beforeEach(() => {
+    calls.length = 0;
+  });
+
+  it("runs exactly the prospect's next step, and only drafts a message (never sends)", async () => {
+    await runPrepStep("w", p("a", "Research"));
+    await runPrepStep("w", p("b", "Score"));
+    await runPrepStep("w", p("c", "Generate strategy"));
+    await runPrepStep("w", p("d", "Approve strategy"));
+    await runPrepStep("w", p("e", "Generate message"));
+    expect(calls).toEqual(["research:a", "score:b", "strategy:c", "approve:s-d", "message:s-e"]);
+  });
+
+  it("does nothing for a step that is the person's (sending, answering)", async () => {
+    expect(await runPrepStep("w", p("a", "Review message"))).toBeNull();
+    expect(await runPrepStep("w", p("b", "Generate reply"))).toBeNull();
+    expect(calls).toEqual([]);
+  });
+
+  it("keeps the research when the follow-on recompute fails, and fails plainly without a plan", async () => {
+    await expect(runPrepStep("w", p("a", "Research"))).resolves.toBe("research");
+    await expect(runPrepStep("w", p("none", "Generate message"))).rejects.toThrow("No outreach plan");
+  });
+
+  it("recognises used-up AI credits so the runner stops instead of skipping", () => {
+    expect(isUsageLimit(new UsageLimitExceededError("runs"))).toBe(true);
+    expect(isUsageLimit(new Error("provider down"))).toBe(false);
+  });
+});
