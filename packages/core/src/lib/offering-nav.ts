@@ -34,15 +34,18 @@ export type OfferingNavPage = {
 export type OfferingNavTab = {
   id: OfferingTabId;
   label: string;
+  /** DISC-NAV-P0-01.8: one line saying what this stage is for and how it works. */
+  hint: string;
   /** Where the tab lands: its first page. */
   href: string;
   pages: OfferingNavPage[];
 };
 
-export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; pages: readonly { slug: string; label: string }[] }[] = [
+export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: string; pages: readonly { slug: string; label: string }[] }[] = [
   {
     id: "setup",
     label: "Setup",
+    hint: "Say what you sell and who buys it. AI drafts both from your website; you edit and approve.",
     pages: [
       { slug: "", label: "Overview" },
       { slug: "icp", label: "Ideal customer" },
@@ -52,6 +55,7 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; pages: 
   {
     id: "find",
     label: "Find",
+    hint: "Search for businesses or channels that match your ideal customer, and pick the ones to keep.",
     pages: [
       { slug: "prospects/discover", label: "Search" },
       { slug: "prospects/import", label: "Import" },
@@ -61,6 +65,7 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; pages: 
   {
     id: "prospects",
     label: "Prospects",
+    hint: "Everyone you approved. Open one to research it and write to it, or reach many at once with a campaign.",
     pages: [
       { slug: "prospects", label: "All" },
       // DISC-CAMP-P0-05.1: outreach campaigns to the offering's prospects.
@@ -72,6 +77,7 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; pages: 
   {
     id: "results",
     label: "Results",
+    hint: "What your outreach led to: replies, deals won, and what people said.",
     pages: [
       { slug: "performance", label: "Performance" },
       { slug: "conversions", label: "Conversions" },
@@ -90,7 +96,7 @@ export function buildOfferingNav(basePath: string): OfferingNavTab[] {
       ...page,
       href: page.slug ? `${basePath}/${page.slug}` : basePath,
     }));
-    return { id: tab.id, label: tab.label, href: pages[0]!.href, pages };
+    return { id: tab.id, label: tab.label, hint: tab.hint, href: pages[0]!.href, pages };
   });
 }
 

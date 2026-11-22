@@ -62,6 +62,33 @@ describe("ProductNav, once the offering has a profile", () => {
   });
 });
 
+// DISC-NAV-P0-01.8: one short line under the tabs says what the stage in view is for.
+describe("ProductNav's line about the stage in view", () => {
+  const hintOf = (path: string, completed: { overview?: boolean } = { overview: true }) => {
+    h.pathname = `${BASE}${path}`;
+    const html = renderToStaticMarkup(<ProductNav basePath={BASE} completed={completed} />);
+    const lines = [...html.matchAll(/<p\b[^>]*>([\s\S]*?)<\/p>/g)].map((m) => m[1]!.replace(/<[^>]+>/g, "").trim());
+    return lines;
+  };
+
+  it("shows exactly one line, for the tab in view", () => {
+    expect(hintOf("")).toEqual([expect.stringMatching(/what you sell and who buys it/)]);
+    expect(hintOf("/prospects/discover")).toEqual([expect.stringMatching(/match your ideal customer, and pick the ones to keep/)]);
+    expect(hintOf("/prospects/p-123")).toEqual([expect.stringMatching(/Everyone you approved/)]);
+    expect(hintOf("/conversions")).toEqual([expect.stringMatching(/What your outreach led to/)]);
+  });
+
+  it("does the same on the four-step bar while the offering is being set up", () => {
+    expect(hintOf("/icp", {})).toEqual([expect.stringMatching(/approve it to start finding prospects/)]);
+  });
+
+  it("keeps each line short", () => {
+    for (const path of ["", "/prospects/discover", "/prospects", "/performance"]) {
+      for (const line of hintOf(path)) expect(line.length, path).toBeLessThanOrEqual(110);
+    }
+  });
+});
+
 describe("ProductNav, while the offering is being set up", () => {
   it("keeps the four-step bar, with the plain label", () => {
     expect(nav("", {}).map((link) => [link.text.replace(/^\d+/, ""), link.href])).toEqual([

@@ -97,7 +97,8 @@ offerings" panel when the same company turns up under more than one of them.
 ## Working an offering
 
 Once an offering has a profile, it has four tabs along the top: **Setup**, **Find**,
-**Prospects** and **Results**. Each tab is one page. Its main content is open, and
+**Prospects** and **Results**. One line under the tabs says what the tab you're on is for.
+Each tab is one page. Its main content is open, and
 everything else is a section with a title, a one-line summary and a chevron. Click a
 section to open it.
 
