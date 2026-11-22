@@ -276,6 +276,14 @@ export const FAQ: FaqEntry[] = [
   },
   {
     category: "Day to day",
+    question: "Can WonderArk send the first email for me?",
+    answer:
+      "Yes, if you turn it on: an offering's Setup → Sending → Send automatically (owners and admins only; off unless turned on). Then the first email to each prospect you approve is sent as soon as it is written, up to your mailbox's daily limit (30 unless you changed it, counting campaign emails), through the same checks as pressing Send. A failed send is never retried on its own. Replies, follow-ups and LinkedIn or WhatsApp messages still wait for you on To do.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
     question: "Do I have to research, score and write to each prospect myself?",
     answer:
       "No. Once your ideal customer is approved, every prospect you pick is prepared by itself while the offering is open: researched, scored, planned and given a first message draft (AI-generated). A line under the tabs shows how many are left. Nothing is sent: each draft waits for you to press Send. Picking a prospect spends about three AI calls on it. If your AI credits run out or your AI key is refused, preparation stops once and says why.",

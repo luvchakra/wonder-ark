@@ -279,6 +279,15 @@ prospect (AI credits used up, your AI key refused or missing, the AI provider bu
 it stops once and says why, with **Fix the AI key** when the key is the problem. When some
 couldn't be prepared, the last line says how many; they are tried again next time. Close the offering and it carries on next time you open it.
 
+**Send automatically** (off unless you turn it on, in **Setup** → **Sending**). With it on,
+the first email to each prospect you approve is sent as soon as it is written, through the
+same path as pressing **Send**: unsubscribed and suppressed addresses are never sent to,
+an address marked risky waits for your confirmation, and each send is recorded (marked as
+sent automatically). At most your mailbox's daily limit go out per day (30 unless you
+changed it), counting campaign emails. A send that fails is never retried on its own.
+Replies, follow-ups and LinkedIn or WhatsApp messages still wait for you on **To do**.
+Only an owner or admin can change it, and every change is recorded.
+
 **Prospects** lists everyone you approved, grouped by how far each has got. Your groups come
 first, in the same order as **To do**: **Answer replies**, **Follow up with**, **Send ready
 messages**. Then **Being prepared** (WonderArk is researching, scoring or writing to them),

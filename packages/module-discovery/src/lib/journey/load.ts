@@ -8,7 +8,7 @@ import { todoCount } from "./todo";
  * (RLS scopes every read to their business): the To do count, and how many picked
  * prospects are still to prepare. Three reads, in parallel.
  */
-export async function loadOfferingJourney(input: { workspaceId: string; setupDone: boolean }): Promise<{ todo: number; prepRemaining: number }> {
+export async function loadOfferingJourney(input: { workspaceId: string; setupDone: boolean; autoSend?: boolean }): Promise<{ todo: number; prepRemaining: number }> {
   const supabase = await createClient();
   const [picked, suggestionCount, waiting] = await Promise.all([
     listProspects(input.workspaceId, { shortlisted: true }),
@@ -20,6 +20,6 @@ export async function loadOfferingJourney(input: { workspaceId: string; setupDon
     todo: todoCount({ picked, suggestionCount, waitingToPick: waiting.count ?? 0 }),
     // DISC-AUTO-P0-01.1: only once setup is done (scoring and the message need the
     // approved ideal customer).
-    prepRemaining: input.setupDone ? prepQueue(picked).length : 0,
+    prepRemaining: input.setupDone ? prepQueue(picked, [], { autoSend: input.autoSend }).length : 0,
   };
 }

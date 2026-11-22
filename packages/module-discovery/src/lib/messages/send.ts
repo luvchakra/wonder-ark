@@ -45,7 +45,12 @@ export async function sendMessage(
   messageId: string,
   /** DISC-DATA-P0-04.2: set when the person confirmed sending to an address a lookup
    * marked risky or left unverified. It has no effect on an invalid address. */
-  options: { confirmedUnverified?: boolean; smtp?: SmtpDeps } = {},
+  options: {
+    confirmedUnverified?: boolean;
+    smtp?: SmtpDeps;
+    /** DISC-AUTO-P0-03.1: sent by "Send automatically", not a Send press; recorded on the audit row. */
+    automatic?: boolean;
+  } = {},
 ): Promise<Message> {
   const supabase = await createClient();
   const { data: message, error: fetchError } = await supabase
@@ -205,7 +210,7 @@ export async function sendMessage(
         entityType: "discovery_message",
         entityId: messageId,
         // What was sent to whom is on the message; the trail keeps neither address nor text.
-        after: { via, prospectId: message.prospect_id, contactId: recipient?.id ?? null, ...(reason ? { reason } : {}) },
+        after: { via, prospectId: message.prospect_id, contactId: recipient?.id ?? null, ...(options.automatic ? { automatic: true } : {}), ...(reason ? { reason } : {}) },
       });
     } catch (auditError) {
       console.error("Could not record a send in the audit log:", auditError instanceof Error ? auditError.message : auditError);
