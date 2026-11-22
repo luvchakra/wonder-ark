@@ -62,6 +62,8 @@ function icpFieldsFromFormData(formData: FormData) {
     growthStage: parseListField(String(formData.get("growthStage") ?? "")),
     existingTools: parseListField(String(formData.get("existingTools") ?? "")),
     audience: idealUserFromFormData(formData),
+    // DISC-OFFER-P0-12.4: present only when the page shows the Evidence field.
+    evidence: formData.has("evidence") ? parseListField(String(formData.get("evidence") ?? "")) : undefined,
   };
 }
 

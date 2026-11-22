@@ -11,7 +11,7 @@ offerings and data:
 - **Funding** — your funding profile, investor readiness, rounds, investors,
   outreach, data room and due diligence.
 
-Last updated: 2026-11-12
+Last updated: 2026-11-22
 
 
 ## How Discovery is organised
@@ -186,6 +186,8 @@ Ideal Customer Profile (ICP):
 industries, company sizes, geographies, roles, pain points, buying signals,
 exclusions, revenue range, business model, tech stack, growth stage, and
 existing tools. The ICP has one overall **Confidence** percentage and an **Evidence** list.
+Tap **Edit** beside **Evidence** to change it, one item per line. Saving any change keeps
+your Evidence and clears the Confidence, which was the AI's score for its own draft.
 It needs an offering profile first. **Save changes** only saves; **Save & Run Downstream**
 also re-runs prospecting and scoring. Earlier versions are under **Version history**. Buyer
 Personas are managed on the same page, whether or not an ICP exists yet.

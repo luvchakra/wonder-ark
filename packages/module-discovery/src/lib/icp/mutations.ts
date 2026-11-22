@@ -22,6 +22,10 @@ type IcpFieldsInput = {
    * form that has none (an offering sold to companies only), which leaves the stored
    * Ideal user as it is. */
   audience?: unknown;
+  /** DISC-OFFER-P0-12.4: the Evidence list as the person edited it (one item per line).
+   * Left out by a caller that does not edit it, which clears it as before: the AI's
+   * evidence no longer describes a profile a person changed. */
+  evidence?: string[];
 };
 
 function icpFieldsToRow(input: IcpFieldsInput) {
@@ -163,7 +167,9 @@ export async function updateIcpProfile(icpId: string, input: IcpFieldsInput): Pr
 
   const { data, error } = await supabase
     .from("icp_profiles")
-    .update({ ...icpFieldsToRow(input), status: "draft", confidence: null, evidence: [], version: current.version + 1 })
+    // A person's edit is no longer the AI's draft, so its confidence score goes. Evidence the
+    // person kept or wrote stays (DISC-OFFER-P0-12.4).
+    .update({ ...icpFieldsToRow(input), status: "draft", confidence: null, evidence: input.evidence ?? [], version: current.version + 1 })
     .eq("id", icpId)
     .select()
     .single();
