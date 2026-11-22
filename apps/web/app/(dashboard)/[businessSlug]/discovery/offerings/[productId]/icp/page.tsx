@@ -223,32 +223,24 @@ export default async function IcpPage({
         </div>
       </div>
 
-      {icp.confidence !== null || icp.evidence.length > 0 ? (
-        <div className="flex flex-col gap-2 rounded-md border p-3 text-sm">
-          {icp.confidence !== null ? (
-            <p>
-              <span className="font-medium">Confidence: </span>
-              <span className="text-muted-foreground">{Math.round(icp.confidence * 100)}%</span>
-            </p>
-          ) : null}
-          {icp.evidence.length > 0 ? (
-            <div>
-              <p className="font-medium">Evidence</p>
-              <ul className="mt-1 list-disc pl-5 text-muted-foreground">
-                {icp.evidence.map((item, i) => (
-                  <li key={i}>{item}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-
       <form
         id="icp-edit-form"
         action={updateIcpAction.bind(null, businessId, productId, icp.id)}
         className="flex flex-col gap-4"
       >
+        {/* DISC-OFFER-P0-12.4: the AI's evidence is editable like every field below it, and
+            saved with them. */}
+        {icp.confidence !== null || icp.evidence.length > 0 ? (
+          <div className="flex flex-col gap-2 rounded-md border p-3 text-sm">
+            {icp.confidence !== null ? (
+              <p>
+                <span className="font-medium">Confidence: </span>
+                <span className="text-muted-foreground">{Math.round(icp.confidence * 100)}%</span>
+              </p>
+            ) : null}
+            <IcpField label="Evidence" name="evidence" defaultValue={toLines(icp.evidence)} />
+          </div>
+        ) : null}
         <div className="flex flex-col gap-1.5">
           <Label htmlFor="name">Name</Label>
           <Input id="name" name="name" defaultValue={icp.name} required />
