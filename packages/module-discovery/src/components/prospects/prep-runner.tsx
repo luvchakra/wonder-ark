@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 
-type PrepResult = { remaining: number; did: string | null; failedId?: string; error?: string; limitReached?: boolean };
+type PrepResult = { remaining: number; did: string | null; failedId?: string; error?: string; limitReached?: boolean; needsAiSetup?: boolean };
 
 /**
  * DISC-AUTO-P0-01.1: prepares picked prospects by itself while the offering is open: one
@@ -24,6 +25,9 @@ export function PrepRunner({
   const [last, setLast] = useState<string | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [stopped, setStopped] = useState<string | null>(null);
+  const [setupLink, setSetupLink] = useState(false);
+  // DISC-AUTO-P0-01.2: how many were skipped, so the end line never claims all are ready.
+  const [skipped, setSkipped] = useState(0);
   const started = useRef(false);
   // The bound action and router change identity on every refresh; the loop reads the latest
   // through refs, so a refresh never restarts or stops it.
@@ -59,6 +63,7 @@ export function PrepRunner({
         if (unmounted.current) return;
         if (result.failedId) {
           skip.push(result.failedId);
+          setSkipped(skip.length);
           setProblem(result.error ?? null);
         }
         if (result.did) setLast(result.did);
@@ -66,6 +71,7 @@ export function PrepRunner({
         routerRef.current.refresh();
         if (result.limitReached) {
           setStopped(`Preparation stopped: ${result.error ?? "AI credits are used up."}`);
+          setSetupLink(Boolean(result.needsAiSetup));
           return;
         }
         if (result.remaining === 0) return;
@@ -78,9 +84,20 @@ export function PrepRunner({
   return (
     <div role="status" className="flex flex-col gap-0.5 rounded-lg border bg-card px-4 py-2.5 text-sm">
       {stopped ? (
-        <span>{stopped}</span>
+        <span>
+          {stopped}{" "}
+          {setupLink ? (
+            <Link href="/dashboard/settings/ai-provider" className="font-medium text-primary hover:underline">
+              Fix the AI key
+            </Link>
+          ) : null}
+        </span>
       ) : done ? (
-        <span>All picked prospects are prepared. Their first messages are ready for you to send.</span>
+        <span>
+          {skipped === 0
+            ? "All picked prospects are prepared. Their first messages are ready for you to send."
+            : `Prepared what could be prepared. ${skipped} couldn't be and will be tried again next time you open this offering.`}
+        </span>
       ) : (
         <span className="flex items-center gap-2">
           <Loader2 className="size-4 shrink-0 animate-spin text-primary" aria-hidden="true" />

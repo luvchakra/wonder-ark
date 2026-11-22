@@ -271,8 +271,10 @@ prepared by itself while the offering is open: researched, scored, given an outr
 and given a first message draft (AI-generated). A line under the tabs says how many are
 left and what was done last. Nothing is sent: each draft waits for your **Send**. Picking a
 prospect is your go-ahead to spend AI credits on it (about three AI calls each). If a
-prospect can't be prepared, the line says why and moves on; if your AI credits run out, it
-stops and says so. Close the offering and it carries on next time you open it.
+prospect can't be prepared, the line says why and moves on. If something would stop every
+prospect (AI credits used up, your AI key refused or missing, the AI provider busy or down),
+it stops once and says why, with **Fix the AI key** when the key is the problem. When some
+couldn't be prepared, the last line says how many; they are tried again next time. Close the offering and it carries on next time you open it.
 
 **Prospects** lists everyone you approved, grouped by how far each has got. Your groups come
 first, in the same order as **To do**: **Answer replies**, **Follow up with**, **Send ready

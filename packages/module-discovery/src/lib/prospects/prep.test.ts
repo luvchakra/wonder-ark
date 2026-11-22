@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { isUsageLimit, prepQueue, prepStepOf, runPrepStep } from "./prep";
+import { needsAiSetup, prepQueue, prepStepOf, runPrepStep, stopsTheRun } from "./prep";
+import { AiProviderError } from "../ai/router";
 import { UsageLimitExceededError } from "../usage/limits";
 
 // DISC-AUTO-P0-01.1
@@ -53,8 +54,15 @@ describe("runPrepStep", () => {
     await expect(runPrepStep("w", p("none", "Generate message"))).rejects.toThrow("No outreach plan");
   });
 
-  it("recognises used-up AI credits so the runner stops instead of skipping", () => {
-    expect(isUsageLimit(new UsageLimitExceededError("runs"))).toBe(true);
-    expect(isUsageLimit(new Error("provider down"))).toBe(false);
+  // DISC-AUTO-P0-01.2: seen live: a refused key failed 25 prospects one by one.
+  it("stops on failures that would fail every prospect, and skips only one-prospect failures", () => {
+    expect(stopsTheRun(new UsageLimitExceededError("runs"))).toBe(true);
+    expect(stopsTheRun(new AiProviderError("invalid_key", "Your anthropic API key could not complete this request."))).toBe(true);
+    expect(stopsTheRun(new AiProviderError("no_provider_connected", "No AI provider"))).toBe(true);
+    expect(stopsTheRun(new AiProviderError("rate_limited", "Slow down"))).toBe(true);
+    expect(stopsTheRun(new AiProviderError("no_content_found", "Nothing on the site"))).toBe(false);
+    expect(stopsTheRun(new Error("No outreach plan to write from."))).toBe(false);
+    expect(needsAiSetup(new AiProviderError("invalid_key", "x"))).toBe(true);
+    expect(needsAiSetup(new UsageLimitExceededError("cost"))).toBe(false);
   });
 });

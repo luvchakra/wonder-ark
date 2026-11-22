@@ -6,6 +6,7 @@ import { approveOutreachStrategy } from "../outreach/mutations";
 import { getLatestOutreachStrategy } from "../outreach/queries";
 import { applyIncrementalSignalUpdate } from "../pipeline/incremental";
 import { UsageLimitExceededError } from "../usage/limits";
+import { AiProviderError } from "../ai/router";
 
 /**
  * DISC-AUTO-P0-01.1: preparing a picked prospect by itself (owner, 2026-11-22: "after you
@@ -71,6 +72,17 @@ export async function runPrepStep(workspaceId: string, prospect: Preppable): Pro
   return step;
 }
 
-export function isUsageLimit(error: unknown): boolean {
-  return error instanceof UsageLimitExceededError;
+/** DISC-AUTO-P0-01.2: failures that would fail every prospect the same way (credits used up,
+ * no AI key, a key the provider refuses, AI turned off, the provider rate-limiting or down).
+ * The runner stops on these and says why, instead of skipping prospect after prospect. Any
+ * other failure is about that one prospect: it is skipped and the run goes on. */
+const STOPPING_CODES = new Set(["no_provider_connected", "invalid_key", "feature_disabled", "rate_limited", "provider_unavailable"]);
+
+export function stopsTheRun(error: unknown): boolean {
+  return error instanceof UsageLimitExceededError || (error instanceof AiProviderError && STOPPING_CODES.has(error.code));
+}
+
+/** Whether the fix is the person's AI key (shown with a link to the AI provider settings). */
+export function needsAiSetup(error: unknown): boolean {
+  return error instanceof AiProviderError && (error.code === "invalid_key" || error.code === "no_provider_connected");
 }
