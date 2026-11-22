@@ -1,15 +1,17 @@
 /**
  * DISC-NAV-P0-01.1/01.3: the offering's navigation, as data.
  *
- * Four tabs replace the nine an offering with a profile used to show. Every page stays
- * at the path it always had (docs/plan/12-DISCOVERY-EXPANSION-SPEC.md §0.1: no renamed
- * route, no dead deep link); what changes is only which tab it is reached from:
+ * DISC-NAV-P0-02.1 (2026-11-22): three tabs. Every page stays at the path it always had
+ * (docs/plan/12-DISCOVERY-EXPANSION-SPEC.md §0.1: no renamed route, no dead deep link);
+ * what changes is only which tab it is reached from:
  *
- *   Define     Overview, Ideal customer (the ICP page, which also holds buyer personas)
- *   Find       Find (with "To review" on the same page), Import, Definitions (automatic
- *              discovery), History
- *   Reach      All prospects, Campaigns, Opportunities, Watchlist
+ *   To do      To do (the offering's own address once it is set up), Find more, Import,
+ *              Definitions (automatic discovery), History
+ *   Prospects  All prospects, Campaigns, Opportunities, Watchlist
  *   Results    Performance, Conversions, Usage, What people say
+ *
+ * Setup (what you sell, who buys it: `setup`, `icp`) is reached from the Setup link, not a
+ * tab; before it is done the offering's own address shows it.
  *
  * DISC-NAV-P0-01.11: Watchlist and Usage keep their pages but are no longer sections of
  * their tab; neither leads to a new customer.
@@ -25,7 +27,7 @@
  * here: a client component imports it.
  */
 
-export type OfferingTabId = "setup" | "find" | "prospects" | "results";
+export type OfferingTabId = "todo" | "prospects" | "results";
 
 export type OfferingNavPage = {
   /** The page's path below the offering, "" for the offering's overview. */
@@ -46,30 +48,24 @@ export type OfferingNavTab = {
 
 export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: string; pages: readonly { slug: string; label: string }[] }[] = [
   {
-    id: "setup",
-    label: "Define",
-    hint: "Say what you sell and who buys it, then approve. AI drafts both from your website.",
+    // DISC-NAV-P0-02.1 (owner-approved redesign, 2026-11-22): three tabs. To do is the only
+    // list the person works from; WonderArk finds and prepares the rest. Finding more and
+    // its pages belong here, since what they find comes back to To do for approval.
+    id: "todo",
+    label: "To do",
+    hint: "What needs you. WonderArk researches, scores and writes the rest by itself.",
     pages: [
-      { slug: "", label: "Overview" },
-      { slug: "icp", label: "Ideal customer" },
-    ],
-  },
-  {
-    id: "find",
-    label: "Find",
-    hint: "Search for prospects that match, then approve the ones to work on.",
-    pages: [
-      { slug: "prospects/discover", label: "Search" },
+      { slug: "", label: "To do" },
+      { slug: "prospects/discover", label: "Find more" },
       { slug: "prospects/import", label: "Import" },
-      // DISC-NAV-P0-01.11: automatic discovery and its definitions find prospects.
       { slug: "discovery", label: "Definitions" },
       { slug: "history", label: "History" },
     ],
   },
   {
     id: "prospects",
-    label: "Reach",
-    hint: "Your picked prospects, grouped by what to do next. Work from the top.",
+    label: "Prospects",
+    hint: "Everyone you approved, and how far each has got.",
     pages: [
       { slug: "prospects", label: "All" },
       // DISC-CAMP-P0-05.1: outreach campaigns to the offering's prospects.
@@ -92,7 +88,14 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: s
   },
 ];
 
-/** The four tabs and the pages each holds, with links under `basePath` (the offering's
+/** DISC-NAV-P0-02.1: Setup's pages, reached from the Setup link beside the tabs rather
+ * than from a tab. */
+export const OFFERING_SETUP_PAGES: readonly { slug: string; label: string }[] = [
+  { slug: "setup", label: "Setup" },
+  { slug: "icp", label: "Ideal customer" },
+];
+
+/** The tabs and the pages each holds, with links under `basePath` (the offering's
  * own path, `/<business>/discovery/offerings/<id>`). */
 export function buildOfferingNav(basePath: string): OfferingNavTab[] {
   return OFFERING_TABS.map((tab) => {

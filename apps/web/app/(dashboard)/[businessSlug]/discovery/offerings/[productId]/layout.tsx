@@ -15,7 +15,7 @@ import { EditableName } from "@cofounderai/module-discovery/components/tenancy/e
 import { Breadcrumbs } from "@cofounderai/module-discovery/components/tenancy/breadcrumbs";
 import { OfferingContextSelector } from "@cofounderai/module-discovery/components/offerings/offering-context-selector";
 import { renameProductAction } from "./actions";
-import { loadNextStep } from "@cofounderai/module-discovery/lib/journey/load";
+import { loadOfferingJourney } from "@cofounderai/module-discovery/lib/journey/load";
 import { PrepRunner } from "@cofounderai/module-discovery/components/prospects/prep-runner";
 import { prepareNextProspectAction } from "./prospects/actions";
 
@@ -47,15 +47,10 @@ export default async function ProductLayout({
     prospects: Boolean(prospectCounts && prospectCounts.total > 0),
   };
 
-  // DISC-NAV-P0-01.11: whatever was just done, the line under the steps says what is next.
-  const journey = workspace
-    ? await loadNextStep({
-        workspaceId: workspace.id,
-        basePath,
-        hasProfile: Boolean(product.product_profile),
-        icpStatus: icp ? (icp.status === "approved" ? "approved" : "draft") : null,
-      })
-    : null;
+  // DISC-NAV-P0-02.1: set up means described and its ideal customer approved; then the
+  // offering opens on To do, and its count shows on the tab.
+  const setupDone = Boolean(product.product_profile) && icp?.status === "approved";
+  const journey = workspace ? await loadOfferingJourney({ workspaceId: workspace.id, setupDone }) : null;
 
   return (
     // max-w-6xl (not the old max-w-2xl): the prospects table and prospect detail page's
@@ -93,7 +88,7 @@ export default async function ProductLayout({
             offerings={offerings.map((o) => ({ id: o.id, name: o.name }))}
           />
         </div>
-        <ProductNav basePath={basePath} completed={completed} next={journey?.next ?? null} done={journey?.done} />
+        <ProductNav basePath={basePath} completed={completed} setupDone={setupDone} todo={journey?.todo ?? 0} />
         {/* DISC-AUTO-P0-01.1: picked prospects get researched, scored and a first message
             drafted by themselves while the offering is open. */}
         {workspace && journey && journey.prepRemaining > 0 ? (

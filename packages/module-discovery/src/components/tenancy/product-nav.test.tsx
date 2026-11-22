@@ -36,34 +36,38 @@ beforeEach(() => {
 });
 
 describe("ProductNav, once the offering has a profile", () => {
-  // DISC-NAV-P0-01.12: a done step shows a green tick in place of its number.
-  it("ticks the steps that are done and numbers the rest", () => {
-    h.pathname = BASE;
-    const html = renderToStaticMarkup(<ProductNav basePath={BASE} completed={{ overview: true }} done={{ define: true, find: true }} />);
-    expect(html.match(/\(done\)/g)?.length).toBe(2);
-    expect(html).toContain(">3</span>Reach");
-    expect(html).toContain(">4</span>Results");
-  });
+  // DISC-NAV-P0-02.1: three tabs and a Setup link; To do carries the count of what needs you.
+  const tabs = (path: string) => nav(path).filter((link) => link.text !== "Setup");
 
-  // DISC-NAV-P0-01.4: four tabs and no second row; each tab's page folds its other pages.
-  it("shows the four tabs only, on every page", () => {
-    for (const path of ["", "/icp", "/prospects/discover", "/prospects/import", "/history", "/discovery", "/prospects", "/opportunities", "/watchlist", "/campaigns", "/campaigns/abc", "/performance", "/conversions", "/usage", "/people-say", "/prospects/abc"]) {
-      expect(nav(path).map((link) => link.text), path).toEqual(["Define", "Find", "Reach", "Results"]);
+  it("shows the three tabs and Setup, on every page", () => {
+    for (const path of ["", "/icp", "/setup", "/prospects/discover", "/prospects/import", "/history", "/discovery", "/prospects", "/opportunities", "/watchlist", "/campaigns", "/campaigns/abc", "/performance", "/conversions", "/usage", "/people-say", "/prospects/abc"]) {
+      expect(nav(path).map((link) => link.text), path).toEqual(["To do", "Prospects", "Results", "Setup"]);
     }
   });
 
-  it("lands each tab on its page", () => {
-    expect(nav("").map((link) => link.href)).toEqual([BASE, `${BASE}/prospects/discover`, `${BASE}/prospects`, `${BASE}/performance`]);
+  it("lands each tab on its page, and Setup on setup", () => {
+    expect(nav("").map((link) => link.href)).toEqual([BASE, `${BASE}/prospects`, `${BASE}/performance`, `${BASE}/setup`]);
   });
 
-  it("marks the tab of the page in view: as the page on the tab's own page, as the section elsewhere", () => {
-    expect(nav("/prospects").find((link) => link.text === "Reach")!.current).toBe("page");
-    const found = nav("/prospects/import");
-    expect(found.find((link) => link.text === "Find")!.current).toBe("true");
-    expect(found.find((link) => link.text === "Reach")!.current).toBeNull();
-    expect(nav("/discovery").find((link) => link.text === "Find")!.current).toBe("true");
-    expect(nav("/campaigns/abc").find((link) => link.text === "Reach")!.current).toBe("true");
-    expect(nav("/prospects/8d0c").find((link) => link.text === "Reach")!.current).toBe("true");
+  it("counts what needs the person on To do, and nothing when nothing does", () => {
+    h.pathname = BASE;
+    const html = renderToStaticMarkup(<ProductNav basePath={BASE} completed={{ overview: true }} todo={4} />);
+    expect(links(html)[0]!.text).toBe("To do4 waiting");
+    expect(tabs("")[0]!.text).toBe("To do");
+  });
+
+  it("marks the tab of the page in view, and Setup instead of To do while setting up", () => {
+    expect(tabs("/prospects").find((link) => link.text === "Prospects")!.current).toBe("page");
+    expect(tabs("/prospects/import").find((link) => link.text === "To do")!.current).toBe("true");
+    expect(tabs("/campaigns/abc").find((link) => link.text === "Prospects")!.current).toBe("true");
+    expect(tabs("/prospects/8d0c").find((link) => link.text === "Prospects")!.current).toBe("true");
+    const setup = nav("/setup");
+    expect(setup.find((link) => link.text === "Setup")!.current).toBe("page");
+    expect(setup.filter((link) => link.current).length).toBe(1);
+    h.pathname = BASE;
+    const notSetUp = links(renderToStaticMarkup(<ProductNav basePath={BASE} completed={{ overview: true }} setupDone={false} />));
+    expect(notSetUp.find((link) => link.text === "To do")!.current).toBeNull();
+    expect(notSetUp.find((link) => link.text === "Setup")!.current).toBe("page");
   });
 
   it("shows fewer links than the nine tabs did", () => {
@@ -71,8 +75,8 @@ describe("ProductNav, once the offering has a profile", () => {
   });
 });
 
-// DISC-NAV-P0-01.8: one short line under the tabs says what the stage in view is for.
-describe("ProductNav's line about the stage in view", () => {
+// DISC-NAV-P0-01.8: one short line under the tabs says what the tab in view is for.
+describe("ProductNav's line about the tab in view", () => {
   const hintOf = (path: string, completed: { overview?: boolean } = { overview: true }) => {
     h.pathname = `${BASE}${path}`;
     const html = renderToStaticMarkup(<ProductNav basePath={BASE} completed={completed} />);
@@ -81,9 +85,9 @@ describe("ProductNav's line about the stage in view", () => {
   };
 
   it("shows exactly one line, for the tab in view", () => {
-    expect(hintOf("")).toEqual([expect.stringMatching(/Say what you sell and who buys it, then approve/)]);
-    expect(hintOf("/prospects/discover")).toEqual([expect.stringMatching(/then approve the ones to work on/)]);
-    expect(hintOf("/prospects/p-123")).toEqual([expect.stringMatching(/Your picked prospects/)]);
+    expect(hintOf("")).toEqual([expect.stringMatching(/What needs you/)]);
+    expect(hintOf("/setup")).toEqual([expect.stringMatching(/Say what you sell and who buys it, then approve/)]);
+    expect(hintOf("/prospects/p-123")).toEqual([expect.stringMatching(/Everyone you approved/)]);
     expect(hintOf("/conversions")).toEqual([expect.stringMatching(/What your outreach led to/)]);
   });
 
@@ -92,7 +96,7 @@ describe("ProductNav's line about the stage in view", () => {
   });
 
   it("keeps each line short", () => {
-    for (const path of ["", "/prospects/discover", "/prospects", "/performance"]) {
+    for (const path of ["", "/setup", "/prospects", "/performance"]) {
       for (const line of hintOf(path)) expect(line.length, path).toBeLessThanOrEqual(110);
     }
   });

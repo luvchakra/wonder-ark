@@ -2,7 +2,7 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { buildOfferingNav } from "@cofounderai/core/lib/offering-nav";
+import { OFFERING_SETUP_PAGES, buildOfferingNav } from "@cofounderai/core/lib/offering-nav";
 
 // DISC-NAV-P0-01.1. The offering's nine tabs became four. This is the check that no page
 // was stranded by it: every page under offerings/[productId] must open from a link in
@@ -24,7 +24,8 @@ function pageSlugs(dir: string): string[] {
 }
 
 const pages = pageSlugs(OFFERING_ROOT).sort();
-const navSlugs = new Set(buildOfferingNav(BASE).flatMap((tab) => tab.pages.map((page) => page.slug)));
+// DISC-NAV-P0-02.1: Setup's pages open from the Setup link beside the tabs.
+const navSlugs = new Set([...buildOfferingNav(BASE).flatMap((tab) => tab.pages.map((page) => page.slug)), ...OFFERING_SETUP_PAGES.map((page) => page.slug)]);
 const isDetail = (slug: string) => slug.includes("[");
 /** `prospects/[prospectId]` -> `prospects`: the list a detail page opens from. */
 const listOf = (slug: string) => {
@@ -37,14 +38,23 @@ const listOf = (slug: string) => {
 describe("every offering page opens from a link in the four-tab nav", () => {
   // 15 when the tabs were regrouped; DISC-CAMP-P0-05.1 added Campaigns and one campaign;
   // DISC-CONS-P0-04.2/05.2 added What people say and one person.
-  it("covers the 19 offering pages", () => {
-    expect(pages).toHaveLength(19);
+  // DISC-NAV-P0-02.1 added Setup.
+  it("covers the 20 offering pages", () => {
+    expect(pages).toHaveLength(20);
   });
 
   for (const slug of pages) {
     it(`/${slug || "(overview)"}`, () => {
       const linked = isDetail(slug) ? listOf(slug) : slug;
       expect(navSlugs.has(linked), `No nav link opens "${linked}"`).toBe(true);
+    });
+  }
+});
+
+describe("Setup's links land on a page", () => {
+  for (const page of OFFERING_SETUP_PAGES) {
+    it(page.label, () => {
+      expect(existsSync(join(OFFERING_ROOT, page.slug, "page.tsx"))).toBe(true);
     });
   }
 });

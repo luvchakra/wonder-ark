@@ -6,8 +6,6 @@ import {
   getWorkspaceForProduct,
 } from "@cofounderai/module-discovery/lib/tenancy/queries";
 import { listProspects } from "@cofounderai/module-discovery/lib/prospects/queries";
-import { listCampaignTasks } from "@cofounderai/module-discovery/lib/campaigns/tasks";
-import { TodayList } from "@cofounderai/module-discovery/components/prospects/today-list";
 import { ProspectToolbarActions } from "@cofounderai/module-discovery/components/prospects/prospect-toolbar-actions";
 import { ReachList } from "@cofounderai/module-discovery/components/prospects/reach-list";
 import { MoreActions } from "@cofounderai/module-discovery/components/ui/more-actions";
@@ -16,18 +14,14 @@ import { AutoPopulateCompleteDialog } from "@cofounderai/module-discovery/compon
 import {
   createProspectAction,
   saveSignupPageAction,
-  bulkResearchAction,
-  bulkScoreAction,
   autoDiscoverOneProspectAction,
 } from "./actions";
-import { markTaskDoneAction } from "../campaigns/actions";
 import Link from "next/link";
 import { audienceTypeOf } from "@cofounderai/module-discovery/lib/icp/audience";
 import { listLeads } from "@cofounderai/module-discovery/lib/audience/leads";
 import { getSignupPage } from "@cofounderai/module-discovery/lib/audience/pages";
 import { defaultConsentText } from "@cofounderai/module-discovery/lib/audience/rules";
 import { PeopleList } from "@cofounderai/module-discovery/components/audience/people-list";
-import { bulkResultMessage } from "@cofounderai/module-discovery/lib/prospects/bulk-actions";
 import { SignupPageSettings } from "@cofounderai/module-discovery/components/audience/signup-page-settings";
 import { SITE_URL } from "@cofounderai/core/site";
 import { getBusiness } from "@cofounderai/module-discovery/lib/tenancy/queries";
@@ -83,9 +77,6 @@ export default async function ProspectsPage({
     imported,
     skipped,
     duplicates,
-    bulkAction,
-    bulkCompleted,
-    bulkLimit,
     autopopulated,
     aiRestructured,
   } = query;
@@ -116,10 +107,8 @@ export default async function ProspectsPage({
 
   // DISC-NAV-P0-01.13: the list is a to-do list grouped by what to do next (ReachList), so
   // it needs no filters or sort; the old filter addresses still open it, unfiltered.
-  const [prospects, campaignTasks, campaigns] = await Promise.all([
+  const [prospects, campaigns] = await Promise.all([
     listProspects(workspace.id, { kind, shortlisted: true }),
-    // DISC-CAMP-P0-06.1: the running campaigns' call, WhatsApp and LinkedIn steps that are due.
-    listCampaignTasks(workspace.id),
     listCampaignsWithCounts(workspace.id),
   ]);
 
@@ -167,10 +156,6 @@ export default async function ProspectsPage({
         </p>
       ) : null}
 
-      {/* DISC-NAV-P0-01.13: the Next line and the list say what to do with prospects; this
-          shows only campaign steps due by hand (calls, WhatsApp, LinkedIn). */}
-      <TodayList rows={[]} tasks={campaignTasks} taskAction={(enrollmentId) => markTaskDoneAction.bind(null, businessId, productId, enrollmentId)} />
-
 
       <AutoPopulateStepBanner
         step="prospects"
@@ -206,23 +191,11 @@ export default async function ProspectsPage({
       ) : null}
       {query.shortlisted ? (
         <p className="rounded-md border bg-muted p-3 text-sm">
-          Picked {query.shortlisted}. They are below, under what to do next.
+          Picked {query.shortlisted}. WonderArk is preparing them: research, score and a first message for you to send.
         </p>
       ) : null}
       {query.unshortlisted ? (
         <p className="rounded-md border bg-muted p-3 text-sm">Moved {query.unshortlisted} back to Find to pick again.</p>
-      ) : null}
-      {bulkAction === "research" || bulkAction === "score" ? (
-        <p className="rounded-md border bg-muted p-3 text-sm">
-          {bulkResultMessage({
-            action: bulkAction,
-            completed: Number(bulkCompleted ?? 0) || 0,
-            alreadyDone: Number(query.bulkDone ?? 0) || 0,
-            notReady: Number(query.bulkNotReady ?? 0) || 0,
-            failed: Number(query.bulkFailed ?? 0) || 0,
-            limitReached: bulkLimit === "1",
-          })}
-        </p>
       ) : null}
 
       {showPeople ? (
@@ -240,8 +213,6 @@ export default async function ProspectsPage({
         prospects={prospects}
         basePath={basePath}
         channels={currentList === "channels"}
-        bulkResearchAction={bulkResearchAction.bind(null, businessId, productId, workspace.id)}
-        bulkScoreAction={bulkScoreAction.bind(null, businessId, productId, workspace.id)}
       />
       )}
 

@@ -4,10 +4,9 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Search } from "lucide-react";
 import { Input } from "@cofounderai/core/ui/input";
-import { SubmitButton } from "@cofounderai/core/ui/submit-button";
 import type { ProspectWithPipeline } from "../../lib/prospects/queries";
 import { NEXT_ACTION_ANCHOR } from "../../lib/prospects/pipeline";
-import { reachGroups } from "../../lib/journey/next-step";
+import { prospectGroups } from "../../lib/journey/todo";
 import { channelTypeLabel, formatAudience } from "../../lib/data-sources/channels";
 import { ScoreRagDot } from "./rag-badge";
 
@@ -15,35 +14,30 @@ import { ScoreRagDot } from "./rag-badge";
 const SEARCH_FROM = 10;
 
 /**
- * DISC-NAV-P0-01.13: the Reach list as a to-do list. Picked prospects are grouped by what to
- * do next, under the same words and in the same order as the Next line above it (answer,
- * follow up, send, write, score, research; then waiting for a reply, then closed). A card
- * opens the prospect at that step. Research and Score, which run in bulk, have one button
- * for the whole group. No checkboxes, filters or status pills: the group says it all.
+ * DISC-NAV-P0-02.1: the Prospects tab. Everyone the person approved, grouped by how far each
+ * has got: the person's own groups first (answer, follow up, send; the same ones To do
+ * shows), then those WonderArk is preparing, those waiting for a reply, and closed ones. A
+ * card opens the prospect at its step. No buttons: preparing runs by itself.
  */
 export function ReachList({
   prospects,
   basePath,
   channels = false,
-  bulkResearchAction,
-  bulkScoreAction,
 }: {
   prospects: ProspectWithPipeline[];
   basePath: string;
   channels?: boolean;
-  bulkResearchAction: (formData: FormData) => void | Promise<void>;
-  bulkScoreAction: (formData: FormData) => void | Promise<void>;
 }) {
   const [query, setQuery] = useState("");
   const groups = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return reachGroups(q ? prospects.filter((p) => p.company_name.toLowerCase().includes(q)) : prospects);
+    return prospectGroups(q ? prospects.filter((p) => p.company_name.toLowerCase().includes(q)) : prospects);
   }, [prospects, query]);
 
   if (prospects.length === 0) {
     return (
       <p className="rounded-md border p-4 text-sm text-muted-foreground">
-        No {channels ? "channels" : "prospects"} picked yet. Find them on the Find tab.
+        No {channels ? "channels" : "prospects"} approved yet. New ones to approve appear on To do.
       </p>
     );
   }
@@ -66,33 +60,18 @@ export function ReachList({
 
       {groups.length === 0 ? <p className="text-sm text-muted-foreground">None match.</p> : null}
 
-      {groups.map((group) => {
-        const bulk = group.id === "research" ? bulkResearchAction : group.id === "score" ? bulkScoreAction : null;
-        return (
-          <section key={group.id} id={`reach-${group.id}`} aria-labelledby={`reach-${group.id}-title`} className="flex scroll-mt-4 flex-col gap-2">
-            <div className="flex min-h-9 items-center justify-between gap-3">
-              <h2 id={`reach-${group.id}-title`} className="text-sm font-semibold">
-                {group.title}
-              </h2>
-              {bulk && group.prospects.length > 1 ? (
-                <form action={bulk}>
-                  {group.prospects.map((p) => (
-                    <input key={p.id} type="hidden" name="ids" value={p.id} />
-                  ))}
-                  <SubmitButton size="sm" pendingText={group.id === "research" ? "Researching..." : "Scoring..."}>
-                    {group.id === "research" ? "Research all" : "Score all"}
-                  </SubmitButton>
-                </form>
-              ) : null}
-            </div>
-            <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {group.prospects.map((p) => (
-                <ReachCard key={p.id} prospect={p} basePath={basePath} />
-              ))}
-            </ul>
-          </section>
-        );
-      })}
+      {groups.map((group) => (
+        <section key={group.id} id={`reach-${group.id}`} aria-labelledby={`reach-${group.id}-title`} className="flex scroll-mt-4 flex-col gap-2">
+          <h2 id={`reach-${group.id}-title`} className="text-sm font-semibold">
+            {group.title}
+          </h2>
+          <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {group.prospects.map((p) => (
+              <ReachCard key={p.id} prospect={p} basePath={basePath} />
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }
