@@ -2,15 +2,12 @@
 
 import Link from "next/link";
 import { useAppPathname } from "@cofounderai/core/shell/org-address-context";
-import { Check } from "lucide-react";
+import { Check, Settings } from "lucide-react";
 import { cn } from "@cofounderai/core/lib/utils";
 import { activeOfferingNav, buildOfferingNav } from "@cofounderai/core/lib/offering-nav";
 import { useAutoPopulateProgress } from "./auto-populate-progress";
 
 type StageId = "overview" | "icp" | "prospects" | "conversions";
-
-/** The step tabs' ids (core's offering-nav) to the journey's step names. */
-const TAB_STEP = { setup: "define", find: "find", prospects: "reach", results: "results" } as const;
 
 /**
  * Progress-bar stepper, replacing the earlier single-row tab strips (co-founder-ai's
@@ -31,8 +28,8 @@ const TAB_STEP = { setup: "define", find: "find", prospects: "reach", results: "
 export function ProductNav({
   basePath,
   completed,
-  next,
-  done,
+  setupDone = true,
+  todo = 0,
 }: {
   basePath: string;
   /** Real workflow progress (profile generated, ICP exists, prospects added) -- reached
@@ -40,10 +37,11 @@ export function ProductNav({
    * one. Conversions has no completion concept, so it's omitted here and stays neutral
    * unless it's the current step. */
   completed?: Partial<Record<StageId, boolean>>;
-  /** DISC-NAV-P0-01.11: the one next step toward new customers, shown on every step. */
-  next?: { label: string; href: string } | null;
-  /** DISC-NAV-P0-01.12: which of the four steps are done (green tick instead of the number). */
-  done?: Partial<Record<"define" | "find" | "reach" | "results", boolean>>;
+  /** DISC-NAV-P0-02.1: described and its ideal customer approved. Until then the offering's
+   * own address shows Setup, so the To do tab is not marked as the page in view. */
+  setupDone?: boolean;
+  /** How many things need the person, shown on the To do tab. */
+  todo?: number;
 }) {
   const pathname = useAppPathname();
   const { activeStage } = useAutoPopulateProgress();
@@ -70,17 +68,16 @@ export function ProductNav({
    * core's lib/offering-nav.ts, which the sidebar and the route check read too. */
   if (completed?.overview) {
     const ongoingTabs = buildOfferingNav(basePath);
-    const active = activeOfferingNav(ongoingTabs, pathname);
+    const setupHref = `${basePath}/setup`;
+    const onSetup = pathname === setupHref || pathname === `${basePath}/icp` || (!setupDone && pathname === basePath);
+    const active = onSetup ? null : activeOfferingNav(ongoingTabs, pathname);
 
     return (
       <div className="flex flex-col gap-2">
-        <nav
-          aria-label="Offering sections"
-          className="grid w-full grid-cols-4 gap-1 rounded-lg border border-border bg-muted p-1"
-        >
-          {ongoingTabs.map((tab, i) => {
+        {/* DISC-NAV-P0-02.1: three tabs. To do carries the count of what needs the person. */}
+        <nav aria-label="Offering sections" className="grid w-full grid-cols-3 gap-1 rounded-lg border border-border bg-muted p-1">
+          {ongoingTabs.map((tab) => {
             const isActive = tab.id === active?.tab.id;
-            const isDone = Boolean(done?.[TAB_STEP[tab.id]]);
             return (
               <Link
                 key={tab.id}
@@ -89,28 +86,33 @@ export function ProductNav({
                 // (opened at their own address) it marks the section.
                 aria-current={isActive ? (pathname === tab.href ? "page" : "true") : undefined}
                 className={cn(
-                  "rounded-md px-2 py-1.5 text-center text-sm font-medium transition-colors",
+                  "flex items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
                   isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {/* DISC-NAV-P0-01.10: the four steps in order. DISC-NAV-P0-01.12: a done
-                    step shows a green tick in place of its number. */}
-                {isDone ? (
-                  <Check aria-hidden="true" className="mr-1 inline size-3.5 align-[-2px] text-emerald-600" strokeWidth={3} />
-                ) : (
-                  <span aria-hidden="true" className="mr-1 text-xs tabular-nums opacity-60">
-                    {i + 1}
-                  </span>
-                )}
                 {tab.label}
-                {isDone ? <span className="sr-only"> (done)</span> : null}
+                {tab.id === "todo" && todo > 0 ? (
+                  <span className="min-w-5 rounded-full bg-primary px-1.5 text-center text-xs leading-5 text-primary-foreground tabular-nums">
+                    {todo}
+                    <span className="sr-only"> waiting</span>
+                  </span>
+                ) : null}
               </Link>
             );
           })}
         </nav>
-        {/* DISC-NAV-P0-01.8: one line saying what this stage is for. */}
-        {active ? <p className="px-1 text-sm text-muted-foreground">{active.tab.hint}</p> : null}
-        {next ? <NextStepLink next={next} /> : null}
+        {/* DISC-NAV-P0-01.8: one line saying what this tab is for; Setup sits beside it. */}
+        <div className="flex items-baseline justify-between gap-3 px-1 text-sm">
+          <p className="text-muted-foreground">{onSetup ? "Say what you sell and who buys it, then approve. AI drafts both from your website." : active?.tab.hint}</p>
+          <Link
+            href={setupHref}
+            aria-current={onSetup ? "page" : undefined}
+            className={cn("inline-flex shrink-0 items-center gap-1 font-medium hover:underline", onSetup ? "text-foreground" : "text-primary")}
+          >
+            <Settings className="size-3.5" aria-hidden="true" />
+            Setup
+          </Link>
+        </div>
       </div>
     );
   }
@@ -191,20 +193,6 @@ export function ProductNav({
         })}
       </nav>
       {activeHint ? <p className="px-1 text-sm text-muted-foreground">{activeHint}</p> : null}
-      {next ? <NextStepLink next={next} /> : null}
     </div>
-  );
-}
-
-/** The one next step, as a single link: "Next: Score 10 prospects →". */
-function NextStepLink({ next }: { next: { label: string; href: string } }) {
-  return (
-    <Link
-      href={next.href}
-      className="flex items-center justify-between gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5 text-sm hover:bg-primary/10"
-    >
-      <span className="text-muted-foreground">Next</span>
-      <span className="font-medium text-primary">{next.label} &rarr;</span>
-    </Link>
   );
 }

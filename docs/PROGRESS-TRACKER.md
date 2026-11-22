@@ -512,7 +512,7 @@ Source: [`docs/plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md`](./plan/10-DISCOVE
 | ID | Story | Status | Evidence / note |
 |---|---|---|---|
 | `DISC-OFFER-P0-03.1` | Offering Context Selector | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/layout.tsx` +7 |
-| `DISC-OFFER-P0-03.2` | Offering Discovery Overview | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/page.tsx` +1 |
+| `DISC-OFFER-P0-03.2` | Offering Discovery Overview | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/setup-view.tsx` +1 |
 | `DISC-OFFER-P0-03.3` | Offering Navigation | ❔ Unverified | Discussed in `docs/design/discovery-offering-backlog-audit.md`, but no code cites it — confirm before relying on this |
 
 ### DISC-OFFER-P0-04 — Offering Discovery Strategy

@@ -52,15 +52,22 @@ export function SuggestionReviewList({
   suggestions,
   approveAction,
   discardAction,
+  title = "To review",
+  returnTo,
 }: {
   suggestions: ProspectSuggestion[];
   approveAction: (formData: FormData) => Promise<void>;
   discardAction: (formData: FormData) => Promise<void>;
+  /** DISC-NAV-P0-02.1: the heading; To do calls them "New prospects to approve". */
+  title?: string;
+  /** DISC-NAV-P0-02.1: where approving or discarding returns ("todo": the offering's To do). */
+  returnTo?: "todo";
 }) {
   return (
     <section aria-labelledby="to-review-heading" className="flex flex-col gap-3">
       <h2 id="to-review-heading" className="text-base font-medium">
-        To review{suggestions.length > 0 ? ` (${suggestions.length})` : ""}
+        {title}
+        {suggestions.length > 0 ? ` (${suggestions.length})` : ""}
       </h2>
 
       {suggestions.length === 0 ? (
@@ -69,6 +76,7 @@ export function SuggestionReviewList({
         </p>
       ) : (
         <form action={approveAction} className="flex flex-col gap-3">
+          {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
           <div
             aria-hidden="true"
             className={`hidden px-3 text-xs font-medium text-muted-foreground ${ROW_GRID}`}

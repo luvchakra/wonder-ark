@@ -7,35 +7,30 @@ import type { ProspectWithPipeline } from "../../lib/prospects/queries";
 const channel = (id: string, stage: string, nextAction: string | null, extra: Partial<ProspectWithPipeline> = {}) =>
   ({ id, company_name: `Channel ${id}`, kind: "channel", channel_type: null, audience_size: 2741, fit_score: null, stage, nextAction, isStuck: false, status: "new", outcome: "open", ...extra }) as unknown as ProspectWithPipeline;
 
-const noop = async () => {};
 const render = (prospects: ProspectWithPipeline[]) =>
-  renderToStaticMarkup(<ReachList prospects={prospects} basePath="/b/o/p/prospects" channels bulkResearchAction={noop} bulkScoreAction={noop} />);
+  renderToStaticMarkup(<ReachList prospects={prospects} basePath="/b/o/p/prospects" channels />);
 
 describe("ReachList", () => {
   const html = render([
     channel("a", "researched", "Score"),
     channel("b", "scored", "Generate strategy", { fit_score: 40 }),
-    channel("c", "scored", "Generate strategy", { fit_score: 72 }),
-    channel("d", "researched", "Score"),
+    channel("c", "messaged", "Review message", { fit_score: 72 }),
+    channel("d", "new", "Research"),
   ]);
 
-  it("puts the next task first, under the Next line's words", () => {
-    expect(html.indexOf("Write to 2 channels")).toBeGreaterThan(-1);
-    expect(html.indexOf("Write to 2 channels")).toBeLessThan(html.indexOf("Score 2 channels"));
-    expect(html).toContain('id="reach-write"');
+  // DISC-NAV-P0-02.1
+  it("puts the person's group first, then what WonderArk is preparing", () => {
+    expect(html.indexOf("Send 1 ready message")).toBeGreaterThan(-1);
+    expect(html.indexOf("Send 1 ready message")).toBeLessThan(html.indexOf("Being prepared (3)"));
+    expect(html).toContain('id="reach-preparing"');
   });
 
-  it("gives a bulk step one button for its whole group, and none to the rest", () => {
-    expect(html.match(/Score all/g)?.length).toBe(1);
-    expect(html).not.toContain("Research all");
-    expect(html.match(/name="ids"/g)?.length).toBe(2);
-  });
-
-  it("has no checkboxes, filters or status pills, and opens each card at its step", () => {
+  it("has no buttons, checkboxes, filters or status pills, and opens each card at its step", () => {
+    expect(html).not.toContain("<button");
     expect(html).not.toContain('type="checkbox"');
     expect(html).not.toContain("Advanced");
     expect(html).not.toMatch(/>new</);
-    expect(html).toContain('href="/b/o/p/prospects/b#strategy"');
+    expect(html).toContain('href="/b/o/p/prospects/c#messages"');
     expect(html).toContain('href="/b/o/p/prospects/a#score"');
   });
 
@@ -45,7 +40,7 @@ describe("ReachList", () => {
     expect(render(Array.from({ length: 11 }, (_, i) => channel(`x${i}`, "new", "Research")))).toContain('type="search"');
   });
 
-  it("says where to find prospects when none are picked", () => {
-    expect(render([])).toContain("Find them on the Find tab");
+  it("says where new prospects come from when none are approved", () => {
+    expect(render([])).toContain("appear on To do");
   });
 });

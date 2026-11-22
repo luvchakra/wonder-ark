@@ -14,6 +14,9 @@ import { discardProspectSuggestions } from "@cofounderai/module-discovery/lib/pr
 async function discoverPath(businessId: string, productId: string) {
   return `${await businessPath(businessId)}/discovery/offerings/${productId}/prospects/discover`;
 }
+async function offeringPath(businessId: string, productId: string) {
+  return `${await businessPath(businessId)}/discovery/offerings/${productId}`;
+}
 async function prospectsPath(businessId: string, productId: string) {
   return `${await businessPath(businessId)}/discovery/offerings/${productId}/prospects`;
 }
@@ -122,11 +125,15 @@ export async function approveSuggestionsAction(
 
   revalidatePath(await prospectsPath(businessId, productId));
   revalidatePath(await discoverPath(businessId, productId));
+  const counts = `${duplicates > 0 ? `&duplicates=${duplicates}` : ""}`;
+  // DISC-NAV-P0-02.1: approved on To do, back to To do, which says what was added.
+  if (formData.get("returnTo") === "todo") {
+    revalidatePath(await offeringPath(businessId, productId));
+    redirect(`${await offeringPath(businessId, productId)}?approved=${added}${counts}`);
+  }
   // DISC-DATA-P0-03.3: a suggestion refused as a duplicate is reported, not counted as
   // added. The prospects page already words this for a file import.
-  redirect(
-    `${await prospectsPath(businessId, productId)}?imported=${added}${duplicates > 0 ? `&duplicates=${duplicates}` : ""}`,
-  );
+  redirect(`${await prospectsPath(businessId, productId)}?imported=${added}${counts}`);
 }
 
 export async function discardSuggestionsAction(
@@ -138,5 +145,9 @@ export async function discardSuggestionsAction(
   const ids = formData.getAll("ids").map(String);
   await discardProspectSuggestions(workspaceId, ids);
   revalidatePath(await discoverPath(businessId, productId));
+  if (formData.get("returnTo") === "todo") {
+    revalidatePath(await offeringPath(businessId, productId));
+    redirect(await offeringPath(businessId, productId));
+  }
   redirect(await discoverPath(businessId, productId));
 }

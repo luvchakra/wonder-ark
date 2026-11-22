@@ -238,7 +238,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "Why does WorksLake business data say Needs setup or Unavailable?",
     answer:
-      "Under an offering's Find tab, WorksLake business data is one of the sources you can search. Needs setup means the WorksLake connection hasn't been set up for this workspace yet; Unavailable means it didn't answer. WonderArk never fills in sample results in its place. Web search (AI) and Import keep working either way.",
+      "On an offering's Find more page (To do → Find more prospects), WorksLake business data is one of the sources you can search. Needs setup means the WorksLake connection hasn't been set up for this workspace yet; Unavailable means it didn't answer. WonderArk never fills in sample results in its place. Web search (AI) and Import keep working either way.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },
@@ -246,7 +246,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "What does activating a campaign do, and how do I stop it?",
     answer:
-      "On an offering's Reach step, the Companies list's Campaigns section sends a short sequence of emails to your prospects from a mailbox you connect under Sending from. First open Preview: it shows who would be enrolled, the schedule, and the actual email for a real prospect in each line of work, and Send me a test sends that email to your own mailbox. Press This looks right, and Activate appears. Activate enrols those prospects and then sends without you approving each email, at most the daily limit (the mailbox's 30 a day unless you change it, or fewer if you set one for the campaign under Schedule), within the days and hours under Schedule. Follow-ups to a prospect stop when it replies, its email bounces, it unsubscribes, or you mark it won or lost. Pause stops all sending at once and Resume starts it again. Campaigns send only email; a call, WhatsApp or LinkedIn step is yours to do from the list of due steps at the top of Reach.",
+      "On an offering's Prospects tab, the Companies list's Campaigns section sends a short sequence of emails to your prospects from a mailbox you connect under Sending from. First open Preview: it shows who would be enrolled, the schedule, and the actual email for a real prospect in each line of work, and Send me a test sends that email to your own mailbox. Press This looks right, and Activate appears. Activate enrols those prospects and then sends without you approving each email, at most the daily limit (the mailbox's 30 a day unless you change it, or fewer if you set one for the campaign under Schedule), within the days and hours under Schedule. Follow-ups to a prospect stop when it replies, its email bounces, it unsubscribes, or you mark it won or lost. Pause stops all sending at once and Resume starts it again. Campaigns send only email; a call, WhatsApp or LinkedIn step is yours to do from To do.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },
@@ -262,7 +262,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "Can a campaign include calls, WhatsApp or LinkedIn messages?",
     answer:
-      "Yes, as steps you do yourself. Open Schedule on a draft or paused campaign and choose Call, WhatsApp or LinkedIn for any step after the first. Write messages drafts talking points for a call or a short message for WhatsApp or LinkedIn, which you can edit. WonderArk never sends or dials these. When the step is due for a prospect it appears at the top of Reach with the draft and the phone number or LinkedIn page. Do it yourself, press Mark done and choose Done or Couldn't reach; the prospect then moves to its next step. Later steps wait until you do. A call or WhatsApp step for a prospect with no phone number is passed over with the reason shown in the campaign's results.",
+      "Yes, as steps you do yourself. Open Schedule on a draft or paused campaign and choose Call, WhatsApp or LinkedIn for any step after the first. Write messages drafts talking points for a call or a short message for WhatsApp or LinkedIn, which you can edit. WonderArk never sends or dials these. When the step is due for a prospect it appears on To do with the draft and the phone number or LinkedIn page. Do it yourself, press Mark done and choose Done or Couldn't reach; the prospect then moves to its next step. Later steps wait until you do. A call or WhatsApp step for a prospect with no phone number is passed over with the reason shown in the campaign's results.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },
@@ -278,7 +278,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "Do I have to research, score and write to each prospect myself?",
     answer:
-      "No. Once your ideal customer is approved, every prospect you pick is prepared by itself while the offering is open: researched, scored, planned and given a first message draft (AI-generated). A line under the steps shows how many are left. Nothing is sent: each draft waits for you to press Send. Picking a prospect spends about three AI calls on it. If your AI credits run out, preparation stops and says so.",
+      "No. Once your ideal customer is approved, every prospect you pick is prepared by itself while the offering is open: researched, scored, planned and given a first message draft (AI-generated). A line under the tabs shows how many are left. Nothing is sent: each draft waits for you to press Send. Picking a prospect spends about three AI calls on it. If your AI credits run out, preparation stops and says so.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },
@@ -286,7 +286,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "Can a prospect search run again on its own?",
     answer:
-      "Yes. Under an offering's Find tab, run a search on a free WorksLake source and click Run this weekly in its result. The search then runs every 7 days using free sources only, never paid lookups, and adds only companies that are new to To review, where you still approve each one. An offering has one weekly search. The line under the search form shows its last run and next run, and Pause stops it until you press Resume.",
+      "Yes. On an offering's Find more page (To do → Find more prospects), run a search on a free WorksLake source and click Run this weekly in its result. The search then runs every 7 days using free sources only, never paid lookups, and adds only companies that are new to New prospects to approve on To do, where you still approve each one. An offering has one weekly search. The line under the search form shows its last run and next run, and Pause stops it until you press Resume.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },

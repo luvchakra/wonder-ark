@@ -5,7 +5,7 @@
  * keeps them out of the Prospects tab.
  */
 import { describe, expect, it } from "vitest";
-import { OFFERING_TABS, activeOfferingNav, buildOfferingNav } from "./offering-nav";
+import { OFFERING_SETUP_PAGES, OFFERING_TABS, activeOfferingNav, buildOfferingNav } from "./offering-nav";
 
 const BASE = "/acme/discovery/offerings/p1";
 const tabs = buildOfferingNav(BASE);
@@ -15,25 +15,25 @@ const active = (path: string) => {
 };
 
 describe("buildOfferingNav", () => {
-  it("has four tabs, in order, each landing on its first page", () => {
+  // DISC-NAV-P0-02.1
+  it("has three tabs, in order, each landing on its first page", () => {
     expect(tabs.map((tab) => [tab.label, tab.href])).toEqual([
-      ["Define", BASE],
-      ["Find", `${BASE}/prospects/discover`],
-      ["Reach", `${BASE}/prospects`],
+      ["To do", BASE],
+      ["Prospects", `${BASE}/prospects`],
       ["Results", `${BASE}/performance`],
     ]);
   });
 
   it("uses the plain labels", () => {
-    const labels = tabs.flatMap((tab) => [tab.label, ...tab.pages.map((page) => page.label)]);
+    const labels = [...tabs.flatMap((tab) => [tab.label, ...tab.pages.map((page) => page.label)]), ...OFFERING_SETUP_PAGES.map((page) => page.label)];
     expect(labels).toContain("Ideal customer");
-    expect(labels).toContain("Find");
+    expect(labels).toContain("Find more");
     expect(labels).not.toContain("ICP");
     expect(labels).not.toContain("Discovery");
   });
 
   it("still reaches every page the nine tabs reached, and Import and Usage besides", () => {
-    const slugs = tabs.flatMap((tab) => tab.pages.map((page) => page.slug));
+    const slugs = [...tabs.flatMap((tab) => tab.pages.map((page) => page.slug)), ...OFFERING_SETUP_PAGES.map((page) => page.slug)];
     for (const slug of ["", "icp", "discovery", "opportunities", "prospects", "watchlist", "performance", "conversions", "history"]) {
       expect(slugs).toContain(slug);
     }
@@ -52,13 +52,14 @@ describe("buildOfferingNav", () => {
 
 describe("activeOfferingNav", () => {
   it("puts each page under its tab", () => {
-    expect(active("")).toBe("setup:");
-    expect(active("/icp")).toBe("setup:icp");
-    expect(active("/prospects/discover")).toBe("find:prospects/discover");
-    expect(active("/prospects/import")).toBe("find:prospects/import");
-    expect(active("/history")).toBe("find:history");
-    // DISC-NAV-P0-01.4: Definitions is a section of Setup.
-    expect(active("/discovery")).toBe("find:discovery");
+    expect(active("")).toBe("todo:");
+    // Setup's pages belong to no tab; the Setup link marks them.
+    expect(active("/icp")).toBeNull();
+    expect(active("/setup")).toBeNull();
+    expect(active("/prospects/discover")).toBe("todo:prospects/discover");
+    expect(active("/prospects/import")).toBe("todo:prospects/import");
+    expect(active("/history")).toBe("todo:history");
+    expect(active("/discovery")).toBe("todo:discovery");
     expect(active("/prospects")).toBe("prospects:prospects");
     expect(active("/opportunities")).toBe("prospects:opportunities");
     expect(active("/watchlist")).toBe("prospects:watchlist");
@@ -72,7 +73,7 @@ describe("activeOfferingNav", () => {
 
   it("keeps a single prospect, run or opportunity under its list's tab", () => {
     expect(active("/prospects/8d0c")).toBe("prospects:prospects");
-    expect(active("/history/r1")).toBe("find:history");
+    expect(active("/history/r1")).toBe("todo:history");
     expect(active("/opportunities/o1")).toBe("prospects:opportunities");
   });
 

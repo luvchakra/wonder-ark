@@ -96,34 +96,24 @@ offerings" panel when the same company turns up under more than one of them.
 
 ## Working an offering
 
-Once an offering has a profile, it has four numbered steps along the top: **Define**, **Find**,
-**Reach** and **Results**. One line under the tabs says what the tab you're on is for.
-Each tab is one page. Its main content is open, and
-everything else is a section with a title, a one-line summary and a chevron. Click a
-section to open it.
+You decide three things: what you sell (once, in **Setup**), who to contact (**Approve**),
+and what goes out in your name (**Send**). WonderArk does the rest by itself: it researches
+and scores each prospect you approve and drafts its first message, follow-ups and answers
+for you to send.
 
-| Tab | Open on the page | Sections |
-|---|---|---|
-| **1 Define** | Who buys it, if not answered yet | **Offering** (definition quality, who buys it, website, description, sources), **Ideal customer** (your ICP and buyer personas) |
-| **2 Find** | Search, what it found under **To review**, and imports under **Imported, to pick** | **Import**, **Automatic discovery** (the AI run, its schedule, saved criteria and definitions), **History** |
-| **3 Reach** | Your picked prospects, grouped by what to do next (Companies, Channels and People chips) | **Campaigns** (Companies list only) |
-| **4 Results** | Performance, and discovery effectiveness once there are opportunities | **Conversions**, **What people say** |
+Once an offering is set up (described, and its ideal customer approved), it has three tabs:
 
-Under the steps, a **Next** line names the one thing to do now, toward new customers, and
-links to it. It is worked out from the offering itself, so after anything you do it moves on:
-finish **Define**; then answer replies, follow up, send ready messages, write to, score and
-research your picked prospects, in that order; then review what **Find** found, pick
-imports or search for more; and start a campaign once you have prospects. A step that is
-done shows a green tick in place of its number: **Define** once the ideal customer is
-approved, **Find** once you have picked a prospect, **Reach** once one has been written to,
-and **Results** once a deal is won. Sections that are done get the same tick (for example
-**Offering**, **Ideal customer**, and **Campaigns** while one is running). The **Watchlist**
-(on each prospect's **More**) and AI **Usage** keep their own pages but are no longer sections
-of a step.
+| Tab | What it shows |
+|---|---|
+| **To do** | The only list you work from, most urgent first: **Answer replies**, **Follow up with** (no reply and no activity for 7 days), **Send ready messages**, campaign steps you do by hand, then **New prospects to approve** and imported prospects to pick. Tap one to open it at that step. The tab shows how many are waiting. Empty means nothing needs you; **Find more prospects** searches for more. |
+| **Prospects** | Everyone you approved and how far each has got: your groups first (the same as To do), then **Being prepared**, **Waiting for a reply** and **Closed**. No buttons: preparing runs by itself. On the **Companies** list, **Campaigns** below is the other way to reach them. |
+| **Results** | Performance, and discovery effectiveness once there are opportunities, with **Conversions** and **What people say** below. |
 
-They aren't a checklist: use them in any order. Every page keeps the address it had, so
-old links and bookmarks still open it on its own. (Before a profile exists you instead get a
-short step-by-step bar for setting the offering up: Overview, Ideal customer, Prospects,
+**Setup** (beside the tabs) holds what you sell and who buys it. Until it is done, the
+offering opens on Setup; after that it opens on To do. Approving the ideal customer takes you
+to **Find more** to search for the first prospects. Every page keeps the address it had, so
+old links and bookmarks still open it. (Before a profile exists you instead get a short
+step-by-step bar for setting the offering up: Overview, Ideal customer, Prospects,
 Conversions.)
 
 A prospect's own page works the same way. At the top, a row of ticks shows how far it has
@@ -263,42 +253,39 @@ Everything that brings companies in is under the **Find** tab.
   people's own profiles.
 - **Import** loads a list from CSV, Excel or PDF, or pasted CSV. `company_name` is
   required; a file in another layout is restructured by AI for you to check before import.
-- **Add**, on **Reach**, creates one prospect by hand.
+- **Add**, under **More** on **Prospects**, creates one prospect by hand.
 
 ### Picking prospects
 
-**Find** is where you choose what to work on: approving a search result picks it, and it
-goes straight to **Reach**. A file you import arrives unpicked: it waits on **Find** under
-**Imported, to pick** until you tick the ones you want and press **Pick these**. **Reach**
+**Find more** (from **To do**) searches for prospects, and **To do** lists what it found under **New prospects to approve**: approving one picks it, and it
+goes straight to **Prospects**. A file you import arrives unpicked: it waits on **Find** under
+**Imported, to pick** until you tick the ones you want and press **Pick these** (**To do** links to them). **Prospects**
 holds only picked prospects, as **Companies**, **Channels** or **People** chips when the
 offering has more than one. To unpick one, open it and choose **Move back to Find** under
 **More**. A prospect you add by hand (**More** → **Add**) is already picked.
 
-### Reach: what to do next
+### Prospects, and what is prepared for you
 
 **Prepared for you.** Once the ideal customer is approved, every prospect you pick is
 prepared by itself while the offering is open: researched, scored, given an outreach plan,
-and given a first message draft (AI-generated). A line under the steps says how many are
+and given a first message draft (AI-generated). A line under the tabs says how many are
 left and what was done last. Nothing is sent: each draft waits for your **Send**. Picking a
 prospect is your go-ahead to spend AI credits on it (about three AI calls each). If a
 prospect can't be prepared, the line says why and moves on; if your AI credits run out, it
 stops and says so. Close the offering and it carries on next time you open it.
 
-**Reach** lists your picked prospects grouped by what to do next, closest to a customer
-first, under the same words as the **Next** line: **Answer replies**, **Follow up with**
-(no reply and no activity for 7 days), **Send ready messages**, **Write to**, **Score**,
-**Research**; then **Waiting for a reply** and **Closed**. The first group is always the
-one the **Next** line names. Tap a prospect to open it at that step. **Research** and
-**Score** groups have one button for the whole group (**Research all**, **Score all**);
-afterwards the page says what was done and why any were not. A fit score shows once a
-prospect is scored, and a search box appears once the list is longer than ten.
+**Prospects** lists everyone you approved, grouped by how far each has got. Your groups come
+first, in the same order as **To do**: **Answer replies**, **Follow up with**, **Send ready
+messages**. Then **Being prepared** (WonderArk is researching, scoring or writing to them),
+**Waiting for a reply** and **Closed**. Tap a prospect to open it at its step. A fit score
+shows once a prospect is scored, and a search box appears once the list is longer than ten.
 
 On the **Companies** list, **Campaigns** below the list is the other way to reach them:
 email many at once, on a schedule. Campaigns email companies only, so the **Channels** list
 has no Campaigns section and the Next line never suggests one there.
 
 A running campaign's **Call**, **WhatsApp** and **LinkedIn** steps that are due are listed
-at the top of **Reach**, one line per prospect, oldest first and five at a time. Each shows
+on **To do**, one line per prospect, oldest first and five at a time. Each shows
 who, the number or page to use, and the draft with that prospect's details filled in.
 **Mark done** records how it went. The list appears only when a step is due.
 
@@ -482,11 +469,11 @@ mailbox. Nothing is written or sent until you ask for it.
   is no "delivered" figure: your own mailbox doesn't report delivery. A send whose outcome
   isn't known is shown as failed with "Outcome unknown" and is never sent again
   automatically.
-- A prospect in a running campaign is not also listed under **Follow up with** on Reach.
+- A prospect in a running campaign is not also listed under **Follow up with** on To do.
 - **Steps you do yourself.** A **Call**, **WhatsApp** or **LinkedIn** step is never sent or
   dialled by WonderArk. **Write messages** drafts it with the emails: talking points for a
   call, a short message for WhatsApp or LinkedIn, labelled and editable like any other
-  text. When the step is due for a prospect it appears at the top of **Reach** with the draft
+  text. When the step is due for a prospect it appears on **To do** with the draft
   and the phone number or LinkedIn page. A WhatsApp number opens a chat with the draft
   filled in only when it is stored with its country code (starting with "+"); if no
   LinkedIn page is stored, the line says so. Do the step yourself, then press **Mark done**
