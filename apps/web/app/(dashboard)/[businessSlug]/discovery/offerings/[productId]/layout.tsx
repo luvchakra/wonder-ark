@@ -15,6 +15,7 @@ import { EditableName } from "@cofounderai/module-discovery/components/tenancy/e
 import { Breadcrumbs } from "@cofounderai/module-discovery/components/tenancy/breadcrumbs";
 import { OfferingContextSelector } from "@cofounderai/module-discovery/components/offerings/offering-context-selector";
 import { renameProductAction } from "./actions";
+import { loadNextStep } from "@cofounderai/module-discovery/lib/journey/load";
 
 export default async function ProductLayout({
   children,
@@ -43,6 +44,16 @@ export default async function ProductLayout({
     icp: Boolean(icp),
     prospects: Boolean(prospectCounts && prospectCounts.total > 0),
   };
+
+  // DISC-NAV-P0-01.11: whatever was just done, the line under the steps says what is next.
+  const next = workspace
+    ? await loadNextStep({
+        workspaceId: workspace.id,
+        basePath,
+        hasProfile: Boolean(product.product_profile),
+        icpStatus: icp ? (icp.status === "approved" ? "approved" : "draft") : null,
+      })
+    : null;
 
   return (
     // max-w-6xl (not the old max-w-2xl): the prospects table and prospect detail page's
@@ -80,7 +91,7 @@ export default async function ProductLayout({
             offerings={offerings.map((o) => ({ id: o.id, name: o.name }))}
           />
         </div>
-        <ProductNav basePath={basePath} completed={completed} />
+        <ProductNav basePath={basePath} completed={completed} next={next} />
         {children}
       </AutoPopulateProgressProvider>
     </main>

@@ -15,7 +15,7 @@ import {
 import { identifyMissingOfferingInformation } from "../../lib/offerings/missing-information";
 import type { BuyerPersona } from "../../lib/personas/types";
 import type { IcpProfile } from "../../lib/icp/types";
-import type { ProspectCounts } from "../../lib/prospects/queries";
+import { IDEAL_USER_FIELDS, readIdealUser } from "../../lib/icp/audience";
 import type { OpportunityOutcomeFunnel } from "../../lib/opportunities/outcome-funnel";
 
 /**
@@ -56,10 +56,21 @@ const ICP_LIST_FIELDS = [
 ] as const;
 
 /** The ideal customer in one line, for its section's summary. */
-export function icpHint(icp: IcpProfile | null): string {
+export function icpHint(icp: IcpProfile | null, audienceType: "business" | "consumer" | "both" = "business"): string {
   if (!icp) return "Not defined yet";
+  const status = icp.status === "approved" ? "Approved" : "Draft, not approved yet";
+  // DISC-NAV-P0-01.11: an offering sold to consumers is described by its Ideal user, not by
+  // company fields it leaves empty ("0 of 12 fields" read as nothing defined).
+  if (audienceType === "consumer") {
+    const user = readIdealUser(icp.audience);
+    const filled = IDEAL_USER_FIELDS.filter((field) => {
+      const value = user?.[field];
+      return Array.isArray(value) ? value.length > 0 : Boolean(value);
+    }).length;
+    return `${status} · ${filled} of ${IDEAL_USER_FIELDS.length} fields`;
+  }
   const defined = ICP_LIST_FIELDS.filter((field) => icp[field].length > 0).length;
-  return `${icp.status === "approved" ? "Approved" : "Draft, not approved yet"} · ${defined} of ${ICP_LIST_FIELDS.length} fields`;
+  return `${status} · ${defined} of ${ICP_LIST_FIELDS.length} fields`;
 }
 
 /** The offering in one line, for its section's summary. */
@@ -78,37 +89,6 @@ export function offeringHint(offering: Offering, icp: IcpProfile | null, persona
 /** Where the offering's own setup screens are: the ideal customer is a section of Setup. */
 function setupSection(basePath: string, section: string) {
   return `${basePath}?open=${section}#${section}`;
-}
-
-/** The one thing to do next for this offering, from its data. */
-export function NextStepLine({
-  basePath,
-  icp,
-  personas,
-  prospectCounts,
-}: {
-  basePath: string;
-  icp: IcpProfile | null;
-  personas: BuyerPersona[];
-  prospectCounts: ProspectCounts;
-}) {
-  const next = !icp
-    ? { label: "Define your ideal customer", href: setupSection(basePath, "icp") }
-    : icp.status === "draft"
-      ? { label: "Review and approve your ideal customer", href: setupSection(basePath, "icp") }
-      : personas.length === 0
-        ? { label: "Add buyer personas", href: setupSection(basePath, "icp") }
-        : prospectCounts.total === 0
-          ? { label: "Find prospects", href: `${basePath}/prospects/discover` }
-          : { label: "Review your prospects", href: `${basePath}/prospects` };
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
-      <p className="text-sm text-muted-foreground">Next step</p>
-      <Link href={next.href} className="text-sm font-medium text-primary hover:underline">
-        {next.label} &rarr;
-      </Link>
-    </div>
-  );
 }
 
 /** DISC-OFFER-P1-03.1/03.2: how well the offering is defined, and what is missing. */

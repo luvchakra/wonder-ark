@@ -33,6 +33,7 @@ import {
 import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
 import ImportProspectsPage from "../import/page";
 import RunHistoryPage from "../../history/page";
+import { DiscoverySection } from "../../discovery-section";
 
 /** The one line under the form: what is left of this business's lookups, or why the
  * gateway can't be searched. Only what the gateway reported; nothing is estimated. */
@@ -175,6 +176,7 @@ export default async function DiscoverProspectsPage({
         <SectionFold id="import" title="Import" hint="Add prospects from a file">
           <ImportProspectsPage params={params} />
         </SectionFold>
+        <DiscoverySection params={params} />
         <SectionFold id="history" title="History" hint="Every search and AI discovery run, with what each found">
           <RunHistoryPage params={params} />
         </SectionFold>

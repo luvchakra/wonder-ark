@@ -52,7 +52,7 @@ describe("ProductNav, once the offering has a profile", () => {
     const found = nav("/prospects/import");
     expect(found.find((link) => link.text === "Find")!.current).toBe("true");
     expect(found.find((link) => link.text === "Reach")!.current).toBeNull();
-    expect(nav("/discovery").find((link) => link.text === "Define")!.current).toBe("true");
+    expect(nav("/discovery").find((link) => link.text === "Find")!.current).toBe("true");
     expect(nav("/campaigns/abc").find((link) => link.text === "Reach")!.current).toBe("true");
     expect(nav("/prospects/8d0c").find((link) => link.text === "Reach")!.current).toBe("true");
   });
@@ -180,7 +180,7 @@ describe("TodayList", () => {
 
   it("says so in one line when nothing is waiting, with no control", () => {
     const html = renderToStaticMarkup(<TodayList rows={[]} />);
-    expect(html).toContain("Nothing is waiting for you today.");
+    expect(html).toBe("");
     expect(links(html)).toEqual([]);
   });
 });

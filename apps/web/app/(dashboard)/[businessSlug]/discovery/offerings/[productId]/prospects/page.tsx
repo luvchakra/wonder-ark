@@ -42,7 +42,6 @@ import { SectionFold } from "@cofounderai/module-discovery/components/ui/section
 import { listCampaignsWithCounts } from "@cofounderai/module-discovery/lib/campaigns/campaigns";
 import CampaignsPage from "../campaigns/page";
 import OpportunitiesPage from "../opportunities/page";
-import WatchlistPage from "../watchlist/page";
 
 /** DISC-CONS-P0-05.1/05.2: the lists the Prospects tab offers, by who buys the offering. */
 const LIST_LABEL = { companies: "Companies", channels: "Channels", people: "People" } as const;
@@ -311,9 +310,6 @@ export default async function ProspectsPage({
         </SectionFold>
         <SectionFold id="opportunities" title="Opportunities" hint="Prospects showing a reason to buy now">
           <OpportunitiesPage params={params} />
-        </SectionFold>
-        <SectionFold id="watchlist" title="Watchlist" hint="Accounts you are keeping an eye on">
-          <WatchlistPage params={params} />
         </SectionFold>
       </div>
     </div>
