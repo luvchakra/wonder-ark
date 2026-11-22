@@ -38,12 +38,12 @@ export function ProductNav({
 }) {
   const pathname = useAppPathname();
   const { activeStage } = useAutoPopulateProgress();
-  const tabs: { id: StageId; href: string; label: string }[] = [
-    { id: "overview", href: basePath, label: "Overview" },
+  const tabs: { id: StageId; href: string; label: string; hint: string }[] = [
+    { id: "overview", href: basePath, label: "Overview", hint: "Say what you sell. AI can draft it from your website; you edit it." },
     // DISC-NAV-P0-01.3: "ICP" reads as "Ideal customer" wherever it is a label.
-    { id: "icp", href: `${basePath}/icp`, label: "Ideal customer" },
-    { id: "prospects", href: `${basePath}/prospects`, label: "Prospects" },
-    { id: "conversions", href: `${basePath}/conversions`, label: "Conversions" },
+    { id: "icp", href: `${basePath}/icp`, label: "Ideal customer", hint: "Say who buys it. AI drafts a profile; approve it to start finding prospects." },
+    { id: "prospects", href: `${basePath}/prospects`, label: "Prospects", hint: "Find businesses or channels that match, approve the ones you want, then reach them." },
+    { id: "conversions", href: `${basePath}/conversions`, label: "Conversions", hint: "Mark a conversation Won when it closes; your customers show here." },
   ];
 
   const activeIndex = tabs.findIndex((tab) =>
@@ -64,104 +64,112 @@ export function ProductNav({
     const active = activeOfferingNav(ongoingTabs, pathname);
 
     return (
+      <div className="flex flex-col gap-2">
+        <nav
+          aria-label="Offering sections"
+          className="grid w-full grid-cols-4 gap-1 rounded-lg border border-border bg-muted p-1"
+        >
+          {ongoingTabs.map((tab) => {
+            const isActive = tab.id === active?.tab.id;
+            return (
+              <Link
+                key={tab.id}
+                href={tab.href}
+                // "page" only on the very page the tab lands on; on the tab's other pages
+                // (opened at their own address) it marks the section.
+                aria-current={isActive ? (pathname === tab.href ? "page" : "true") : undefined}
+                className={cn(
+                  "rounded-md px-2 py-1.5 text-center text-sm font-medium transition-colors",
+                  isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
+        </nav>
+        {/* DISC-NAV-P0-01.8: one line saying what this stage is for. */}
+        {active ? <p className="px-1 text-sm text-muted-foreground">{active.tab.hint}</p> : null}
+      </div>
+    );
+  }
+
+  const activeHint = activeIndex >= 0 ? tabs[activeIndex]!.hint : null;
+  return (
+    <div className="flex flex-col gap-2">
       <nav
-        aria-label="Offering sections"
-        className="grid w-full grid-cols-4 gap-1 rounded-lg border border-border bg-muted p-1"
+        aria-label="Product sections"
+        className="flex w-full items-start rounded-2xl border border-border bg-card px-4 py-5 sm:px-6"
       >
-        {ongoingTabs.map((tab) => {
-          const isActive = tab.id === active?.tab.id;
+        {tabs.map((tab, i) => {
+          const isActive = i === activeIndex;
+          const isCompleted = !isActive && Boolean(completed?.[tab.id]);
+          const isPast = i < activeIndex;
+          const isProcessing = tab.id === activeStage;
+
           return (
             <Link
-              key={tab.id}
+              key={tab.href}
               href={tab.href}
-              // "page" only on the very page the tab lands on; on the tab's other pages
-              // (opened at their own address) it marks the section.
-              aria-current={isActive ? (pathname === tab.href ? "page" : "true") : undefined}
-              className={cn(
-                "rounded-md px-2 py-1.5 text-center text-sm font-medium transition-colors",
-                isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
-              )}
+              aria-current={isActive ? "page" : undefined}
+              className="flex min-w-0 flex-1 flex-col items-center gap-2 rounded-md py-1 transition-opacity hover:opacity-80"
             >
-              {tab.label}
+              <div className="flex w-full items-center" aria-hidden="true">
+                <div
+                  className={cn(
+                    "h-1 flex-1 rounded-full",
+                    i === 0 ? "bg-transparent" : isPast || isCompleted ? "bg-primary" : "bg-muted",
+                  )}
+                />
+                <span
+                  className={cn(
+                    "relative flex size-10 shrink-0 items-center justify-center rounded-full text-base font-semibold transition-colors",
+                    isActive
+                      ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
+                      : isCompleted
+                        ? "bg-primary/20 text-primary"
+                        : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {isProcessing ? (
+                    <span
+                      aria-hidden="true"
+                      className="absolute inset-0 animate-[spin_2.2s_linear_infinite] rounded-full border-2 border-transparent border-t-primary"
+                    />
+                  ) : null}
+                  {i + 1}
+                  {isCompleted ? (
+                    <span className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card">
+                      <Check className="size-2.5" />
+                    </span>
+                  ) : null}
+                </span>
+                <div
+                  className={cn(
+                    "h-1 flex-1 rounded-full",
+                    i === tabs.length - 1 ? "bg-transparent" : isPast ? "bg-primary" : "bg-muted",
+                  )}
+                />
+              </div>
+              <span
+                className={cn(
+                  // `text-xs` (not `text-sm`) below `sm`: at the default size "Conversions"
+                  // -- the longest label, and a single word with no space to wrap at --
+                  // didn't fit this column's width on a phone, so `break-words` split it
+                  // mid-word into "Conversion"/"s" on two lines instead of wrapping cleanly.
+                  // The smaller size fits the whole word on one line at every width that
+                  // matters; `break-words` stays on as a safety net for anything narrower.
+                  "max-w-full text-center text-xs leading-tight font-medium break-words sm:text-sm",
+                  isActive ? "text-foreground" : "text-muted-foreground",
+                )}
+              >
+                {tab.label}
+              </span>
             </Link>
           );
         })}
       </nav>
-    );
-  }
-
-  return (
-    <nav
-      aria-label="Product sections"
-      className="flex w-full items-start rounded-2xl border border-border bg-card px-4 py-5 sm:px-6"
-    >
-      {tabs.map((tab, i) => {
-        const isActive = i === activeIndex;
-        const isCompleted = !isActive && Boolean(completed?.[tab.id]);
-        const isPast = i < activeIndex;
-        const isProcessing = tab.id === activeStage;
-
-        return (
-          <Link
-            key={tab.href}
-            href={tab.href}
-            aria-current={isActive ? "page" : undefined}
-            className="flex min-w-0 flex-1 flex-col items-center gap-2 rounded-md py-1 transition-opacity hover:opacity-80"
-          >
-            <div className="flex w-full items-center" aria-hidden="true">
-              <div
-                className={cn(
-                  "h-1 flex-1 rounded-full",
-                  i === 0 ? "bg-transparent" : isPast || isCompleted ? "bg-primary" : "bg-muted",
-                )}
-              />
-              <span
-                className={cn(
-                  "relative flex size-10 shrink-0 items-center justify-center rounded-full text-base font-semibold transition-colors",
-                  isActive
-                    ? "bg-primary text-primary-foreground ring-4 ring-primary/20"
-                    : isCompleted
-                      ? "bg-primary/20 text-primary"
-                      : "bg-muted text-muted-foreground",
-                )}
-              >
-                {isProcessing ? (
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-0 animate-[spin_2.2s_linear_infinite] rounded-full border-2 border-transparent border-t-primary"
-                  />
-                ) : null}
-                {i + 1}
-                {isCompleted ? (
-                  <span className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-primary text-primary-foreground ring-2 ring-card">
-                    <Check className="size-2.5" />
-                  </span>
-                ) : null}
-              </span>
-              <div
-                className={cn(
-                  "h-1 flex-1 rounded-full",
-                  i === tabs.length - 1 ? "bg-transparent" : isPast ? "bg-primary" : "bg-muted",
-                )}
-              />
-            </div>
-            <span
-              className={cn(
-                // `text-xs` (not `text-sm`) below `sm`: at the default size "Conversions"
-                // -- the longest label, and a single word with no space to wrap at --
-                // didn't fit this column's width on a phone, so `break-words` split it
-                // mid-word into "Conversion"/"s" on two lines instead of wrapping cleanly.
-                // The smaller size fits the whole word on one line at every width that
-                // matters; `break-words` stays on as a safety net for anything narrower.
-                "max-w-full text-center text-xs leading-tight font-medium break-words sm:text-sm",
-                isActive ? "text-foreground" : "text-muted-foreground",
-              )}
-            >
-              {tab.label}
-            </span>
-          </Link>
-        );
-      })}
-    </nav>
+      {activeHint ? <p className="px-1 text-sm text-muted-foreground">{activeHint}</p> : null}
+    </div>
   );
 }
