@@ -2,8 +2,9 @@
 
 import { businessPath } from "@/lib/business-path";
 import { redirect } from "next/navigation";
+import type { BulkActionResult } from "@cofounderai/module-discovery/lib/prospects/bulk-actions";
 import { revalidatePath } from "next/cache";
-import { createProspect } from "@cofounderai/module-discovery/lib/prospects/mutations";
+import { createProspect, setProspectsShortlisted } from "@cofounderai/module-discovery/lib/prospects/mutations";
 import { saveSignupPage } from "@cofounderai/module-discovery/lib/audience/pages";
 import { findDuplicateProspect } from "@cofounderai/module-discovery/lib/prospects/duplicates";
 import {
@@ -41,13 +42,21 @@ export async function createProspectAction(
     companySize: String(formData.get("companySize") ?? ""),
     location: String(formData.get("location") ?? ""),
     description: String(formData.get("description") ?? ""),
-  });
+  }, { shortlist: true });
   revalidatePath(await prospectsPath(businessId, productId));
   redirect(`${await prospectsPath(businessId, productId)}/${prospect.id}`);
 }
 
-function bulkResultQuery(action: string, result: { completed: number; skipped: number; limitReached: boolean }) {
-  return `bulkAction=${action}&bulkCompleted=${result.completed}&bulkSkipped=${result.skipped}&bulkLimit=${result.limitReached ? 1 : 0}`;
+function bulkResultQuery(action: string, result: BulkActionResult) {
+  const q = new URLSearchParams({
+    bulkAction: action,
+    bulkCompleted: String(result.completed),
+    bulkDone: String(result.alreadyDone),
+    bulkNotReady: String(result.notReady),
+    bulkFailed: String(result.failed),
+    bulkLimit: result.limitReached ? "1" : "0",
+  });
+  return q.toString();
 }
 
 export async function bulkResearchAction(
@@ -103,4 +112,35 @@ export async function saveSignupPageAction(businessId: string, productId: string
     consentText: formData.get("consentText"),
   });
   revalidatePath(await prospectsPath(businessId, productId));
+}
+
+/**
+ * DISC-PROS-P0-08.1: "Use these" on the Select tab picks the ticked prospects for work, then
+ * opens the working list (Channels, Companies) where research, scoring and campaigns happen.
+ * "Back to Select" sends ticked ones back. The list to return to is one of the page's own.
+ */
+export async function shortlistProspectsAction(
+  businessId: string,
+  productId: string,
+  workspaceId: string,
+  nextList: string | null,
+  formData: FormData,
+) {
+  const ids = formData.getAll("ids").map(String);
+  const moved = await setProspectsShortlisted(workspaceId, ids, true);
+  revalidatePath(await prospectsPath(businessId, productId));
+  const list = nextList && /^(companies|channels)$/.test(nextList) ? `list=${nextList}&` : "";
+  redirect(`${await prospectsPath(businessId, productId)}?${list}shortlisted=${moved}`);
+}
+
+export async function unshortlistProspectsAction(
+  businessId: string,
+  productId: string,
+  workspaceId: string,
+  formData: FormData,
+) {
+  const ids = formData.getAll("ids").map(String);
+  const moved = await setProspectsShortlisted(workspaceId, ids, false);
+  revalidatePath(await prospectsPath(businessId, productId));
+  redirect(`${await prospectsPath(businessId, productId)}?list=select&unshortlisted=${moved}`);
 }

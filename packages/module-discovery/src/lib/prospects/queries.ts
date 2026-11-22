@@ -24,6 +24,9 @@ export type ProspectFilters = {
   followUpDue?: boolean;
   /** DISC-CONS-P0-05.1: only companies or only channels. Left out, both. */
   kind?: ProspectKind;
+  /** DISC-PROS-P0-08.1: true, only those picked for work; false, only those waiting on the
+   * Select tab. Left out, both. */
+  shortlisted?: boolean;
 };
 
 export type ProspectSort = "recent" | "stage" | "priority";
@@ -112,6 +115,8 @@ export async function listProspects(
   if (filters.industry) query = query.eq("industry", filters.industry);
   if (filters.search) query = query.ilike("company_name", `%${filters.search}%`);
   if (filters.kind) query = query.eq("kind", filters.kind);
+  if (filters.shortlisted === true) query = query.not("shortlisted_at", "is", null);
+  if (filters.shortlisted === false) query = query.is("shortlisted_at", null);
 
   const { data, error } = await query.order("created_at", { ascending: false });
   if (error) throw error;

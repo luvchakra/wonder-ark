@@ -31,6 +31,8 @@ export function ProspectsBoard({
   bulkScoreAction,
   channels = false,
   list,
+  selectAction,
+  backToSelectAction,
 }: {
   prospects: ProspectWithPipeline[];
   basePath: string;
@@ -48,6 +50,10 @@ export function ProspectsBoard({
   channels?: boolean;
   /** The list's name in the URL, kept by the filters. */
   list?: string;
+  /** DISC-PROS-P0-08.1: this is the Select tab; ticked prospects are picked for work. */
+  selectAction?: (formData: FormData) => void | Promise<void>;
+  /** The working list: ticked prospects can go back to the Select tab. */
+  backToSelectAction?: (formData: FormData) => void | Promise<void>;
 }) {
   const [query, setQuery] = useState(initialSearch);
   const [advancedOpen, setAdvancedOpen] = useState(defaultAdvancedOpen);
@@ -106,9 +112,11 @@ export function ProspectsBoard({
         <p className="rounded-md border p-4 text-sm text-muted-foreground">
           {query || hasActiveFilters
             ? `No ${channels ? "channels" : "prospects"} match these filters.`
-            : channels
-              ? "No channels yet. Find them on the Find tab."
-              : "No prospects yet."}
+            : selectAction
+              ? "Nothing to pick. What you approve on Find waits here until you choose it."
+              : channels
+                ? "No channels picked yet. Pick them on the Select tab, or find them on Find."
+                : "No prospects picked yet. Pick them on the Select tab, or find them on Find."}
         </p>
       ) : (
         <ProspectsCards
@@ -117,6 +125,8 @@ export function ProspectsBoard({
           bulkResearchAction={bulkResearchAction}
           bulkScoreAction={bulkScoreAction}
           channels={channels}
+          selectAction={selectAction}
+          backToSelectAction={backToSelectAction}
         />
       )}
     </div>

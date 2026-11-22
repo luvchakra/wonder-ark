@@ -41,6 +41,9 @@ export type Prospect = {
   channel_type?: string | null;
   audience_size?: number | null;
   field_sources?: Record<string, ProspectFieldSource>;
+  /** DISC-PROS-P0-08.1: when it was picked for work on the Select tab; null while it waits
+   * there. Optional: absent on a value built before the column existed. */
+  shortlisted_at?: string | null;
 };
 
 export type ProspectKind = "company" | "channel";

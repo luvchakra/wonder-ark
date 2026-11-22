@@ -54,6 +54,8 @@ export function ProspectsCards({
   bulkResearchAction,
   bulkScoreAction,
   channels = false,
+  selectAction,
+  backToSelectAction,
 }: {
   prospects: ProspectWithPipeline[];
   basePath: string;
@@ -61,6 +63,11 @@ export function ProspectsCards({
   channels?: boolean;
   bulkResearchAction: (formData: FormData) => void | Promise<void>;
   bulkScoreAction: (formData: FormData) => void | Promise<void>;
+  /** DISC-PROS-P0-08.1: on the Select tab, the one thing to do with ticked prospects is to
+   * pick them for work ("Use these"); research and scoring come after, on the working list. */
+  selectAction?: (formData: FormData) => void | Promise<void>;
+  /** On the working list: send ticked prospects back to the Select tab. */
+  backToSelectAction?: (formData: FormData) => void | Promise<void>;
 }) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
@@ -80,6 +87,11 @@ export function ProspectsCards({
   }
 
   const allSelected = prospects.length > 0 && selected.size === prospects.length;
+  // DISC-PROS-P0-08.2: offer only what applies to the ticked prospects -- research for those
+  // not researched yet, scoring for those researched and not scored.
+  const ticked = prospects.filter((p) => selected.has(p.id));
+  const canResearch = ticked.filter((p) => p.stage === "new").length;
+  const canScore = ticked.filter((p) => p.stage === "researched").length;
 
   const groups = PROSPECT_STAGES.map((stage) => ({
     stage,
@@ -87,7 +99,7 @@ export function ProspectsCards({
   })).filter((g) => g.prospects.length > 0);
 
   return (
-    <form action={bulkResearchAction} className="flex flex-col gap-4">
+    <form action={selectAction ?? bulkResearchAction} className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-3">
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           <input
@@ -102,12 +114,29 @@ export function ProspectsCards({
         {selected.size > 0 ? (
           <div className="flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 px-3 py-2">
             <span className="text-sm font-medium">{selected.size} selected</span>
-            <SubmitButton size="sm" variant="outline" pendingText="Researching...">
-              Research selected
-            </SubmitButton>
-            <SubmitButton size="sm" variant="outline" pendingText="Scoring..." formAction={bulkScoreAction}>
-              Score selected
-            </SubmitButton>
+            {selectAction ? (
+              <SubmitButton size="sm" pendingText="Moving...">
+                Use these
+              </SubmitButton>
+            ) : (
+              <>
+                {canResearch > 0 ? (
+                  <SubmitButton size="sm" variant="outline" pendingText="Researching..." formAction={bulkResearchAction}>
+                    Research {canResearch}
+                  </SubmitButton>
+                ) : null}
+                {canScore > 0 ? (
+                  <SubmitButton size="sm" variant="outline" pendingText="Scoring..." formAction={bulkScoreAction}>
+                    Score {canScore}
+                  </SubmitButton>
+                ) : null}
+                {backToSelectAction ? (
+                  <SubmitButton size="sm" variant="ghost" pendingText="Moving..." formAction={backToSelectAction}>
+                    Back to Select
+                  </SubmitButton>
+                ) : null}
+              </>
+            )}
             <Button type="button" size="sm" variant="ghost" onClick={() => setSelected(new Set())}>
               Clear selection
             </Button>

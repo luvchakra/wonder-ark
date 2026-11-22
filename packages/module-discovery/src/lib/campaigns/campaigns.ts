@@ -359,7 +359,8 @@ export async function previewAudience(
   const core = clients?.core ?? (await createCoreClient({ schema: "core" }));
 
   const [prospects, contacts, enrollments, suppressions] = await Promise.all([
-    supabase.from("prospects").select("id, kind, status, outcome, fit_score, industry, company_email").eq("workspace_id", campaign.workspace_id),
+    // DISC-PROS-P0-08.1: a campaign reaches only prospects picked for work on the Select tab.
+    supabase.from("prospects").select("id, kind, status, outcome, fit_score, industry, company_email").eq("workspace_id", campaign.workspace_id).not("shortlisted_at", "is", null),
     supabase.from("contacts").select("id, prospect_id, email, status, email_status, source").eq("workspace_id", campaign.workspace_id).order("created_at"),
     supabase.from("outreach_enrollments").select("prospect_id").eq("workspace_id", campaign.workspace_id),
     core.from("communication_suppressions").select("email_hash").eq("business_id", businessId),

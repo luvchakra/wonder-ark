@@ -249,6 +249,18 @@ Everything that brings companies in is under the **Find** tab.
   required; a file in another layout is restructured by AI for you to check before import.
 - **Add**, on the **Prospects** tab, creates one prospect by hand.
 
+### Select first
+
+The **Prospects** tab's first list is **Select**. What you approve on **Find** or import
+waits there. Tick the ones to work on and press **Use these**: they move to your list
+(**Channels** or **Companies**), where you research, score and reach them. Campaigns reach
+only prospects on that list. **Back to Select** moves ticked ones back. A prospect you add by
+hand with **Add** goes straight to your list.
+
+When you tick prospects on your list, the bar offers only what applies: **Research** for
+those not researched yet and **Score** for those researched and not scored. Afterwards it
+says what was done and why any were not.
+
 ### Today
 
 The **Prospects** tab opens with a short **Today** list of what is waiting for you, counted

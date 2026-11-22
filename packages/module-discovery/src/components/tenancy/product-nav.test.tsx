@@ -74,7 +74,7 @@ describe("ProductNav's line about the stage in view", () => {
   it("shows exactly one line, for the tab in view", () => {
     expect(hintOf("")).toEqual([expect.stringMatching(/what you sell and who buys it/)]);
     expect(hintOf("/prospects/discover")).toEqual([expect.stringMatching(/match your ideal customer, and pick the ones to keep/)]);
-    expect(hintOf("/prospects/p-123")).toEqual([expect.stringMatching(/Everyone you approved/)]);
+    expect(hintOf("/prospects/p-123")).toEqual([expect.stringMatching(/Pick the ones to work on under Select/)]);
     expect(hintOf("/conversions")).toEqual([expect.stringMatching(/What your outreach led to/)]);
   });
 
