@@ -9,6 +9,9 @@ import { useAutoPopulateProgress } from "./auto-populate-progress";
 
 type StageId = "overview" | "icp" | "prospects" | "conversions";
 
+/** The step tabs' ids (core's offering-nav) to the journey's step names. */
+const TAB_STEP = { setup: "define", find: "find", prospects: "reach", results: "results" } as const;
+
 /**
  * Progress-bar stepper, replacing the earlier single-row tab strips (co-founder-ai's
  * clip-path chevrons, then a flexbox tab strip with the label and a chevron side by
@@ -29,6 +32,7 @@ export function ProductNav({
   basePath,
   completed,
   next,
+  done,
 }: {
   basePath: string;
   /** Real workflow progress (profile generated, ICP exists, prospects added) -- reached
@@ -38,6 +42,8 @@ export function ProductNav({
   completed?: Partial<Record<StageId, boolean>>;
   /** DISC-NAV-P0-01.11: the one next step toward new customers, shown on every step. */
   next?: { label: string; href: string } | null;
+  /** DISC-NAV-P0-01.12: which of the four steps are done (green tick instead of the number). */
+  done?: Partial<Record<"define" | "find" | "reach" | "results", boolean>>;
 }) {
   const pathname = useAppPathname();
   const { activeStage } = useAutoPopulateProgress();
@@ -74,6 +80,7 @@ export function ProductNav({
         >
           {ongoingTabs.map((tab, i) => {
             const isActive = tab.id === active?.tab.id;
+            const isDone = Boolean(done?.[TAB_STEP[tab.id]]);
             return (
               <Link
                 key={tab.id}
@@ -86,11 +93,17 @@ export function ProductNav({
                   isActive ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
                 )}
               >
-                {/* DISC-NAV-P0-01.10: the four steps in order. */}
-                <span aria-hidden="true" className="mr-1 text-xs tabular-nums opacity-60">
-                  {i + 1}
-                </span>
+                {/* DISC-NAV-P0-01.10: the four steps in order. DISC-NAV-P0-01.12: a done
+                    step shows a green tick in place of its number. */}
+                {isDone ? (
+                  <Check aria-hidden="true" className="mr-1 inline size-3.5 align-[-2px] text-emerald-600" strokeWidth={3} />
+                ) : (
+                  <span aria-hidden="true" className="mr-1 text-xs tabular-nums opacity-60">
+                    {i + 1}
+                  </span>
+                )}
                 {tab.label}
+                {isDone ? <span className="sr-only"> (done)</span> : null}
               </Link>
             );
           })}

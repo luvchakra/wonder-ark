@@ -22,7 +22,6 @@ import {
   deriveProspectPipelineState,
   latestTimestamp,
   NEXT_ACTION_ANCHOR,
-  PROSPECT_STAGE_LABEL,
 } from "@cofounderai/module-discovery/lib/prospects/pipeline";
 import type { Message } from "@cofounderai/module-discovery/lib/messages/types";
 import type { Contact } from "@cofounderai/module-discovery/lib/contacts/types";
@@ -95,6 +94,7 @@ import {
   writeChannelDraftAction,
   markChannelPostPostedAction,
 } from "./actions";
+import { ProspectProgress } from "@cofounderai/module-discovery/components/prospects/prospect-progress";
 import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
 import { MoreActions } from "@cofounderai/module-discovery/components/ui/more-actions";
 
@@ -459,11 +459,10 @@ export default async function ProspectDetailPage({
         </p>
       ) : null}
 
-      <div className="flex items-center justify-between rounded-md border bg-muted/40 p-4">
-        <div>
-          <p className="text-xs font-medium uppercase text-muted-foreground">
-            {PROSPECT_STAGE_LABEL[stage]}
-          </p>
+      <div className="flex items-center justify-between gap-3 rounded-md border bg-muted/40 p-4">
+        <div className="flex flex-col gap-1.5">
+          {/* DISC-NAV-P0-01.12: a tick on each step done, in place of the stage name. */}
+          <ProspectProgress stage={stage} outcome={prospect.outcome} />
           {nextAction ? (
             <a href={`#${NEXT_ACTION_ANCHOR[nextAction] ?? ""}`} className="font-medium hover:underline">
               Next: {nextAction}
@@ -643,7 +642,7 @@ export default async function ProspectDetailPage({
       {/* DISC-DATA-P0-04.2. Visible controls in this block, apart from each contact's own
           two: seven before (the six fields of the add form and its button), two now
           (Find contacts, and "Add a contact", which unfolds the form). */}
-      <SectionFold id="contacts" title="Contacts" hint={contacts.length ? `${contacts.length} ${contacts.length === 1 ? "contact" : "contacts"}` : "None yet"}>
+      <SectionFold id="contacts" title="Contacts" done={contacts.length > 0} hint={contacts.length ? `${contacts.length} ${contacts.length === 1 ? "contact" : "contacts"}` : "None yet"}>
       <section className="flex flex-col gap-4">
         {/* The fold's title names the section. */}
         <div className="flex flex-wrap items-start justify-end gap-3">
@@ -716,85 +715,22 @@ export default async function ProspectDetailPage({
           </form>
         </details>
       </section>
-      </SectionFold>
-
-      {/* DISC-OFFER-P0-06.2: "Offering Research Brief" -- the doc's own progressive-
-          disclosure order (decision summary -> research brief -> expandable evidence ->
-          raw signals), so this decision-support summary sits above the raw Research
-          section below it rather than buried inside it. Requires research to exist
-          first (same guard generateResearchBrief() itself enforces server-side). */}
-      <SectionFold id="research-brief" title="Research brief" hint={researchBrief ? "Ready" : research ? "Not generated yet" : "Needs research first"}>
-        <div className="flex items-center justify-between">
-          <h2 className="font-medium">Research brief</h2>
-          {research ? (
-            <AiActionForm
-              action={generateResearchBriefAction.bind(null, businessId, productId, prospect.id)}
-              buttonLabel={researchBrief ? "Regenerate brief" : "Generate brief"}
-              pendingText="Generating..."
-            />
-          ) : null}
-        </div>
-
-        {!research ? (
-          <p className="text-sm text-muted-foreground">Research this prospect first to generate a brief.</p>
-        ) : !researchBrief ? (
-          <p className="text-sm text-muted-foreground">Not generated yet.</p>
-        ) : (
-          <div className="flex flex-col gap-3 text-sm">
-            <div className="flex items-center gap-2">
-              <span
-                className={cn(
-                  "rounded px-1.5 py-0.5 text-xs font-medium",
-                  researchBrief.confidence === "high"
-                    ? "bg-emerald-100 text-emerald-800"
-                    : researchBrief.confidence === "medium"
-                      ? "bg-amber-100 text-amber-800"
-                      : "bg-muted text-muted-foreground",
-                )}
-              >
-                {researchBrief.confidence === "high" ? "High" : researchBrief.confidence === "medium" ? "Medium" : "Low"} confidence
-              </span>
-              <span className="text-xs text-muted-foreground">
-                Generated {new Date(researchBrief.generated_at).toLocaleString()}
-              </span>
-            </div>
-            <div>
-              <p className="font-medium">Offering fit</p>
-              <p className="text-muted-foreground">{researchBrief.offering_fit}</p>
-            </div>
-            <div>
-              <p className="font-medium">Problem hypothesis</p>
-              <p className="text-muted-foreground">{researchBrief.problem_hypothesis}</p>
-            </div>
-            <div>
-              <p className="font-medium">Potential objection</p>
-              <p className="text-muted-foreground">{researchBrief.potential_objection}</p>
-            </div>
-            <div>
-              <p className="font-medium">Suggested opening</p>
-              <p className="text-muted-foreground">{researchBrief.suggested_opening}</p>
-            </div>
-          </div>
-        )}
-      </SectionFold>
-
-      {/* DISC-OFFER-P0-06.3: "Buyer/Person Intelligence" -- one row per real
-          discovery.contacts row (never invented), each enriched with seniority,
-          likely buying-committee role, relevance to this offering, contactability, and
-          any research evidence that actually mentions them. Shown independently of
-          whether a research brief has been generated yet -- it only needs contacts,
-          which can exist before research does. */}
-      <SectionFold id="buyer-intelligence" title="Buyer intelligence" hint={buyerIntelligence.length ? `${buyerIntelligence.length} ${buyerIntelligence.length === 1 ? "person" : "people"}` : "No contacts yet"}>
-        <h2 className="font-medium">Buyer intelligence</h2>
+        {/* DISC-OFFER-P0-06.3: buyer intelligence, one row per real contact. DISC-NAV-P0-01.12:
+            part of Contacts, since it describes the same people. */}
+        {buyerIntelligence.length ? (
+          <div id="buyer-intelligence" className="flex scroll-mt-4 flex-col gap-3 border-t border-border pt-4">
+        <h3 className="text-sm font-medium">Buyer intelligence</h3>
         {/* DISC-OFFER-P1-05.2: "Desktop Stage Tables" -- extracted into its own component
          * (`BuyerIntelligenceTable`) since it now renders a real desktop table alongside
          * the mobile card list this section already had; nothing about `contactability`
          * moved with it (see that component's own comment for exactly which columns the
          * doc's own "Person | Role | Fit | Evidence | Confidence" set maps onto). */}
         <BuyerIntelligenceTable buyerIntelligence={buyerIntelligence} />
+          </div>
+        ) : null}
       </SectionFold>
 
-      <SectionFold id="research" title="Research" hint={research ? "Done" : "Not researched yet"} open={openStep === "research"}>
+      <SectionFold id="research" title="Research" done={research !== null} hint={research ? (researchBrief ? "Done, with a brief" : "Done") : "Not researched yet"} open={openStep === "research"}>
         <div className="flex items-center justify-between">
           <h2 className="font-medium">Research</h2>
           <AiActionForm
@@ -876,9 +812,65 @@ export default async function ProspectDetailPage({
           </ExpandableBox>
           </>
         )}
+        {/* DISC-OFFER-P0-06.2: the research brief (decision summary). DISC-NAV-P0-01.12: part
+            of Research, not a section of its own, so the page has one step per activity. */}
+        <div id="research-brief" className="flex scroll-mt-4 flex-col gap-3 border-t border-border pt-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium">Research brief</h3>
+          {research ? (
+            <AiActionForm
+              action={generateResearchBriefAction.bind(null, businessId, productId, prospect.id)}
+              buttonLabel={researchBrief ? "Regenerate brief" : "Generate brief"}
+              pendingText="Generating..."
+            />
+          ) : null}
+        </div>
+
+        {!research ? (
+          <p className="text-sm text-muted-foreground">Research this prospect first to generate a brief.</p>
+        ) : !researchBrief ? (
+          <p className="text-sm text-muted-foreground">Not generated yet.</p>
+        ) : (
+          <div className="flex flex-col gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <span
+                className={cn(
+                  "rounded px-1.5 py-0.5 text-xs font-medium",
+                  researchBrief.confidence === "high"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : researchBrief.confidence === "medium"
+                      ? "bg-amber-100 text-amber-800"
+                      : "bg-muted text-muted-foreground",
+                )}
+              >
+                {researchBrief.confidence === "high" ? "High" : researchBrief.confidence === "medium" ? "Medium" : "Low"} confidence
+              </span>
+              <span className="text-xs text-muted-foreground">
+                Generated {new Date(researchBrief.generated_at).toLocaleString()}
+              </span>
+            </div>
+            <div>
+              <p className="font-medium">Offering fit</p>
+              <p className="text-muted-foreground">{researchBrief.offering_fit}</p>
+            </div>
+            <div>
+              <p className="font-medium">Problem hypothesis</p>
+              <p className="text-muted-foreground">{researchBrief.problem_hypothesis}</p>
+            </div>
+            <div>
+              <p className="font-medium">Potential objection</p>
+              <p className="text-muted-foreground">{researchBrief.potential_objection}</p>
+            </div>
+            <div>
+              <p className="font-medium">Suggested opening</p>
+              <p className="text-muted-foreground">{researchBrief.suggested_opening}</p>
+            </div>
+          </div>
+        )}
+        </div>
       </SectionFold>
 
-      <SectionFold id="score" title="Score" hint={score ? `${score.overall_score}/100` : "Not scored yet"} open={openStep === "score"}>
+      <SectionFold id="score" title="Score" done={score !== null} hint={score ? `${score.overall_score}/100` : "Not scored yet"} open={openStep === "score"}>
         <div className="flex items-center justify-between">
           <h2 className="font-medium">Score</h2>
           <form action={scoreProspectAction.bind(null, businessId, productId, prospect.id)}>
@@ -929,7 +921,7 @@ export default async function ProspectDetailPage({
         )}
       </SectionFold>
 
-      <SectionFold id="strategy" title="Outreach strategy" hint={strategy ? (strategy.status === "approved" ? "Approved" : "Draft, not approved yet") : "Not generated yet"} open={openStep === "strategy"}>
+      <SectionFold id="strategy" title="Outreach strategy" done={strategy?.status === "approved"} hint={strategy ? (strategy.status === "approved" ? "Approved" : "Draft, not approved yet") : "Not generated yet"} open={openStep === "strategy"}>
         <div className="flex items-center justify-between">
           <h2 className="font-medium">Outreach strategy</h2>
           {strategy?.status === "approved" ? (
@@ -1011,7 +1003,7 @@ export default async function ProspectDetailPage({
         )}
       </SectionFold>
 
-      <SectionFold id="messages" title="Messages" hint={messages.length ? `${messages.length} ${messages.length === 1 ? "message" : "messages"}` : "None yet"} open={openStep === "messages"}>
+      <SectionFold id="messages" title="Messages" done={messages.some((m) => m.status === "sent")} hint={messages.length ? `${messages.length} ${messages.length === 1 ? "message" : "messages"}` : "None yet"} open={openStep === "messages"}>
         <div className="flex items-center justify-between">
           <h2 className="font-medium">Messages</h2>
           {strategy?.status === "approved" ? (
@@ -1065,7 +1057,7 @@ export default async function ProspectDetailPage({
         )}
       </SectionFold>
 
-      <SectionFold id="conversations" title="Conversations" hint={conversations.length ? `${conversations.length} ${conversations.length === 1 ? "conversation" : "conversations"}` : "None yet"}>
+      <SectionFold id="conversations" title="Conversations" done={conversations.length > 0} hint={conversations.length ? `${conversations.length} ${conversations.length === 1 ? "conversation" : "conversations"}` : "None yet"}>
         <h2 className="font-medium">Conversations</h2>
         {conversations.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -1210,10 +1202,13 @@ export default async function ProspectDetailPage({
         )}
       </SectionFold>
 
-      <ProspectFeedbackSection
-        feedback={prospectFeedback}
-        addAction={addProspectFeedbackAction.bind(null, businessId, productId, workspace.id, prospect.id)}
-      />
+      {/* DISC-NAV-P0-01.12: folded like every other section. */}
+      <SectionFold id="feedback" title="Feedback" hint={prospectFeedback.length ? `${prospectFeedback.length} noted` : "None yet"}>
+        <ProspectFeedbackSection
+          feedback={prospectFeedback}
+          addAction={addProspectFeedbackAction.bind(null, businessId, productId, workspace.id, prospect.id)}
+        />
+      </SectionFold>
 
     </div>
   );

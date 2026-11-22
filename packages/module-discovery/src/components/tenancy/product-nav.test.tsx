@@ -36,6 +36,15 @@ beforeEach(() => {
 });
 
 describe("ProductNav, once the offering has a profile", () => {
+  // DISC-NAV-P0-01.12: a done step shows a green tick in place of its number.
+  it("ticks the steps that are done and numbers the rest", () => {
+    h.pathname = BASE;
+    const html = renderToStaticMarkup(<ProductNav basePath={BASE} completed={{ overview: true }} done={{ define: true, find: true }} />);
+    expect(html.match(/\(done\)/g)?.length).toBe(2);
+    expect(html).toContain(">3</span>Reach");
+    expect(html).toContain(">4</span>Results");
+  });
+
   // DISC-NAV-P0-01.4: four tabs and no second row; each tab's page folds its other pages.
   it("shows the four tabs only, on every page", () => {
     for (const path of ["", "/icp", "/prospects/discover", "/prospects/import", "/history", "/discovery", "/prospects", "/opportunities", "/watchlist", "/campaigns", "/campaigns/abc", "/performance", "/conversions", "/usage", "/people-say", "/prospects/abc"]) {

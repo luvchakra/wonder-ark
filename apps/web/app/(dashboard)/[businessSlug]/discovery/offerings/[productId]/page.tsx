@@ -149,7 +149,7 @@ export default async function ProductPage({
         />
       ) : null}
 
-      <SectionFold id="offering" title="Offering" hint={offeringHint(product, icp, personas)} open={opened === "offering"}>
+      <SectionFold id="offering" title="Offering" done={Boolean(product.product_profile)} hint={offeringHint(product, icp, personas)} open={opened === "offering"}>
         {product.product_profile ? (
           <OfferingQuality
             basePath={basePath}
@@ -176,7 +176,7 @@ export default async function ProductPage({
         />
       </SectionFold>
 
-      <SectionFold id="icp" title="Ideal customer" hint={icpHint(icp, audienceTypeOf(product))} open={opened === "icp"}>
+      <SectionFold id="icp" title="Ideal customer" done={icp?.status === "approved"} hint={icpHint(icp, audienceTypeOf(product))} open={opened === "icp"}>
         <IcpPage params={params} searchParams={Promise.resolve({ suggest: query.suggest })} />
       </SectionFold>
 

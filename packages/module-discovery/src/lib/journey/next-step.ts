@@ -25,6 +25,7 @@ type Prospect = {
   nextAction: string | null;
   isStuck: boolean;
   inActiveCampaign?: boolean;
+  outcome?: "open" | "won" | "lost";
 };
 
 export type NextStepInput = {
@@ -90,4 +91,18 @@ export function nextStep(input: NextStepInput): NextStep {
   if (input.picked.length === 0) return { step: "find", label: "Find prospects", href: `${basePath}/prospects/discover` };
   if (!input.hasCampaign) return { step: "reach", label: "Start a campaign to reach them all", href: `${basePath}/prospects#campaigns` };
   return { step: "find", label: "Find more prospects", href: `${basePath}/prospects/discover` };
+}
+
+/** DISC-NAV-P0-01.12: which of the four steps are done, for the green ticks on the step tabs.
+ * Define: offering described and ideal customer approved. Find: at least one prospect picked.
+ * Reach: at least one picked prospect written to. Results: at least one deal won. */
+export type StepsDone = Record<NextStep["step"], boolean>;
+
+export function stepsDone(input: Pick<NextStepInput, "hasProfile" | "icpStatus" | "picked">): StepsDone {
+  return {
+    define: input.hasProfile && input.icpStatus === "approved",
+    find: input.picked.length > 0,
+    reach: input.picked.some((p) => p.stage === "sent" || p.stage === "replied" || p.stage === "closed"),
+    results: input.picked.some((p) => p.outcome === "won"),
+  };
 }

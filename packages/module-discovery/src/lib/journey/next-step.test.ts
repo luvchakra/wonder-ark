@@ -4,7 +4,7 @@
  * the step there is to score them.
  */
 import { describe, expect, it } from "vitest";
-import { nextStep, type NextStepInput } from "./next-step";
+import { nextStep, stepsDone, type NextStepInput } from "./next-step";
 
 const BASE = "/acme/discovery/offerings/o1";
 const p = (id: string, stage: string, nextAction: string | null, extra: Record<string, unknown> = {}) =>
@@ -49,5 +49,20 @@ describe("nextStep", () => {
     expect(nextStep({ ...base, waitingToPick: 2 })).toMatchObject({ step: "find", label: "Pick from 2 imported prospects" });
     expect(nextStep(base)).toMatchObject({ step: "find", label: "Find prospects" });
     expect(nextStep({ ...base, picked: [p("a", "sent", null)] })).toMatchObject({ step: "reach", label: "Start a campaign to reach them all" });
+  });
+});
+
+// DISC-NAV-P0-01.12: which steps get a green tick.
+
+describe("stepsDone", () => {
+  const p = (stage: "new" | "sent" | "closed", outcome: "open" | "won" = "open") => ({ id: "x", stage, nextAction: null, isStuck: false, outcome });
+  it("needs an approved ideal customer for Define", () => {
+    expect(stepsDone({ hasProfile: true, icpStatus: "draft", picked: [] }).define).toBe(false);
+    expect(stepsDone({ hasProfile: true, icpStatus: "approved", picked: [] }).define).toBe(true);
+  });
+  it("ticks Find once something is picked, Reach once written to, Results once won", () => {
+    expect(stepsDone({ hasProfile: true, icpStatus: "approved", picked: [p("new")] })).toEqual({ define: true, find: true, reach: false, results: false });
+    expect(stepsDone({ hasProfile: true, icpStatus: "approved", picked: [p("sent")] }).reach).toBe(true);
+    expect(stepsDone({ hasProfile: true, icpStatus: "approved", picked: [p("closed", "won")] }).results).toBe(true);
   });
 });

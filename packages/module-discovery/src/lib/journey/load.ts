@@ -1,6 +1,6 @@
 import { createClient } from "../../db/server";
 import { countProspectSuggestions, listProspects } from "../prospects/queries";
-import { nextStep, type NextStep } from "./next-step";
+import { nextStep, stepsDone, type NextStep, type StepsDone } from "./next-step";
 
 /**
  * DISC-NAV-P0-01.11: reads what `nextStep` needs for one offering, under the person's own
@@ -11,7 +11,7 @@ export async function loadNextStep(input: {
   basePath: string;
   hasProfile: boolean;
   icpStatus: "approved" | "draft" | null;
-}): Promise<NextStep> {
+}): Promise<{ next: NextStep; done: StepsDone }> {
   const supabase = await createClient();
   const [picked, suggestionCount, waiting, campaigns] = await Promise.all([
     listProspects(input.workspaceId, { shortlisted: true }),
@@ -21,7 +21,7 @@ export async function loadNextStep(input: {
   ]);
   if (waiting.error) throw waiting.error;
   if (campaigns.error) throw campaigns.error;
-  return nextStep({
+  const journey = {
     basePath: input.basePath,
     hasProfile: input.hasProfile,
     icpStatus: input.icpStatus,
@@ -29,5 +29,7 @@ export async function loadNextStep(input: {
     suggestionCount,
     waitingToPick: waiting.count ?? 0,
     hasCampaign: (campaigns.count ?? 0) > 0,
-  });
+  };
+  // DISC-NAV-P0-01.12: the same reads also say which steps are done.
+  return { next: nextStep(journey), done: stepsDone(journey) };
 }
