@@ -110,8 +110,11 @@ Once an offering is set up (described, and its ideal customer approved), it has 
 | **Results** | Performance, and discovery effectiveness once there are opportunities, with **Conversions** and **What people say** below. |
 
 **Setup** (beside the tabs) holds what you sell and who buys it. Until it is done, the
-offering opens on Setup; after that it opens on To do. Approving the ideal customer takes you
-to **Find more** to search for the first prospects. Every page keeps the address it had, so
+offering opens on Setup; after that it opens on To do. Approving the ideal customer starts the first
+search by itself, from what you approved (its industries and places; for an offering sold
+to consumers, the Ideal user's interests), and opens **To do**, which says what it found.
+When that search used a free WorksLake source, it also runs again every week. If it can't
+run (nothing to search for yet, or no source connected), To do says why. Every page keeps the address it had, so
 old links and bookmarks still open it. (Before a profile exists you instead get a short
 step-by-step bar for setting the offering up: Overview, Ideal customer, Prospects,
 Conversions.)

@@ -286,7 +286,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "Can a prospect search run again on its own?",
     answer:
-      "Yes. On an offering's Find more page (To do → Find more prospects), run a search on a free WorksLake source and click Run this weekly in its result. The search then runs every 7 days using free sources only, never paid lookups, and adds only companies that are new to New prospects to approve on To do, where you still approve each one. An offering has one weekly search. The line under the search form shows its last run and next run, and Pause stops it until you press Resume.",
+      "Yes. When you approve an offering's ideal customer, its first search runs by itself and, on a free WorksLake source, is saved to run weekly. You can also, on an offering's Find more page (To do → Find more prospects), run a search on a free WorksLake source and click Run this weekly in its result. The search then runs every 7 days using free sources only, never paid lookups, and adds only companies that are new to New prospects to approve on To do, where you still approve each one. An offering has one weekly search. The line under the search form shows its last run and next run, and Pause stops it until you press Resume.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },
