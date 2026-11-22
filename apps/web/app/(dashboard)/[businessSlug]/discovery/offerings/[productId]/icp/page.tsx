@@ -8,6 +8,7 @@ import {
 import { getIcpProfile, listCloneableIcpSourcesForBusiness, listIcpProfileVersions } from "@cofounderai/module-discovery/lib/icp/queries";
 import { IcpVersionHistory } from "@cofounderai/module-discovery/components/icp/icp-version-history";
 import { SubmitButton } from "@cofounderai/core/ui/submit-button";
+import { MoreActions } from "@cofounderai/module-discovery/components/ui/more-actions";
 import { AiActionForm } from "@cofounderai/module-discovery/components/ai/ai-action-form";
 import { Input } from "@cofounderai/core/ui/input";
 import { Label } from "@cofounderai/core/ui/label";
@@ -202,17 +203,8 @@ export default async function IcpPage({
             <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">v{icp.version}</span>
           ) : null}
         </div>
-        <div className="flex flex-wrap gap-2">
-          <ExportMenu exportId="discovery.icp" businessSlug={businessSlug} params={{ productId }} kind="report" />
-          <AiActionForm
-            action={generateIcpAction.bind(null, businessId, productId)}
-            buttonLabel="Regenerate"
-            pendingText="Regenerating..."
-            buttonProps={{ variant: "outline" }}
-          >
-            <input type="hidden" name="force" value="true" />
-          </AiActionForm>
-          <CloneIcpButton sources={cloneSources} hasExistingIcp cloneAction={cloneIcpAction.bind(null, businessId, productId)} />
+        {/* DISC-NAV-P0-01.9: Approve is the step's one action; the rest are folded. */}
+        <div className="flex flex-wrap items-start justify-end gap-2">
           {icp.status === "draft" ? (
             <form action={approveIcpAction.bind(null, businessId, productId, icp.id)}>
               <SubmitButton size="sm" pendingText="Approving...">
@@ -220,6 +212,18 @@ export default async function IcpPage({
               </SubmitButton>
             </form>
           ) : null}
+          <MoreActions>
+            <AiActionForm
+              action={generateIcpAction.bind(null, businessId, productId)}
+              buttonLabel="Regenerate"
+              pendingText="Regenerating..."
+              buttonProps={{ variant: "outline" }}
+            >
+              <input type="hidden" name="force" value="true" />
+            </AiActionForm>
+            <CloneIcpButton sources={cloneSources} hasExistingIcp cloneAction={cloneIcpAction.bind(null, businessId, productId)} />
+            <ExportMenu exportId="discovery.icp" businessSlug={businessSlug} params={{ productId }} kind="report" />
+          </MoreActions>
         </div>
       </div>
 
@@ -283,16 +287,18 @@ export default async function IcpPage({
           companyFields
         )}
         <p className="text-xs text-muted-foreground">One item per line.</p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap items-start gap-2">
           <SubmitButton size="sm" pendingText="Saving...">
             Save changes
           </SubmitButton>
+          <MoreActions>
           <SaveAndRunDownstreamButton
             formId="icp-edit-form"
             runDownstreamAction={updateIcpAndRunDownstreamAction.bind(null, businessId, productId, icp.id)}
             saveOnlyAction={updateIcpAction.bind(null, businessId, productId, icp.id)}
             affectedLabels={downstreamGroupLabels("icp")}
           />
+          </MoreActions>
         </div>
       </form>
 

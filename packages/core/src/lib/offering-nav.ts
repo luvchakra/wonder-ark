@@ -65,7 +65,7 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: s
   {
     id: "prospects",
     label: "Prospects",
-    hint: "Everyone you approved. Open one to research it and write to it, or reach many at once with a campaign.",
+    hint: "Pick the ones to work on under Select, then research, score and reach them, one by one or in a campaign.",
     pages: [
       { slug: "prospects", label: "All" },
       // DISC-CAMP-P0-05.1: outreach campaigns to the offering's prospects.

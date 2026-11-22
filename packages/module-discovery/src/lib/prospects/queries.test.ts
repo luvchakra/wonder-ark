@@ -73,6 +73,22 @@ describe("listProspects — query shape", () => {
     });
   });
 
+  // DISC-PROS-P0-08.1: the Select tab lists those not picked yet; the working lists the picked.
+  it("splits picked prospects from those waiting on the Select tab", async () => {
+    let supabase = mock([]);
+    await listProspects(WORKSPACE, { shortlisted: true });
+    expect(opArgs(supabase.queries("prospects")[0]!, "not")).toEqual(["shortlisted_at", "is", null]);
+
+    supabase = mock([]);
+    await listProspects(WORKSPACE, { shortlisted: false });
+    expect(opArgs(supabase.queries("prospects")[0]!, "is")).toEqual(["shortlisted_at", null]);
+
+    supabase = mock([]);
+    await listProspects(WORKSPACE, {});
+    expect(opArgs(supabase.queries("prospects")[0]!, "is")).toBeUndefined();
+    expect(opArgs(supabase.queries("prospects")[0]!, "not")).toBeUndefined();
+  });
+
   it("applies a search as a case-insensitive contains", async () => {
     const supabase = mock([]);
 

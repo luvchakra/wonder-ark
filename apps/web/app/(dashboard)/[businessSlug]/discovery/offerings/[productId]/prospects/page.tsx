@@ -25,6 +25,8 @@ import {
   bulkResearchAction,
   bulkScoreAction,
   autoDiscoverOneProspectAction,
+  shortlistProspectsAction,
+  unshortlistProspectsAction,
 } from "./actions";
 import { markTaskDoneAction } from "../campaigns/actions";
 import Link from "next/link";
@@ -33,6 +35,7 @@ import { countNewSignups, listLeads } from "@cofounderai/module-discovery/lib/au
 import { getSignupPage } from "@cofounderai/module-discovery/lib/audience/pages";
 import { defaultConsentText } from "@cofounderai/module-discovery/lib/audience/rules";
 import { PeopleList } from "@cofounderai/module-discovery/components/audience/people-list";
+import { bulkResultMessage } from "@cofounderai/module-discovery/lib/prospects/bulk-actions";
 import { SignupPageSettings } from "@cofounderai/module-discovery/components/audience/signup-page-settings";
 import { SITE_URL } from "@cofounderai/core/site";
 import { getBusiness } from "@cofounderai/module-discovery/lib/tenancy/queries";
@@ -43,7 +46,7 @@ import OpportunitiesPage from "../opportunities/page";
 import WatchlistPage from "../watchlist/page";
 
 /** DISC-CONS-P0-05.1/05.2: the lists the Prospects tab offers, by who buys the offering. */
-const LIST_LABEL = { companies: "Companies", channels: "Channels", people: "People" } as const;
+const LIST_LABEL = { select: "Select", companies: "Companies", channels: "Channels", people: "People" } as const;
 type ProspectList = keyof typeof LIST_LABEL;
 
 /** The campaigns in one line, for their section's summary. */
@@ -70,12 +73,16 @@ export default async function ProspectsPage({
     duplicates?: string;
     bulkAction?: string;
     bulkCompleted?: string;
-    bulkSkipped?: string;
+    bulkDone?: string;
+    bulkNotReady?: string;
+    bulkFailed?: string;
     bulkLimit?: string;
     autopopulated?: string;
     aiRestructured?: string;
     list?: string;
     peopleImported?: string;
+    shortlisted?: string;
+    unshortlisted?: string;
   }>;
 }) {
   const { businessSlug, productId } = await params;
@@ -94,7 +101,6 @@ export default async function ProspectsPage({
     duplicates,
     bulkAction,
     bulkCompleted,
-    bulkSkipped,
     bulkLimit,
     autopopulated,
     aiRestructured,
@@ -111,10 +117,18 @@ export default async function ProspectsPage({
   // DISC-CONS-P0-05.1: a consumer offering's prospects are channels; one sold to both
   // has companies and channels, one list at a time. A business offering is unchanged.
   const audienceType = audienceTypeOf(product);
-  const lists: ProspectList[] =
-    audienceType === "consumer" ? ["channels", "people"] : audienceType === "both" ? ["companies", "channels", "people"] : [];
-  const currentList: ProspectList | null = lists.find((entry) => entry === query.list) ?? lists[0] ?? null;
-  const kind = currentList === "channels" ? ("channel" as const) : currentList === "companies" ? ("company" as const) : undefined;
+  // DISC-PROS-P0-08.1: Select comes first. Prospects wait there until they are picked for
+  // work; the working lists (Companies, Channels) hold only the picked ones.
+  const workLists: ProspectList[] =
+    audienceType === "consumer" ? ["channels", "people"] : audienceType === "both" ? ["companies", "channels", "people"] : ["companies"];
+  const lists: ProspectList[] = ["select", ...workLists];
+  const waiting = await listProspects(workspace.id, { shortlisted: false });
+  // Opened without a list: Select while something waits there, else the first working list.
+  const currentList: ProspectList =
+    lists.find((entry) => entry === query.list) ?? (waiting.length > 0 ? "select" : workLists[0]!);
+  const selecting = currentList === "select";
+  const kind =
+    currentList === "channels" ? ("channel" as const) : currentList === "companies" && audienceType !== "business" ? ("company" as const) : undefined;
   // DISC-CONS-P0-05.2: People are the offering's own list of those who opted in.
   const showPeople = currentList === "people";
   const [leads, signupPage, business] = showPeople
@@ -136,6 +150,7 @@ export default async function ProspectsPage({
         stage: (stage as ProspectStage) || undefined,
         followUpDue,
         kind,
+        shortlisted: !selecting,
       },
       sortMode,
     ),
@@ -186,6 +201,7 @@ export default async function ProspectsPage({
               }
             >
               {LIST_LABEL[entry]}
+              {entry === "select" && waiting.length > 0 ? ` (${waiting.length})` : ""}
             </Link>
           ))}
         </nav>
@@ -193,18 +209,6 @@ export default async function ProspectsPage({
 
       <TodayList rows={today} tasks={campaignTasks} taskAction={(enrollmentId) => markTaskDoneAction.bind(null, businessId, productId, enrollmentId)} />
 
-      {/* DISC-NAV-P0-01.4: the Prospects tab's other pages, folded above the list. */}
-      <div className="flex flex-col gap-3">
-        <SectionFold id="campaigns" title="Campaigns" hint={campaignsHint(campaigns)}>
-          <CampaignsPage params={params} />
-        </SectionFold>
-        <SectionFold id="opportunities" title="Opportunities" hint="Prospects showing a reason to buy now">
-          <OpportunitiesPage params={params} />
-        </SectionFold>
-        <SectionFold id="watchlist" title="Watchlist" hint="Accounts you are keeping an eye on">
-          <WatchlistPage params={params} />
-        </SectionFold>
-      </div>
 
       {followUpDue ? (
         <p className="rounded-md border bg-muted p-3 text-sm">
@@ -244,16 +248,24 @@ export default async function ProspectsPage({
             : ""}
         </p>
       ) : null}
-      {bulkAction ? (
+      {query.shortlisted ? (
         <p className="rounded-md border bg-muted p-3 text-sm">
-          {bulkAction === "research" ? "Researched" : "Scored"} {bulkCompleted ?? 0} prospect
-          {bulkCompleted === "1" ? "" : "s"}.
-          {bulkSkipped && bulkSkipped !== "0"
-            ? ` Skipped ${bulkSkipped} (not eligible for this step, or failed).`
-            : ""}
-          {bulkLimit === "1"
-            ? " Stopped early -- this workspace hit its free-tier monthly AI usage limit."
-            : ""}
+          Moved {query.shortlisted} to your list. Research, score or add them to a campaign here.
+        </p>
+      ) : null}
+      {query.unshortlisted ? (
+        <p className="rounded-md border bg-muted p-3 text-sm">Moved {query.unshortlisted} back to Select.</p>
+      ) : null}
+      {bulkAction === "research" || bulkAction === "score" ? (
+        <p className="rounded-md border bg-muted p-3 text-sm">
+          {bulkResultMessage({
+            action: bulkAction,
+            completed: Number(bulkCompleted ?? 0) || 0,
+            alreadyDone: Number(query.bulkDone ?? 0) || 0,
+            notReady: Number(query.bulkNotReady ?? 0) || 0,
+            failed: Number(query.bulkFailed ?? 0) || 0,
+            limitReached: bulkLimit === "1",
+          })}
         </p>
       ) : null}
 
@@ -282,9 +294,29 @@ export default async function ProspectsPage({
         bulkResearchAction={bulkResearchAction.bind(null, businessId, productId, workspace.id)}
         bulkScoreAction={bulkScoreAction.bind(null, businessId, productId, workspace.id)}
         channels={currentList === "channels"}
-        list={lists.length > 1 ? (currentList ?? undefined) : undefined}
+        list={currentList}
+        selectAction={
+          selecting
+            ? shortlistProspectsAction.bind(null, businessId, productId, workspace.id, workLists.find((l) => l !== "people") ?? null)
+            : undefined
+        }
+        backToSelectAction={selecting ? undefined : unshortlistProspectsAction.bind(null, businessId, productId, workspace.id)}
       />
       )}
+
+      {/* DISC-NAV-P0-01.4/01.9: the Prospects tab's other pages, folded below the list, which is
+          what this tab is for. */}
+      <div className="flex flex-col gap-3">
+        <SectionFold id="campaigns" title="Campaigns" hint={campaignsHint(campaigns)}>
+          <CampaignsPage params={params} />
+        </SectionFold>
+        <SectionFold id="opportunities" title="Opportunities" hint="Prospects showing a reason to buy now">
+          <OpportunitiesPage params={params} />
+        </SectionFold>
+        <SectionFold id="watchlist" title="Watchlist" hint="Accounts you are keeping an eye on">
+          <WatchlistPage params={params} />
+        </SectionFold>
+      </div>
     </div>
   );
 }

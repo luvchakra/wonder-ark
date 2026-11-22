@@ -96,6 +96,7 @@ import {
   markChannelPostPostedAction,
 } from "./actions";
 import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
+import { MoreActions } from "@cofounderai/module-discovery/components/ui/more-actions";
 
 /** DISC-OFFER-P0-06.1: replaced by `EVIDENCE_TYPE_LABEL` (module-discovery's own
  * lib/research/types.ts) -- one source of truth for the doc's own "Verified fact /
@@ -450,9 +451,6 @@ export default async function ProspectDetailPage({
         <Link href={basePath} className="text-sm text-muted-foreground hover:underline">
           ← Back to prospects
         </Link>
-        <div className="flex shrink-0 items-center gap-2">
-          <ExportMenu exportId="discovery.prospect" businessSlug={businessSlug} params={{ productId, prospectId }} kind="report" />
-        </div>
       </div>
 
       {duplicate ? (
@@ -480,9 +478,11 @@ export default async function ProspectDetailPage({
       {showHandoffPanel ? <FsmHandoffPanel status={handoffStatus} /> : null}
 
       <section className="flex flex-col gap-4 rounded-md border p-4">
-        <div className="flex items-center justify-between gap-4">
+        {/* DISC-NAV-P0-01.9: the name and what is known lead; moving it to CRM, its status,
+            the watchlist and the export are folded under More. */}
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <h2 className="font-medium">{prospect.company_name}</h2>
-          <div className="flex items-center gap-2">
+          <MoreActions>
             <PromoteToCrmButton
               hasParty={Boolean(prospect.party_id)}
               promoteAction={promoteProspectToCrmAction.bind(null, businessId, productId, prospect.id, prospect.party_id ?? "")}
@@ -491,7 +491,7 @@ export default async function ProspectDetailPage({
               action={updateProspectStatusAction.bind(null, businessId, productId, prospect.id)}
               className="flex items-center gap-2"
             >
-              <NativeSelect name="status" defaultValue={prospect.status} className="w-auto">
+              <NativeSelect name="status" defaultValue={prospect.status} className="w-auto" aria-label="Status">
                 {STATUS_OPTIONS.map((s) => (
                   <option key={s} value={s}>
                     {s}
@@ -502,15 +502,15 @@ export default async function ProspectDetailPage({
                 Update status
               </SubmitButton>
             </form>
-          </div>
+            <WatchlistToggle
+              entry={watchlistEntry}
+              addAction={addToWatchlistAction.bind(null, businessId, productId, workspace.id, prospect.id)}
+              updateAction={updateWatchlistAction.bind(null, businessId, productId, prospect.id, watchlistEntry?.id ?? "")}
+              removeAction={removeFromWatchlistAction.bind(null, businessId, productId, prospect.id, watchlistEntry?.id ?? "")}
+            />
+            <ExportMenu exportId="discovery.prospect" businessSlug={businessSlug} params={{ productId, prospectId }} kind="report" />
+          </MoreActions>
         </div>
-
-        <WatchlistToggle
-          entry={watchlistEntry}
-          addAction={addToWatchlistAction.bind(null, businessId, productId, workspace.id, prospect.id)}
-          updateAction={updateWatchlistAction.bind(null, businessId, productId, prospect.id, watchlistEntry?.id ?? "")}
-          removeAction={removeFromWatchlistAction.bind(null, businessId, productId, prospect.id, watchlistEntry?.id ?? "")}
-        />
 
         {/* DISC-DATA-P0-04.1 (B4.6): what is known, with the source beside each value a
             source supplied. The form that edits these is folded under "Edit details":
@@ -643,9 +643,10 @@ export default async function ProspectDetailPage({
       {/* DISC-DATA-P0-04.2. Visible controls in this block, apart from each contact's own
           two: seven before (the six fields of the add form and its button), two now
           (Find contacts, and "Add a contact", which unfolds the form). */}
+      <SectionFold id="contacts" title="Contacts" hint={contacts.length ? `${contacts.length} ${contacts.length === 1 ? "contact" : "contacts"}` : "None yet"}>
       <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <h2 className="font-medium">Contacts</h2>
+        {/* The fold's title names the section. */}
+        <div className="flex flex-wrap items-start justify-end gap-3">
           {isCompany && gatewayReady ? (
             <PaidLookupButton
               label="Find contacts"
@@ -715,6 +716,7 @@ export default async function ProspectDetailPage({
           </form>
         </details>
       </section>
+      </SectionFold>
 
       {/* DISC-OFFER-P0-06.2: "Offering Research Brief" -- the doc's own progressive-
           disclosure order (decision summary -> research brief -> expandable evidence ->

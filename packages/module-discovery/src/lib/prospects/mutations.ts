@@ -50,12 +50,15 @@ function toRow(input: ProspectInput) {
 export async function createProspect(
   workspaceId: string,
   input: ProspectInput,
+  /** DISC-PROS-P0-08.1: a prospect a person adds by hand is already picked; anything else
+   * (an approval on Find, an import, another module) waits on the Select tab. */
+  options: { shortlist?: boolean } = {},
 ): Promise<Prospect> {
   const supabase = await createClient();
   const row = toRow(input);
   const { data, error } = await supabase
     .from("prospects")
-    .insert({ workspace_id: workspaceId, ...row })
+    .insert({ workspace_id: workspaceId, ...row, ...(options.shortlist ? { shortlisted_at: new Date().toISOString() } : {}) })
     .select()
     .single();
   if (error) throw error;
@@ -478,4 +481,24 @@ export async function discardProspectSuggestions(
     .eq("workspace_id", workspaceId)
     .in("id", suggestionIds);
   if (error) throw error;
+}
+
+/**
+ * DISC-PROS-P0-08.1: picks prospects for work ("Use these" on the Select tab), or sends them
+ * back to Select. Only the workspace's own rows are touched (the filter here, and RLS under
+ * it); ids from anywhere else are ignored. Returns how many changed.
+ */
+export async function setProspectsShortlisted(workspaceId: string, ids: string[], shortlisted: boolean): Promise<number> {
+  const unique = [...new Set(ids.filter((id) => typeof id === "string" && id.length > 0))];
+  if (unique.length === 0) return 0;
+  const supabase = await createClient();
+  let query = supabase
+    .from("prospects")
+    .update({ shortlisted_at: shortlisted ? new Date().toISOString() : null })
+    .eq("workspace_id", workspaceId)
+    .in("id", unique);
+  query = shortlisted ? query.is("shortlisted_at", null) : query.not("shortlisted_at", "is", null);
+  const { data, error } = await query.select("id");
+  if (error) throw error;
+  return (data ?? []).length;
 }
