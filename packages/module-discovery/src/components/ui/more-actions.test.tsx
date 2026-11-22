@@ -44,7 +44,7 @@ describe("the Setup tab's top opportunity", () => {
         relationship={null as never}
         watchAction={async () => {}}
         dismissAction={async () => {}}
-        sendToCrmAction={async () => {}}
+        sendToCrmAction={(async () => ({})) as never}
       />,
     );
     expect(visibleActions(html).filter((label) => /CRM|Watch|Dismiss|Edit Recommendation/.test(label))).toEqual(["Send to CRM"]);
