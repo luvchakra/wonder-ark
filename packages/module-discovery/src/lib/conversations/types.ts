@@ -1,4 +1,4 @@
-export type ConversationChannel = "email" | "linkedin" | "whatsapp";
+export type ConversationChannel = "email" | "linkedin" | "whatsapp" | "instagram" | "facebook";
 export type ConversationStatus = "awaiting_reply" | "replied" | "closed";
 
 export type Conversation = {

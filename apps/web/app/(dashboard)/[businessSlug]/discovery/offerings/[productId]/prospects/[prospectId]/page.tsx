@@ -74,10 +74,10 @@ import {
   updateStrategyAction,
   generateMessageAction,
   updateMessageContentAction,
-  approveMessageAction,
   approveAndSendMessageAction,
+  markDirectMessageSentAction,
+  sendToTypedAddressAction,
   sendMessageAction,
-  markMessageSentAction,
   deleteMessageAction,
   generateReplyAction,
   closeConversationAction,
@@ -95,6 +95,9 @@ import {
   markChannelPostPostedAction,
 } from "./actions";
 import { unshortlistProspectsAction } from "../actions";
+import { DM_LABEL } from "@cofounderai/module-discovery/lib/channels/reach";
+import { CopyTextButton } from "@cofounderai/module-discovery/components/ui/copy-text-button";
+import { safeHttpUrl } from "@cofounderai/module-discovery/lib/data-sources/suggestions";
 import { ProspectProgress } from "@cofounderai/module-discovery/components/prospects/prospect-progress";
 import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
 import { MoreActions } from "@cofounderai/module-discovery/components/ui/more-actions";
@@ -127,6 +130,9 @@ const CHANNEL_ICON: Record<ConversationChannel, typeof Mail> = {
   email: Mail,
   linkedin: Briefcase,
   whatsapp: MessageCircle,
+  // DISC-REACH-P0-01.1
+  instagram: MessageCircle,
+  facebook: MessageCircle,
 };
 
 const CLASSIFICATION_LABEL: Record<string, string> = {
@@ -145,8 +151,14 @@ function OutboundMessageCard({
   productId,
   prospectId,
   contacts,
+  workspaceId,
+  profileLink,
   className,
 }: {
+  /** DISC-REACH-P0-01.1: for saving an address typed beside Send. */
+  workspaceId: string;
+  /** The prospect's own profile or page, where a direct message is sent by the person. */
+  profileLink: string | null;
   message: Message;
   businessId: string;
   productId: string;
@@ -176,7 +188,8 @@ function OutboundMessageCard({
     <li className={cn("flex flex-col gap-2 rounded-md border p-3 text-sm", className)}>
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-2 text-xs font-medium uppercase text-muted-foreground">
-          {message.channel} · {MESSAGE_STATUS_LABEL[message.status] ?? message.status}
+          {isEmail ? "Email" : `${DM_LABEL[message.channel as keyof typeof DM_LABEL] ?? message.channel} message`} ·{" "}
+          {MESSAGE_STATUS_LABEL[message.status] ?? message.status}
           {message.resend_template_name ? (
             <span className="rounded-full bg-primary/10 px-2 py-0.5 normal-case text-primary">
               Template: {message.resend_template_name}
@@ -230,10 +243,27 @@ function OutboundMessageCard({
         ) : null}
       </form>
 
+      {/* DISC-REACH-P0-01.1: no address yet: type it beside Send. It is saved as a contact you
+          provided and the email goes out, in one step. */}
       {isEmail && !hasContactEmail && message.status !== "sent" ? (
-        <p className="text-xs text-muted-foreground">
-Add a contact with an email under Contacts before this can be sent.
-        </p>
+        <AiActionForm
+          action={sendToTypedAddressAction.bind(null, businessId, productId, workspaceId, prospectId, message.id)}
+          buttonLabel={
+            <>
+              <Send className="size-4" aria-hidden="true" />
+              Send
+            </>
+          }
+          pendingText="Sending..."
+          formClassName="flex w-full flex-wrap items-center gap-2"
+        >
+          <Input name="toEmail" type="email" required placeholder="To: their email address" aria-label="To" className="min-w-0 flex-1" />
+        </AiActionForm>
+      ) : null}
+      {isEmail && !hasContactEmail && message.status !== "sent" && profileLink ? (
+        <a href={profileLink} target="_blank" rel="noreferrer" className="text-xs font-medium text-primary hover:underline">
+          Open their page to look for an address ↗
+        </a>
       ) : null}
 
       <div className="flex flex-col items-start gap-2">
@@ -287,35 +317,27 @@ Add a contact with an email under Contacts before this can be sent.
           </>
         ) : (
           <>
-            {message.status === "draft" ? (
-              <form
-                action={approveMessageAction.bind(
-                  null,
-                  businessId,
-                  productId,
-                  prospectId,
-                  message.id,
-                )}
-              >
-                <SubmitButton size="sm" pendingText="Approving...">
-                  Approve
-                </SubmitButton>
-              </form>
-            ) : null}
-            {message.status === "approved" ? (
-              <form
-                action={markMessageSentAction.bind(
-                  null,
-                  businessId,
-                  productId,
-                  prospectId,
-                  message.id,
-                )}
-              >
-                <SubmitButton size="sm" pendingText="Marking sent...">
-                  Mark sent
-                </SubmitButton>
-              </form>
+            {/* DISC-REACH-P0-01.1: WonderArk never sends on these platforms. Copy the message,
+                send it there yourself, then mark it sent. */}
+            {message.status !== "sent" ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <CopyTextButton text={message.content} label="Copy message" />
+                {profileLink ? (
+                  <a
+                    href={profileLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-8 items-center gap-1 rounded-md border px-3 text-xs font-medium hover:bg-accent"
+                  >
+                    Open {DM_LABEL[message.channel as keyof typeof DM_LABEL] ?? "their page"} ↗
+                  </a>
+                ) : null}
+                <form action={markDirectMessageSentAction.bind(null, businessId, productId, prospectId, message.id)}>
+                  <SubmitButton size="sm" pendingText="Saving...">
+                    Mark as sent
+                  </SubmitButton>
+                </form>
+              </div>
             ) : null}
             {message.status === "sent" && message.sent_at ? (
               <span className="text-xs text-muted-foreground">
@@ -1060,6 +1082,8 @@ export default async function ProspectDetailPage({
                   productId={productId}
                   prospectId={prospect.id}
                   contacts={contacts}
+                  workspaceId={workspace.id}
+                  profileLink={safeHttpUrl(prospect.source_ref ?? null) ?? safeHttpUrl(prospect.website ?? null)}
                 />
               ))}
             </ul>
@@ -1168,6 +1192,8 @@ export default async function ProspectDetailPage({
                             productId={productId}
                             prospectId={prospect.id}
                             contacts={contacts}
+                            workspaceId={workspace.id}
+                            profileLink={safeHttpUrl(prospect.source_ref ?? null) ?? safeHttpUrl(prospect.website ?? null)}
                             className="ml-auto max-w-xl bg-background"
                           />
                         ),

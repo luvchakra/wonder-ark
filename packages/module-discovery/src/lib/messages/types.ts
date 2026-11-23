@@ -1,4 +1,4 @@
-export type MessageChannel = "email" | "linkedin" | "whatsapp";
+export type MessageChannel = "email" | "linkedin" | "whatsapp" | "instagram" | "facebook";
 export type MessageDirection = "outbound" | "inbound";
 export type MessageStatus = "draft" | "approved" | "sent" | "failed";
 export type MessageClassification =

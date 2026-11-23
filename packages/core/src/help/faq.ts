@@ -276,6 +276,14 @@ export const FAQ: FaqEntry[] = [
   },
   {
     category: "Day to day",
+    question: "A message is written for my prospect. How do I send it?",
+    answer:
+      "It depends on how the prospect can be reached, and To do groups them that way. Send ready emails: open one and press Send. Message on Instagram (or Facebook, LinkedIn): WonderArk never sends on these platforms, so press Copy and open Instagram, paste the message there and send it yourself, then press Mark as sent. Add an email address: the email is written but there is no address yet, so open it, type the address in the To box beside Send and press Send; the address is saved as a contact.",
+    guideSlug: "discovery",
+    sectionId: "working-an-offering",
+  },
+  {
+    category: "Day to day",
     question: "Can WonderArk send the first email for me?",
     answer:
       "Yes, if you turn it on: an offering's Setup → Sending → Send automatically (owners and admins only; off unless turned on). Then the first email to each prospect you approve is sent as soon as it is written, up to your mailbox's daily limit (30 unless you changed it, counting campaign emails), through the same checks as pressing Send. A failed send is never retried on its own. Replies, follow-ups and LinkedIn or WhatsApp messages still wait for you on To do.",

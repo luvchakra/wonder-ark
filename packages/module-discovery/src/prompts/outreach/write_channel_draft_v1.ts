@@ -9,11 +9,14 @@ import { untrusted, UNTRUSTED_RULES } from "../shared/untrusted";
  */
 export const WRITE_CHANNEL_DRAFT_PROMPT_VERSION = "write_channel_draft_v1";
 
-export const CHANNEL_DRAFT_VARIANTS = ["pitch", "sponsorship", "post"] as const;
+// DISC-REACH-P0-01.1: "dm" is a short direct message for a channel reached on a social platform.
+export const CHANNEL_DRAFT_VARIANTS = ["pitch", "sponsorship", "post", "dm"] as const;
 export type ChannelDraftVariant = (typeof CHANNEL_DRAFT_VARIANTS)[number];
 
 export type ChannelDraftInput = {
   variant: ChannelDraftVariant;
+  /** For "dm": where the message will be sent, e.g. "Instagram". */
+  platform?: string;
   offeringName: string;
   businessName: string;
   offeringProfile: unknown;
@@ -27,7 +30,11 @@ export type ChannelDraftInput = {
   };
 };
 
+/** The platform name is chosen by code from this list, never taken from a source. */
+const PLATFORMS = ["Instagram", "Facebook", "LinkedIn"];
+
 const TASK: Record<ChannelDraftVariant, string> = {
+  dm: `Write a short direct message to the owner of the channel, to be sent on the platform named below: one line on what you noticed about their channel, one on why their audience would care about the offering, and one simple next step (a reply, or trying it free). Under 70 words, no greeting line of its own, no sign-off block, no subject. Return a three-word label as the subject and the message as the body.`,
   pitch: `Write a short email to the owner of the channel proposing a partnership or a feature: why their audience would care about the offering, and one simple next step (a reply, a call, a free trial for them to review). Return a subject line and the body.`,
   sponsorship: `Write a short email to the owner of the channel asking about sponsorship or a paid listing: what the business would like to sponsor or list, and asking for their rates, audience details and requirements. Return a subject line and the body.`,
   post: `Write a community post the business will publish itself in this channel. Follow the tone of a helpful member, not an advert: lead with something useful for the audience, mention the offering once, plainly, and say who is posting. Return a short title as the subject and the post as the body.`,
@@ -50,7 +57,7 @@ ${untrusted("channel_type", channel.channelType, 100)}
 ${untrusted("channel_topics", channel.topics.join(", "), 500)}
 ${untrusted("channel_description", channel.description, 1_500)}
 ${untrusted("audience_size", channel.audienceSize === null ? null : String(channel.audienceSize), 50)}
-
+${input.variant === "dm" ? `Platform the message is sent on: ${PLATFORMS.includes(input.platform ?? "") ? input.platform : "a social platform"}\n` : ""}
 Task: ${TASK[input.variant]}
 
 Rules:

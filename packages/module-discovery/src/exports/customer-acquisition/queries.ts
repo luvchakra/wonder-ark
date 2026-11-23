@@ -19,6 +19,7 @@ import type {
   ProspectSort,
   ProspectWithPipeline,
 } from "../../lib/prospects/queries";
+import { reachFieldsOf } from "../../lib/prospects/queries";
 import type { Prospect, ProspectStatus } from "../../lib/prospects/types";
 
 type Page<T> = PromiseLike<{ data: T[] | null; error: unknown }>;
@@ -26,7 +27,7 @@ type Page<T> = PromiseLike<{ data: T[] | null; error: unknown }>;
 /** Same embed as lib/prospects/queries.ts#listProspects (PIPELINE_SELECT). */
 const PIPELINE_SELECT =
   "*, prospect_research(researched_at), prospect_scores(created_at), " +
-  "outreach_strategies(status, updated_at), messages(status, created_at, sent_at), " +
+  "outreach_strategies(status, updated_at), messages(status, created_at, sent_at, channel, direction), contacts(email), " +
   "conversations(status, last_message_at), outreach_enrollments(status)";
 
 type ProspectPipelineRow = Prospect & {
@@ -34,7 +35,8 @@ type ProspectPipelineRow = Prospect & {
   prospect_research: { researched_at: string } | null;
   prospect_scores: { created_at: string }[];
   outreach_strategies: { status: "draft" | "approved"; updated_at: string }[];
-  messages: { status: "draft" | "approved" | "sent" | "failed"; created_at: string; sent_at: string | null }[];
+  messages: { status: "draft" | "approved" | "sent" | "failed"; created_at: string; sent_at: string | null; channel?: string; direction?: string }[];
+  contacts?: { email: string | null }[];
   conversations: { status: "awaiting_reply" | "replied" | "closed"; last_message_at: string }[];
 };
 
@@ -75,7 +77,7 @@ function deriveRow(row: ProspectPipelineRow): ProspectExportRow {
 
   // DISC-CAMP-P0-04.1: as listProspects derives it.
   const inActiveCampaign = (row.outreach_enrollments ?? []).some((enrollment) => enrollment.status === "active");
-  return { ...row, ...state, inActiveCampaign, researchedAt: row.prospect_research?.researched_at ?? null };
+  return { ...row, ...state, inActiveCampaign, ...reachFieldsOf(row), researchedAt: row.prospect_research?.researched_at ?? null };
 }
 
 /**

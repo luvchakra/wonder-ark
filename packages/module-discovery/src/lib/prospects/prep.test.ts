@@ -22,6 +22,13 @@ describe("prep queue", () => {
 });
 
 const calls: string[] = [];
+const draftOutcome = { status: "completed", message: "The draft was refused." };
+vi.mock("../channels/drafts", () => ({
+  generateChannelDraft: vi.fn(async (id: string, variant: string) => {
+    calls.push(`draft:${id}:${variant}`);
+    return draftOutcome;
+  }),
+}));
 vi.mock("../ai/research-prospect", () => ({ researchProspect: vi.fn(async (id: string) => calls.push(`research:${id}`)) }));
 vi.mock("../scoring/score-prospect", () => ({ scoreProspect: vi.fn(async (id: string) => calls.push(`score:${id}`)) }));
 vi.mock("../ai/generate-strategy", () => ({ generateOutreachStrategy: vi.fn(async (id: string) => calls.push(`strategy:${id}`)) }));
@@ -29,6 +36,40 @@ vi.mock("../ai/generate-message", () => ({ generateOutreachMessage: vi.fn(async 
 vi.mock("../outreach/mutations", () => ({ approveOutreachStrategy: vi.fn(async (id: string) => calls.push(`approve:${id}`)) }));
 vi.mock("../outreach/queries", () => ({ getLatestOutreachStrategy: vi.fn(async (id: string) => (id === "none" ? null : { id: `s-${id}` })) }));
 vi.mock("../pipeline/incremental", () => ({ applyIncrementalSignalUpdate: vi.fn(async () => { throw new Error("recompute failed"); }) }));
+
+// DISC-REACH-P0-01.1: a channel is written to by the way it can be reached.
+describe("a channel", () => {
+  const channel = (nextAction: string | null, extra: Record<string, unknown> = {}) => ({ ...p("c", nextAction), kind: "channel" as const, ...extra });
+
+  it("skips the plan step and is written to once scored", () => {
+    expect(prepStepOf(channel("Generate strategy"))).toBe("message");
+    expect(stepsLeft(channel("Research"))).toBe(3);
+  });
+
+  it("gets a direct message when its email draft has nowhere to go and it is on a platform", () => {
+    const stuck = channel("Review message", { reach: "needs_email", dmPlatform: "instagram", hasContactEmail: false });
+    expect(prepStepOf(stuck)).toBe("message");
+    expect(stepsLeft(stuck, { autoSend: true })).toBe(1);
+    expect(prepStepOf(channel("Review message", { reach: "instagram", dmPlatform: "instagram" }))).toBeNull();
+    expect(prepStepOf(channel("Review message", { reach: "needs_email", dmPlatform: null }))).toBeNull();
+  });
+
+  it("is never sent automatically unless it is an email with an address", () => {
+    expect(prepStepOf(channel("Review message", { reach: "instagram", dmPlatform: "instagram" }), { autoSend: true })).toBeNull();
+    expect(prepStepOf(channel("Review message", { reach: "email", hasContactEmail: true }), { autoSend: true })).toBe("send");
+  });
+
+  it("writes a direct message or an email pitch, and fails plainly when the draft is refused", async () => {
+    calls.length = 0;
+    await runPrepStep("w", channel("Generate strategy", { dmPlatform: "instagram", hasContactEmail: false }));
+    await runPrepStep("w", channel("Generate strategy", { dmPlatform: null }));
+    await runPrepStep("w", channel("Generate strategy", { dmPlatform: "instagram", hasContactEmail: true }));
+    expect(calls).toEqual(["draft:c:dm", "draft:c:pitch", "draft:c:pitch"]);
+    draftOutcome.status = "failed";
+    await expect(runPrepStep("w", channel("Generate strategy"))).rejects.toThrow("refused");
+    draftOutcome.status = "completed";
+  });
+});
 
 // DISC-AUTO-P0-01.3: the progress bar counts steps, not prospects.
 describe("stepsLeft", () => {

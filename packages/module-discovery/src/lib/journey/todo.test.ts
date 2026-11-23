@@ -19,7 +19,7 @@ describe("prospectGroups", () => {
   it("puts the person's work first, closest to a customer, then what WonderArk is preparing", () => {
     expect(groups.map((g) => [g.id, g.title, g.prospects.length])).toEqual([
       ["answer", "Answer 1 reply", 1],
-      ["send", "Send 1 ready message", 1],
+      ["send", "Send 1 ready email", 1],
       ["preparing", "To prepare (3)", 3],
       ["waiting", "Waiting for a reply (1)", 1],
       ["closed", "Closed (1)", 1],
@@ -29,6 +29,28 @@ describe("prospectGroups", () => {
   it("follows up only on prospects gone quiet outside a running campaign", () => {
     expect(prospectGroups([p("a", "sent", null, { isStuck: true })])[0]!.title).toBe("Follow up with 1 prospect");
     expect(prospectGroups([p("a", "sent", null, { isStuck: true, inActiveCampaign: true })])[0]!.id).toBe("waiting");
+  });
+});
+
+// DISC-REACH-P0-01.1
+describe("a written message is grouped by how it can go out", () => {
+  it("separates emails with an address, direct messages, and emails with nowhere to go", () => {
+    const groups = prospectGroups([
+      p("a", "messaged", "Review message", { reach: "email" }),
+      p("b", "messaged", "Review message", { reach: "instagram" }),
+      p("c", "messaged", "Review message", { reach: "instagram" }),
+      p("d", "messaged", "Review message", { reach: "needs_email" }),
+    ]);
+    expect(groups.map((g) => [g.id, g.title])).toEqual([
+      ["send", "Send 1 ready email"],
+      ["dm", "Message 2 on Instagram"],
+      ["needs-email", "Add an email address for 1"],
+    ]);
+  });
+
+  it("names no platform when they differ", () => {
+    const groups = prospectGroups([p("b", "messaged", "Review message", { reach: "instagram" }), p("c", "messaged", "Review message", { reach: "linkedin" })]);
+    expect(groups[0]!.title).toBe("Send 2 direct messages");
   });
 });
 

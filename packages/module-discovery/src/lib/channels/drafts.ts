@@ -20,6 +20,7 @@ import {
   type ChannelDraftVariant,
 } from "../../prompts/outreach/write_channel_draft_v1";
 
+import { DM_LABEL, dmPlatformOf } from "./reach";
 /**
  * DISC-CONS-P0-02.2: the three drafts on a channel prospect, and "Mark as posted".
  *
@@ -47,6 +48,7 @@ export const CHANNEL_DRAFT_LABEL: Record<ChannelDraftVariant, string> = {
   pitch: "Partnership pitch to the owner",
   sponsorship: "Sponsorship or listing enquiry",
   post: "Community post",
+  dm: "Direct message to the owner",
 };
 
 const ChannelDraftSchema = z.object({
@@ -86,6 +88,12 @@ export async function generateChannelDraft(prospectId: string, variant: ChannelD
   const prospect = await getProspect(prospectId);
   if (!prospect) return { status: "failed", message: "Prospect not found." };
   if (prospect.kind !== "channel") return { status: "failed", message: "These drafts are for channels." };
+  // DISC-REACH-P0-01.1: a direct message needs a platform to send it on, taken from the
+  // channel's own profile link, never assumed.
+  const platform = dmPlatformOf(prospect.source_ref);
+  if (variant === "dm" && !platform) {
+    return { status: "failed", message: "This channel isn't on Instagram, Facebook or LinkedIn, so there is nowhere to send a direct message." };
+  }
 
   const workspace = await getWorkspace(prospect.workspace_id);
   if (!workspace) return { status: "failed", message: "Workspace not found." };
@@ -100,6 +108,7 @@ export async function generateChannelDraft(prospectId: string, variant: ChannelD
 
   const prompt = writeChannelDraftPrompt({
     variant,
+    platform: platform ? DM_LABEL[platform] : undefined,
     offeringName: product.name,
     businessName: business?.name ?? product.name,
     offeringProfile: product.product_profile,
@@ -190,10 +199,11 @@ export async function generateChannelDraft(prospectId: string, variant: ChannelD
       workspace_id: workspace.id,
       prospect_id: prospect.id,
       contact_id: null,
-      channel: "email",
+      // The person sends a direct message themselves, on the platform; an email goes by Send.
+      channel: variant === "dm" && platform ? platform : "email",
       direction: "outbound",
       status: "draft",
-      subject,
+      subject: variant === "dm" ? null : subject,
       content: body,
     })
     .select("id")

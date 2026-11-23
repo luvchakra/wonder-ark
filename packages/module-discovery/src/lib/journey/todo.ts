@@ -1,4 +1,5 @@
 import { isFollowUpDue, type ProspectStage } from "../prospects/pipeline";
+import { DM_LABEL, type Reach } from "../channels/reach";
 
 /**
  * DISC-NAV-P0-02.1: what an offering's picked prospects need, grouped. The redesign the
@@ -16,13 +17,18 @@ type Prospect = {
   nextAction: string | null;
   isStuck: boolean;
   inActiveCampaign?: boolean;
+  /** DISC-REACH-P0-01.1: how its unsent message can go out. */
+  reach?: Reach | null;
 };
 
-export type GroupId = "answer" | "follow-up" | "send" | "preparing" | "waiting" | "closed";
+export type GroupId = "answer" | "follow-up" | "send" | "dm" | "needs-email" | "preparing" | "waiting" | "closed";
 export type ProspectGroup<T> = { id: GroupId; title: string; prospects: T[] };
 
 const n = (count: number, one: string, many: string) => `${count} ${count === 1 ? one : many}`;
 const noun = (count: number, channels: boolean) => (channels ? n(count, "channel", "channels") : n(count, "prospect", "prospects"));
+
+const hasDraft = (p: Prospect) => p.nextAction === "Review message" || p.nextAction === "Retry send";
+const isDirect = (reach: Reach | null | undefined) => reach !== undefined && reach !== null && reach !== "email" && reach !== "needs_email";
 
 const PREP_ACTIONS = new Set(["Research", "Score", "Generate strategy", "Approve strategy", "Generate message"]);
 
@@ -30,12 +36,16 @@ const PREP_ACTIONS = new Set(["Research", "Score", "Generate strategy", "Approve
 const GROUPS: { id: GroupId; match: (p: Prospect) => boolean; title: (c: number, channels: boolean) => string }[] = [
   { id: "answer", match: (p) => p.nextAction === "Generate reply", title: (c) => `Answer ${n(c, "reply", "replies")}` },
   { id: "follow-up", match: (p) => isFollowUpDue(p), title: (c, channels) => `Follow up with ${noun(c, channels)}` },
-  { id: "send", match: (p) => p.nextAction === "Review message" || p.nextAction === "Retry send", title: (c) => `Send ${n(c, "ready message", "ready messages")}` },
+  // DISC-REACH-P0-01.1: a written message is grouped by how it can go out. An email is
+  // ready only with an address; a direct message is sent by the person on its platform.
+  { id: "dm", match: (p) => hasDraft(p) && isDirect(p.reach), title: (c) => `Send ${n(c, "direct message", "direct messages")}` },
+  { id: "needs-email", match: (p) => hasDraft(p) && p.reach === "needs_email", title: (c) => `Add an email address for ${c}` },
+  { id: "send", match: (p) => hasDraft(p), title: (c) => `Send ${n(c, "ready email", "ready emails")}` },
   { id: "preparing", match: (p) => p.nextAction !== null && PREP_ACTIONS.has(p.nextAction), title: (c) => `To prepare (${c})` },
   { id: "closed", match: (p) => p.stage === "closed", title: (c) => `Closed (${c})` },
 ];
 
-export const PERSON_GROUPS: readonly GroupId[] = ["answer", "follow-up", "send"];
+export const PERSON_GROUPS: readonly GroupId[] = ["answer", "follow-up", "send", "dm", "needs-email"];
 
 /** Each prospect sits in the first group it matches; the rest are waiting for a reply. */
 export function prospectGroups<T extends Prospect>(prospects: T[]): ProspectGroup<T>[] {
@@ -47,13 +57,16 @@ export function prospectGroups<T extends Prospect>(prospects: T[]): ProspectGrou
     if (hit.length) found.set(group.id, hit);
   }
   const waiting = [...left];
-  const order: GroupId[] = ["answer", "follow-up", "send", "preparing", "waiting", "closed"];
+  const order: GroupId[] = ["answer", "follow-up", "send", "dm", "needs-email", "preparing", "waiting", "closed"];
   return order.flatMap((id): ProspectGroup<T>[] => {
     if (id === "waiting") return waiting.length ? [{ id, title: `Waiting for a reply (${waiting.length})`, prospects: waiting }] : [];
     const hit = found.get(id);
     if (!hit) return [];
     const group = GROUPS.find((g) => g.id === id)!;
-    return [{ id, title: group.title(hit.length, hit.every((p) => p.kind === "channel")), prospects: hit }];
+    // "Message 4 on Instagram" when they are all on one platform.
+    const platform = id === "dm" && hit.every((p) => p.reach === hit[0]!.reach) ? DM_LABEL[hit[0]!.reach as keyof typeof DM_LABEL] : undefined;
+    const title = platform ? `Message ${hit.length} on ${platform}` : group.title(hit.length, hit.every((p) => p.kind === "channel"));
+    return [{ id, title, prospects: hit }];
   });
 }
 

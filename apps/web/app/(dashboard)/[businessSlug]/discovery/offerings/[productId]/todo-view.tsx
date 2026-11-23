@@ -9,9 +9,15 @@ import { TodayList } from "@cofounderai/module-discovery/components/prospects/to
 import { SuggestionReviewList } from "@cofounderai/module-discovery/components/prospects/suggestion-review-list";
 import { approveSuggestionsAction, discardSuggestionsAction } from "./prospects/discover/actions";
 import { markTaskDoneAction } from "./campaigns/actions";
+import { markDirectMessageSentAction } from "./prospects/[prospectId]/actions";
+import { listDirectDrafts } from "@cofounderai/module-discovery/lib/messages/queries";
+import { DmCard } from "@cofounderai/module-discovery/components/prospects/dm-card";
+import { DM_LABEL } from "@cofounderai/module-discovery/lib/channels/reach";
+import { formatAudience } from "@cofounderai/module-discovery/lib/data-sources/channels";
+import { safeHttpUrl } from "@cofounderai/module-discovery/lib/data-sources/suggestions";
 
 /** What pressing a card does, in the card's words. */
-const CARD_ACTION: Partial<Record<GroupId, string>> = { answer: "Answer", "follow-up": "Follow up", send: "Review and send" };
+const CARD_ACTION: Partial<Record<GroupId, string>> = { answer: "Answer", "follow-up": "Follow up", send: "Review and send", "needs-email": "Add email and send" };
 
 /**
  * DISC-NAV-P0-02.1: To do, the offering's page once it is set up (owner-approved redesign,
@@ -50,6 +56,8 @@ export async function TodoView({
   ]);
   const base = `/${businessSlug}/discovery/offerings/${productId}`;
   const groups = prospectGroups(picked).filter((group) => PERSON_GROUPS.includes(group.id));
+  // DISC-REACH-P0-01.1: the text of each direct message, so its card can copy it.
+  const directDrafts = await listDirectDrafts(workspace.id, groups.find((group) => group.id === "dm")?.prospects.map((p) => p.id) ?? []);
   const tasksDue = campaignTasks.tasks.length > 0;
   const nothing = groups.length === 0 && suggestions.length === 0 && toPick.length === 0 && !tasksDue;
 
@@ -77,8 +85,26 @@ export async function TodoView({
           <h2 id={`todo-${group.id}`} className="text-sm font-semibold">
             {group.title}
           </h2>
+          {group.id === "needs-email" ? (
+            <p className="text-xs text-muted-foreground">Their email is written, but there is no address to send it to yet.</p>
+          ) : null}
           <ul className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
             {group.prospects.map((p) => {
+              const draft = group.id === "dm" ? directDrafts.find((m) => m.prospect_id === p.id) : undefined;
+              if (draft) {
+                return (
+                  <DmCard
+                    key={p.id}
+                    name={p.company_name}
+                    detail={p.audience_size ? `${formatAudience(p.audience_size)} audience` : null}
+                    text={draft.content}
+                    platform={DM_LABEL[draft.channel as keyof typeof DM_LABEL] ?? "their page"}
+                    profileLink={safeHttpUrl(p.source_ref ?? null) ?? safeHttpUrl(p.website ?? null)}
+                    prospectHref={`${base}/prospects/${p.id}#messages`}
+                    markSentAction={markDirectMessageSentAction.bind(null, businessId, productId, p.id, draft.id)}
+                  />
+                );
+              }
               const anchor = (p.nextAction && NEXT_ACTION_ANCHOR[p.nextAction]) || "messages";
               return (
                 <li key={p.id}>
