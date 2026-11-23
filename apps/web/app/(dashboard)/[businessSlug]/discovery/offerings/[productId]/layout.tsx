@@ -92,12 +92,14 @@ export default async function ProductLayout({
           />
         </div>
         <ProductNav basePath={basePath} completed={completed} setupDone={setupDone} todo={journey?.todo ?? 0} />
-        {/* DISC-AUTO-P0-01.1: picked prospects get researched, scored and a first message
-            drafted by themselves while the offering is open. */}
-        {workspace && journey && journey.prepRemaining > 0 ? (
+        {/* DISC-AUTO-P0-01.3: the person chooses which picked prospects to prepare
+            (research, score, first message); nothing starts by itself. */}
+        {/* Always mounted, so a finished run's last line stays when the list empties. */}
+        {workspace && journey ? (
           <PrepRunner
-            initialRemaining={journey.prepRemaining}
+            candidates={journey.prepCandidates}
             autoSend={autoSend}
+            todoPath={basePath}
             prepareAction={prepareNextProspectAction.bind(null, businessId, productId, workspace.id)}
           />
         ) : null}

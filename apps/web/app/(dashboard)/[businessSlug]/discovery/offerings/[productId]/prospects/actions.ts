@@ -16,7 +16,7 @@ import {
   type AutoPopulateProspectsResult,
 } from "@cofounderai/module-discovery/lib/ai-approval/auto-populate";
 import { listProspects } from "@cofounderai/module-discovery/lib/prospects/queries";
-import { needsAiSetup, prepQueue, prepStepOf, PREP_STEP_LABEL, runPrepStep, stopsTheRun } from "@cofounderai/module-discovery/lib/prospects/prep";
+import { needsAiSetup, prepQueue, prepStepOf, PREP_STEP_LABEL, runPrepStep, stepsLeft, stopsTheRun } from "@cofounderai/module-discovery/lib/prospects/prep";
 import { getAutoSend } from "@cofounderai/module-discovery/lib/auto-send/settings";
 
 async function prospectsPath(businessId: string, productId: string) {
@@ -150,8 +150,10 @@ export async function unshortlistProspectsAction(
 
 /** DISC-AUTO-P0-01.1: what one call of the preparation runner did. */
 export type PrepResult = {
-  /** Prospects still to prepare after this call (not counting skipped ones). */
+  /** Chosen prospects still to prepare after this call (not counting skipped ones). */
   remaining: number;
+  /** DISC-AUTO-P0-01.3: their steps left, for the progress bar. */
+  stepsLeft: number;
   /** "Researched Week Plan", or null when there was nothing to do. */
   did: string | null;
   /** The prospect that failed this time; the runner skips it for the rest of the run. */
@@ -173,22 +175,30 @@ export async function prepareNextProspectAction(
   businessId: string,
   productId: string,
   workspaceId: string,
+  /** DISC-AUTO-P0-01.3: only the prospects the person chose to prepare. */
+  chosen: string[],
   skip: string[],
 ): Promise<PrepResult> {
   // DISC-AUTO-P0-03.1: read on every call, failing closed, so turning it off takes effect at once.
   const options = { autoSend: await getAutoSend(businessId) };
-  const queue = prepQueue(await listProspects(workspaceId, { shortlisted: true }), skip, options);
+  // The chosen ids only narrow this workspace's own picked prospects, read under RLS.
+  const inChosen = (list: Awaited<ReturnType<typeof listProspects>>) => prepQueue(list, skip, options).filter((p) => chosen.includes(p.id));
+  const sumSteps = (list: ReturnType<typeof inChosen>) => list.reduce((sum, p) => sum + stepsLeft(p, options), 0);
+  const queue = inChosen(await listProspects(workspaceId, { shortlisted: true }));
   const next = queue[0];
-  if (!next) return { remaining: 0, did: null };
+  if (!next) return { remaining: 0, stepsLeft: 0, did: null };
   const label = PREP_STEP_LABEL[prepStepOf(next, options)!];
   try {
     await runPrepStep(workspaceId, next, options);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    if (stopsTheRun(error)) return { remaining: queue.length, did: null, limitReached: true, error: message, needsAiSetup: needsAiSetup(error) };
-    return { remaining: queue.length - 1, did: null, failedId: next.id, error: `Couldn't prepare ${next.company_name}: ${message}` };
+    if (stopsTheRun(error)) {
+      return { remaining: queue.length, stepsLeft: sumSteps(queue), did: null, limitReached: true, error: message, needsAiSetup: needsAiSetup(error) };
+    }
+    const rest = queue.slice(1);
+    return { remaining: rest.length, stepsLeft: sumSteps(rest), did: null, failedId: next.id, error: `Couldn't prepare ${next.company_name}: ${message}` };
   }
   revalidatePath(await prospectsPath(businessId, productId));
-  const after = prepQueue(await listProspects(workspaceId, { shortlisted: true }), skip, options);
-  return { remaining: after.length, did: `${label} ${next.company_name}` };
+  const after = inChosen(await listProspects(workspaceId, { shortlisted: true }));
+  return { remaining: after.length, stepsLeft: sumSteps(after), did: `${label} ${next.company_name}` };
 }

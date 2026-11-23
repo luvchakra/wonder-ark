@@ -286,7 +286,7 @@ export const FAQ: FaqEntry[] = [
     category: "Day to day",
     question: "Do I have to research, score and write to each prospect myself?",
     answer:
-      "No. Once your ideal customer is approved, every prospect you pick is prepared by itself while the offering is open: researched, scored, planned and given a first message draft (AI-generated). A line under the tabs shows how many are left. Nothing is sent: each draft waits for you to press Send. Picking a prospect spends about three AI calls on it. If your AI credits run out or your AI key is refused, preparation stops once and says why.",
+      "No. Once your ideal customer is approved, prospects you pick wait under Prepare prospects on To do. Tick the ones you want and press Prepare: WonderArk researches, scores, plans and writes a first message draft (AI-generated) for each. Nothing starts until you press Prepare, so AI credits (about three AI calls each) are spent only on the ones you chose. A progress bar shows how far it has got; Pause and Resume stop and restart it. Nothing is sent unless Send automatically is on. If your AI credits run out or your AI key is refused, it stops once and says why.",
     guideSlug: "discovery",
     sectionId: "working-an-offering",
   },

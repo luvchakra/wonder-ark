@@ -21,7 +21,7 @@ describe("ReachList", () => {
   // DISC-NAV-P0-02.1
   it("puts the person's group first, then what WonderArk is preparing", () => {
     expect(html.indexOf("Send 1 ready message")).toBeGreaterThan(-1);
-    expect(html.indexOf("Send 1 ready message")).toBeLessThan(html.indexOf("Being prepared (3)"));
+    expect(html.indexOf("Send 1 ready message")).toBeLessThan(html.indexOf("To prepare (3)"));
     expect(html).toContain('id="reach-preparing"');
   });
 
