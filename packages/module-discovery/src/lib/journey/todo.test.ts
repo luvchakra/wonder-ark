@@ -20,7 +20,7 @@ describe("prospectGroups", () => {
     expect(groups.map((g) => [g.id, g.title, g.prospects.length])).toEqual([
       ["answer", "Answer 1 reply", 1],
       ["send", "Send 1 ready message", 1],
-      ["preparing", "Being prepared (3)", 3],
+      ["preparing", "To prepare (3)", 3],
       ["waiting", "Waiting for a reply (1)", 1],
       ["closed", "Closed (1)", 1],
     ]);

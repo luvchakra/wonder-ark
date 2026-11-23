@@ -58,6 +58,16 @@ export function prepQueue<T extends Preppable>(prospects: T[], skip: readonly st
     .sort((a, b) => ORDER.indexOf(prepStepOf(a, options)!) - ORDER.indexOf(prepStepOf(b, options)!));
 }
 
+/** DISC-AUTO-P0-01.3: how many steps a prospect has left, for the progress bar: research,
+ * score, plan, approve the plan, write; plus the send when Send automatically is on. */
+const STEPS_FROM: Record<PrepStep, number> = { research: 5, score: 4, strategy: 3, approve: 2, message: 1, send: 0 };
+
+export function stepsLeft(p: Preppable, options: PrepOptions = {}): number {
+  const step = prepStepOf(p, options);
+  if (!step) return 0;
+  return STEPS_FROM[step] + (options.autoSend ? 1 : 0);
+}
+
 /** Runs one step for one prospect under the person's own session (RLS scopes it). */
 export async function runPrepStep(workspaceId: string, prospect: Preppable, options: PrepOptions = {}): Promise<PrepStep | null> {
   const step = prepStepOf(prospect, options);

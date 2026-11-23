@@ -31,7 +31,7 @@ const GROUPS: { id: GroupId; match: (p: Prospect) => boolean; title: (c: number,
   { id: "answer", match: (p) => p.nextAction === "Generate reply", title: (c) => `Answer ${n(c, "reply", "replies")}` },
   { id: "follow-up", match: (p) => isFollowUpDue(p), title: (c, channels) => `Follow up with ${noun(c, channels)}` },
   { id: "send", match: (p) => p.nextAction === "Review message" || p.nextAction === "Retry send", title: (c) => `Send ${n(c, "ready message", "ready messages")}` },
-  { id: "preparing", match: (p) => p.nextAction !== null && PREP_ACTIONS.has(p.nextAction), title: (c) => `Being prepared (${c})` },
+  { id: "preparing", match: (p) => p.nextAction !== null && PREP_ACTIONS.has(p.nextAction), title: (c) => `To prepare (${c})` },
   { id: "closed", match: (p) => p.stage === "closed", title: (c) => `Closed (${c})` },
 ];
 

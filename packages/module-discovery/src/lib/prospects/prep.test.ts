@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { needsAiSetup, prepQueue, prepStepOf, runPrepStep, stopsTheRun } from "./prep";
+import { needsAiSetup, prepQueue, prepStepOf, runPrepStep, stepsLeft, stopsTheRun } from "./prep";
 import { AiProviderError } from "../ai/router";
 import { DailySendLimitReached, LeftForPerson } from "../auto-send/send";
 import { UsageLimitExceededError } from "../usage/limits";
@@ -29,6 +29,17 @@ vi.mock("../ai/generate-message", () => ({ generateOutreachMessage: vi.fn(async 
 vi.mock("../outreach/mutations", () => ({ approveOutreachStrategy: vi.fn(async (id: string) => calls.push(`approve:${id}`)) }));
 vi.mock("../outreach/queries", () => ({ getLatestOutreachStrategy: vi.fn(async (id: string) => (id === "none" ? null : { id: `s-${id}` })) }));
 vi.mock("../pipeline/incremental", () => ({ applyIncrementalSignalUpdate: vi.fn(async () => { throw new Error("recompute failed"); }) }));
+
+// DISC-AUTO-P0-01.3: the progress bar counts steps, not prospects.
+describe("stepsLeft", () => {
+  it("counts the steps from where each prospect is, plus the send when it is on", () => {
+    expect(stepsLeft(p("a", "Research"))).toBe(5);
+    expect(stepsLeft(p("a", "Generate message"))).toBe(1);
+    expect(stepsLeft(p("a", "Research"), { autoSend: true })).toBe(6);
+    expect(stepsLeft(p("a", "Review message"), { autoSend: true })).toBe(1);
+    expect(stepsLeft(p("a", "Review message"))).toBe(0);
+  });
+});
 
 // DISC-AUTO-P0-03.1
 describe("with Send automatically", () => {

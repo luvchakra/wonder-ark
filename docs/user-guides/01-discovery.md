@@ -11,7 +11,7 @@ offerings and data:
 - **Funding** — your funding profile, investor readiness, rounds, investors,
   outreach, data room and due diligence.
 
-Last updated: 2026-11-22
+Last updated: 2026-11-23
 
 
 ## How Discovery is organised
@@ -106,7 +106,7 @@ Once an offering is set up (described, and its ideal customer approved), it has 
 | Tab | What it shows |
 |---|---|
 | **To do** | The only list you work from, most urgent first: **Answer replies**, **Follow up with** (no reply and no activity for 7 days), **Send ready messages**, campaign steps you do by hand, then **New prospects to approve** and imported prospects to pick. Tap one to open it at that step. The tab shows how many are waiting. Empty means nothing needs you; **Find more prospects** searches for more. |
-| **Prospects** | Everyone you approved and how far each has got: your groups first (the same as To do), then **Being prepared**, **Waiting for a reply** and **Closed**. No buttons: preparing runs by itself. On the **Companies** list, **Campaigns** below is the other way to reach them. |
+| **Prospects** | Everyone you approved and how far each has got: your groups first (the same as To do), then **To prepare**, **Waiting for a reply** and **Closed**. No buttons: you choose what to prepare on To do. On the **Companies** list, **Campaigns** below is the other way to reach them. |
 | **Results** | Performance, and discovery effectiveness once there are opportunities, with **Conversions** and **What people say** below. |
 
 **Setup** (beside the tabs) holds what you sell and who buys it. Until it is done, the
@@ -269,15 +269,18 @@ offering has more than one. To unpick one, open it and choose **Move back to Fin
 
 ### Prospects, and what is prepared for you
 
-**Prepared for you.** Once the ideal customer is approved, every prospect you pick is
-prepared by itself while the offering is open: researched, scored, given an outreach plan,
-and given a first message draft (AI-generated). A line under the tabs says how many are
-left and what was done last. Nothing is sent: each draft waits for your **Send**. Picking a
-prospect is your go-ahead to spend AI credits on it (about three AI calls each). If a
-prospect can't be prepared, the line says why and moves on. If something would stop every
-prospect (AI credits used up, your AI key refused or missing, the AI provider busy or down),
-it stops once and says why, with **Fix the AI key** when the key is the problem. When some
-couldn't be prepared, the last line says how many; they are tried again next time. Close the offering and it carries on next time you open it.
+**Prepared when you choose.** Once the ideal customer is approved, prospects you pick wait
+under **Prepare prospects** at the top of **To do** (other tabs show one line linking there).
+Tick the ones you want, or **Select all**, and press **Prepare**: WonderArk researches and
+scores each one, plans the message and writes a first message draft (AI-generated). Nothing
+starts until you press Prepare, so AI credits are spent only on the ones you chose (about
+three AI calls each). A progress bar shows how far it has got and what was done last;
+**Pause** stops after the step in progress, **Resume** carries on. It runs while the
+offering is open. Nothing is sent unless **Send automatically** is on: each draft waits for
+your **Send**. If a prospect can't be prepared, it is skipped with the reason. If something
+would stop every prospect (AI credits used up, your AI key refused or missing, the AI
+provider busy or down), it stops once and says why, with **Fix the AI key** when the key is
+the problem.
 
 **Send automatically** (off unless you turn it on, in **Setup** → **Sending**). With it on,
 the first email to each prospect you approve is sent as soon as it is written, through the
@@ -290,7 +293,7 @@ Only an owner or admin can change it, and every change is recorded.
 
 **Prospects** lists everyone you approved, grouped by how far each has got. Your groups come
 first, in the same order as **To do**: **Answer replies**, **Follow up with**, **Send ready
-messages**. Then **Being prepared** (WonderArk is researching, scoring or writing to them),
+messages**. Then **To prepare** (not researched, scored or written to yet),
 **Waiting for a reply** and **Closed**. Tap a prospect to open it at its step. A fit score
 shows once a prospect is scored, and a search box appears once the list is longer than ten.
 
