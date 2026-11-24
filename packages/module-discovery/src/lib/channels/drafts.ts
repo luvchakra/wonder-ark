@@ -68,6 +68,23 @@ export function refuseDraft(draft: { subject: string; body: string }): string | 
   return null;
 }
 
+const EMOJI = /\p{Extended_Pictographic}(?:\uFE0F|[\u{1F3FB}-\u{1F3FF}]|\u200D\p{Extended_Pictographic})*/gu;
+
+/**
+ * DISC-REACH-P0-01.4: code's finish on a direct message, whatever the model returned: at
+ * most `maxEmoji` emojis (the first ones are kept), no hashtags, tidy spacing.
+ */
+export function tidyDirectMessage(body: string, maxEmoji = 2): string {
+  let seen = 0;
+  return body
+    .replace(EMOJI, (emoji) => (++seen <= maxEmoji ? emoji : ""))
+    .replace(/(^|\s)#[\p{L}\p{N}_]+/gu, "$1")
+    .replace(/[ \t]{2,}/g, " ")
+    .replace(/[ \t]+$/gm, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
 export type ChannelDraftOutcome =
   | { status: "completed"; variant: ChannelDraftVariant; id: string }
   /** The same draft was written from the same input moments ago (a double click). */
@@ -83,7 +100,12 @@ export function isChannelDraftVariant(value: string): value is ChannelDraftVaria
  * code refused) come back as `failed`; a licence, usage-limit or provider failure is
  * thrown for the caller's error handling, after the provider failure is recorded.
  */
-export async function generateChannelDraft(prospectId: string, variant: ChannelDraftVariant): Promise<ChannelDraftOutcome> {
+export async function generateChannelDraft(
+  prospectId: string,
+  variant: ChannelDraftVariant,
+  /** DISC-REACH-P0-01.4: rewrite this unsent direct message in place instead of adding one. */
+  options: { replaceMessageId?: string } = {},
+): Promise<ChannelDraftOutcome> {
   if (!isChannelDraftVariant(variant)) return { status: "failed", message: "Choose which draft to write." };
   const prospect = await getProspect(prospectId);
   if (!prospect) return { status: "failed", message: "Prospect not found." };
@@ -166,7 +188,7 @@ export async function generateChannelDraft(prospectId: string, variant: ChannelD
   const refusal = refuseDraft(draft);
   if (refusal) return { status: "failed", message: refusal };
   const subject = draft.subject.trim();
-  const body = draft.body.trim();
+  const body = variant === "dm" ? tidyDirectMessage(draft.body, platform === "linkedin" ? 0 : 2) : draft.body.trim();
 
   if (variant === "post") {
     const id = await createContent(
@@ -193,6 +215,21 @@ export async function generateChannelDraft(prospectId: string, variant: ChannelD
   }
 
   const supabase = await createClient();
+  if (options.replaceMessageId) {
+    // Only an unsent direct message of this prospect is rewritten; anything else is refused.
+    const { data: replaced, error: replaceError } = await supabase
+      .from("messages")
+      .update({ content: body, status: "draft" })
+      .eq("id", options.replaceMessageId)
+      .eq("prospect_id", prospect.id)
+      .neq("channel", "email")
+      .in("status", ["draft", "approved"])
+      .select("id")
+      .maybeSingle();
+    if (replaceError) throw replaceError;
+    if (!replaced) return { status: "failed", message: "This message was already sent, so it was not rewritten." };
+    return { status: "completed", variant, id: replaced.id as string };
+  }
   const { data, error } = await supabase
     .from("messages")
     .insert({

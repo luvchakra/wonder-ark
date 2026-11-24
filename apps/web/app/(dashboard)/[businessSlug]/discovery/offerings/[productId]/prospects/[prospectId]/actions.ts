@@ -471,6 +471,44 @@ export async function markDirectMessageSentAction(businessId: string, productId:
 }
 
 /**
+ * DISC-REACH-P0-01.4: edit a direct message from its To do card. Only an unsent direct
+ * message of this prospect; the text is the person's own, saved as typed.
+ */
+export async function editDirectMessageAction(
+  businessId: string,
+  productId: string,
+  prospectId: string,
+  messageId: string,
+  _prevState: AiActionState,
+  formData: FormData,
+): Promise<AiActionState> {
+  return runAiAction(async () => {
+    const message = await getMessage(messageId);
+    if (!message || message.prospect_id !== prospectId) throw new Error("Message not found.");
+    if (message.channel === "email") throw new Error("An email is edited on the prospect's page.");
+    if (message.status === "sent") throw new Error("This message was already sent.");
+    await updateMessageContent(messageId, String(formData.get("content") ?? ""), null);
+    revalidatePath(`${await businessPath(businessId)}/discovery/offerings/${productId}`, "layout");
+  });
+}
+
+/** DISC-REACH-P0-01.4: AI rewrites an unsent direct message in place, in the current style. */
+export async function rewriteDirectMessageAction(
+  businessId: string,
+  productId: string,
+  prospectId: string,
+  messageId: string,
+  _prevState: AiActionState,
+): Promise<AiActionState> {
+  return runAiAction(async () => {
+    const outcome = await generateChannelDraft(prospectId, "dm", { replaceMessageId: messageId });
+    if (outcome.status === "failed") throw new Error(outcome.message);
+    if (outcome.status === "duplicate") throw new Error("It was rewritten moments ago. Edit it, or try again in a minute.");
+    revalidatePath(`${await businessPath(businessId)}/discovery/offerings/${productId}`, "layout");
+  });
+}
+
+/**
  * DISC-REACH-P0-01.1: Send for an email draft whose prospect has no address yet. The person
  * types the address beside Send: it is saved as a contact they provided, then the email goes
  * through the same approve-and-send path as any other. A malformed address is refused

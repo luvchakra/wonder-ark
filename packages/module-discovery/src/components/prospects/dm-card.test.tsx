@@ -5,7 +5,7 @@ import { DmCard } from "./dm-card";
 
 const render = (profileLink: string | null) =>
   renderToStaticMarkup(
-    <DmCard name="weekview" detail="2,741 audience" text="Hi! Love your weekly planning posts." platform="Instagram" profileLink={profileLink} prospectHref="/b/o/p/prospects/x#messages" markSentAction={async () => {}} />,
+    <DmCard name="weekview" detail="2,741 audience" text="Hi! Love your weekly planning posts." platform="Instagram" profileLink={profileLink} prospectHref="/b/o/p/prospects/x#messages" markSentAction={async () => {}} editAction={async () => null} rewriteAction={async () => null} />,
   );
 
 describe("DmCard", () => {
@@ -18,6 +18,14 @@ describe("DmCard", () => {
     expect(html).not.toMatch(/>\s*Send\s*</);
     expect(html).toContain("WonderArk never sends on this platform");
     expect(html).toContain('href="/b/o/p/prospects/x#messages"');
+  });
+
+  it("shows the whole message with Edit beside it (DISC-REACH-P0-01.4)", () => {
+    const html = render("https://www.instagram.com/weekview/");
+    expect(html).toContain("Hi! Love your weekly planning posts.");
+    expect(html).not.toContain("line-clamp");
+    expect(html).toMatch(/>\s*Edit\s*</);
+    expect(html).toContain("AI-generated");
   });
 
   it("only copies when the channel has no link", () => {
