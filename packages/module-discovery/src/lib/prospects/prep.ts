@@ -7,6 +7,8 @@ import { getLatestOutreachStrategy } from "../outreach/queries";
 import { applyIncrementalSignalUpdate } from "../pipeline/incremental";
 import { UsageLimitExceededError } from "../usage/limits";
 import { AiProviderError } from "../ai/router";
+import { generateChannelDraft } from "../channels/drafts";
+import type { DmPlatform, Reach } from "../channels/reach";
 import { DailySendLimitReached, sendFirstEmailAutomatically } from "../auto-send/send";
 
 /**
@@ -41,14 +43,34 @@ export const PREP_STEP_LABEL: Record<PrepStep, string> = {
   send: "Sent the first email to",
 };
 
-type Preppable = { id: string; company_name: string; nextAction: string | null };
+type Preppable = {
+  id: string;
+  company_name: string;
+  nextAction: string | null;
+  /** DISC-REACH-P0-01.1: a channel is written to from its own details, by the way it can be
+   * reached: a direct message on its platform, or an email pitch. */
+  kind?: "company" | "channel";
+  reach?: Reach | null;
+  dmPlatform?: DmPlatform | null;
+  hasContactEmail?: boolean;
+};
+
+const isChannel = (p: Preppable) => p.kind === "channel";
+/** A channel on a messaging platform whose only draft is an email with no address to go to:
+ * it gets a direct message written instead. */
+const needsDm = (p: Preppable) => isChannel(p) && p.reach === "needs_email" && Boolean(p.dmPlatform);
 
 /** DISC-AUTO-P0-03.1: with "Send automatically" on, a written first message is sent too. */
 export type PrepOptions = { autoSend?: boolean };
 
 export function prepStepOf(p: Preppable, options: PrepOptions = {}): PrepStep | null {
-  if (options.autoSend && p.nextAction === "Review message") return "send";
-  return p.nextAction ? (STEP_FOR_ACTION[p.nextAction] ?? null) : null;
+  if (needsDm(p)) return "message";
+  // Only an email with an address can be sent automatically; the rest are the person's.
+  if (p.nextAction === "Review message") return options.autoSend && (p.reach === "email" || p.reach === undefined) ? "send" : null;
+  const step = p.nextAction ? (STEP_FOR_ACTION[p.nextAction] ?? null) : null;
+  // A channel has no outreach plan step: once scored, its message is written.
+  if (isChannel(p) && (step === "strategy" || step === "approve")) return "message";
+  return step;
 }
 
 /** The picked prospects still to prepare, leaving out any skipped this run (failed once). */
@@ -61,11 +83,15 @@ export function prepQueue<T extends Preppable>(prospects: T[], skip: readonly st
 /** DISC-AUTO-P0-01.3: how many steps a prospect has left, for the progress bar: research,
  * score, plan, approve the plan, write; plus the send when Send automatically is on. */
 const STEPS_FROM: Record<PrepStep, number> = { research: 5, score: 4, strategy: 3, approve: 2, message: 1, send: 0 };
+/** A channel: research, score, write. */
+const CHANNEL_STEPS_FROM: Record<PrepStep, number> = { research: 3, score: 2, strategy: 1, approve: 1, message: 1, send: 0 };
 
 export function stepsLeft(p: Preppable, options: PrepOptions = {}): number {
   const step = prepStepOf(p, options);
   if (!step) return 0;
-  return STEPS_FROM[step] + (options.autoSend ? 1 : 0);
+  // A direct message is never sent automatically, so it adds no send step.
+  const willSend = Boolean(options.autoSend) && !(isChannel(p) && Boolean(p.dmPlatform) && !p.hasContactEmail);
+  return (isChannel(p) ? CHANNEL_STEPS_FROM : STEPS_FROM)[step] + (willSend ? 1 : 0);
 }
 
 /** Runs one step for one prospect under the person's own session (RLS scopes it). */
@@ -81,6 +107,12 @@ export async function runPrepStep(workspaceId: string, prospect: Preppable, opti
     await generateOutreachStrategy(prospect.id, null);
   } else if (step === "send") {
     await sendFirstEmailAutomatically(workspaceId, prospect.id);
+  } else if (step === "message" && isChannel(prospect)) {
+    // DISC-REACH-P0-01.1: a direct message where the channel is reached on a platform and
+    // has no address; otherwise a partnership pitch by email.
+    const outcome = await generateChannelDraft(prospect.id, prospect.dmPlatform && !prospect.hasContactEmail ? "dm" : "pitch");
+    if (outcome.status === "failed") throw new Error(outcome.message);
+    if (outcome.status === "duplicate") throw new Error("Its message was written a moment ago. Refresh to see it.");
   } else if (step === "approve" || step === "message") {
     const strategy = await getLatestOutreachStrategy(prospect.id);
     if (!strategy) throw new Error("No outreach plan to write from.");

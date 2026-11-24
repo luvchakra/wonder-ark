@@ -16,6 +16,9 @@ const CHANNEL_GUIDANCE: Record<MessageChannel, string> = {
     "it -- exactly one such phrase, not every sentence.",
   linkedin: "A short LinkedIn DM reply. Under 80 words. No subject line.",
   whatsapp: "A very short, casual WhatsApp reply. Under 40 words. No subject line.",
+  // DISC-REACH-P0-01.1: direct messages the person sends themselves.
+  instagram: "A very short, friendly Instagram direct-message reply. Under 50 words. No subject line.",
+  facebook: "A very short, friendly Facebook message reply. Under 50 words. No subject line.",
 };
 
 export function generateReplyPrompt(input: {

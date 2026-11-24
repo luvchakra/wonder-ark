@@ -8,11 +8,18 @@ import {
   type ProspectPipelineState,
   type ProspectStage,
 } from "./pipeline";
+import { dmPlatformOf, reachOf, type DmPlatform, type Reach } from "../channels/reach";
 
 export type ProspectWithPipeline = Prospect &
   ProspectPipelineState & {
     /** DISC-CAMP-P0-04.1: a running campaign is following this prospect up. */
     inActiveCampaign?: boolean;
+    /** DISC-REACH-P0-01.1: how its unsent message can go out; null with none unsent. */
+    reach?: Reach | null;
+    /** Whether any contact has an email address. */
+    hasContactEmail?: boolean;
+    /** The platform its profile link is on, when a person can message it there. */
+    dmPlatform?: DmPlatform | null;
   };
 
 export type ProspectFilters = {
@@ -44,7 +51,11 @@ type ProspectPipelineRow = Prospect & {
     status: "draft" | "approved" | "sent" | "failed";
     created_at: string;
     sent_at: string | null;
+    channel?: string;
+    direction?: string;
   }[];
+  /** DISC-REACH-P0-01.1: only whether an address exists; never the address itself. */
+  contacts?: { email: string | null }[];
   conversations: { status: "awaiting_reply" | "replied" | "closed"; last_message_at: string }[];
   /** DISC-CAMP-P0-04.1: the prospect's campaign enrollments. Absent on a row built
    * before campaigns existed. */
@@ -56,6 +67,18 @@ function latestBy<T>(rows: T[], key: keyof T): T | null {
   return rows.reduce((latest, row) =>
     (row[key] as string) > (latest[key] as string) ? row : latest,
   );
+}
+
+/** DISC-REACH-P0-01.1: how a row's unsent message can go out: an email draft with no
+ * address is not ready to send. Shared with the export's own row derivation. */
+export function reachFieldsOf(row: {
+  messages: { status: string; channel?: string; direction?: string }[];
+  contacts?: { email: string | null }[];
+  source_ref?: string | null;
+}): { hasContactEmail: boolean; reach: Reach | null; dmPlatform: DmPlatform | null } {
+  const hasContactEmail = (row.contacts ?? []).some((contact) => Boolean(contact.email));
+  const unsent = row.messages.filter((m) => m.status !== "sent" && m.direction !== "inbound").map((m) => ({ channel: m.channel ?? "email" }));
+  return { hasContactEmail, reach: reachOf({ unsent, hasContactEmail }), dmPlatform: dmPlatformOf(row.source_ref) };
 }
 
 function deriveRow(row: ProspectPipelineRow): ProspectWithPipeline {
@@ -88,12 +111,12 @@ function deriveRow(row: ProspectPipelineRow): ProspectWithPipeline {
   // reads them.
   // DISC-CAMP-P0-04.1: whether a running campaign is following this prospect up.
   const inActiveCampaign = (row.outreach_enrollments ?? []).some((enrollment) => enrollment.status === "active");
-  return { ...row, ...state, inActiveCampaign };
+  return { ...row, ...state, inActiveCampaign, ...reachFieldsOf(row) };
 }
 
 const PIPELINE_SELECT =
   "*, prospect_research(researched_at), prospect_scores(created_at), " +
-  "outreach_strategies(status, updated_at), messages(status, created_at, sent_at), " +
+  "outreach_strategies(status, updated_at), messages(status, created_at, sent_at, channel, direction), contacts(email), " +
   "conversations(status, last_message_at), outreach_enrollments(status)";
 
 /**

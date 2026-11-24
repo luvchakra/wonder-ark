@@ -1,4 +1,5 @@
 import { Badge } from "@cofounderai/core/ui/badge";
+import { DM_LABEL, dmPlatformOf } from "../../lib/channels/reach";
 import { SubmitButton } from "@cofounderai/core/ui/submit-button";
 import { categoryOf, matchedTitlesOf, safeHttpUrl } from "../../lib/data-sources/suggestions";
 import { channelOf, channelTypeLabel, formatAudience } from "../../lib/data-sources/channels";
@@ -134,6 +135,17 @@ export function SuggestionReviewList({
                     ) : null}
                     {channel && channel.topics.length > 0 ? (
                       <p className="line-clamp-1 text-xs text-muted-foreground">Topics: {channel.topics.join(", ")}</p>
+                    ) : null}
+                    {/* DISC-REACH-P0-01.2: how this channel can be reached, known before approving. */}
+                    {channel ? (
+                      <p className="line-clamp-1 text-xs text-muted-foreground">
+                        Reach:{" "}
+                        {channel.contactEmail
+                          ? `email (${channel.contactEmail})`
+                          : dmPlatformOf(channel.url)
+                            ? `${DM_LABEL[dmPlatformOf(channel.url)!]} message`
+                            : "no address found; you can add one"}
+                      </p>
                     ) : null}
                   </div>
                   <div className="min-w-0">

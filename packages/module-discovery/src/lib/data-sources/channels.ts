@@ -118,8 +118,20 @@ export type StoredChannel = {
   topics: string[];
   url: string | null;
   contactUrl: string | null;
+  /** DISC-REACH-P0-01.2: an enquiry address the channel itself published, and where. */
+  contactEmail: string | null;
+  contactEmailSource: string | null;
   observedAt: string | null;
 };
+
+const EMAIL = /^[^\s@<>"']+@[^\s@<>"']+\.[a-z]{2,}$/i;
+
+/** An address as stored: trimmed and lower-cased, or null when it isn't one. */
+export function publishedEmail(value: unknown): string | null {
+  if (typeof value !== "string") return null;
+  const email = value.trim().toLowerCase();
+  return email.length <= 254 && EMAIL.test(email) ? email : null;
+}
 
 export function channelOf(payload: unknown): StoredChannel | null {
   if (!isRecord(payload) || payload.kind !== "channel") return null;
@@ -140,6 +152,8 @@ export function channelOf(payload: unknown): StoredChannel | null {
       : [],
     url: safeHttpUrl(typeof payload.url === "string" ? payload.url : null),
     contactUrl: safeHttpUrl(typeof payload.contactUrl === "string" ? payload.contactUrl : null),
+    contactEmail: publishedEmail(payload.contactEmail),
+    contactEmailSource: typeof payload.contactEmailSource === "string" ? cleanText(payload.contactEmailSource, 80) : null,
     observedAt: typeof payload.observedAt === "string" ? payload.observedAt : null,
   };
 }

@@ -2,6 +2,7 @@
 
 import { businessPath } from "@/lib/business-path";
 import { revalidatePath } from "next/cache";
+import { getMessage } from "@cofounderai/module-discovery/lib/messages/queries";
 import { redirect } from "next/navigation";
 import {
   saveProspectEdits,
@@ -76,6 +77,9 @@ const DISCOVERY_TO_CRM_CHANNEL: Record<MessageChannel, RecordInteractionInput["c
   email: "email",
   whatsapp: "whatsapp",
   linkedin: "other",
+  // DISC-REACH-P0-01.1
+  instagram: "other",
+  facebook: "other",
 };
 
 async function prospectPath(businessId: string, productId: string, prospectId: string) {
@@ -451,6 +455,46 @@ export async function markMessageSentAction(
 ) {
   await markMessageSent(messageId);
   revalidatePath(await prospectPath(businessId, productId, prospectId));
+}
+
+/**
+ * DISC-REACH-P0-01.1: "Mark as sent" for a direct message the person sent themselves on its
+ * platform (Instagram, Facebook, LinkedIn, WhatsApp). One press: an unapproved draft is
+ * approved by the same press. WonderArk sent nothing; this records what the person did.
+ */
+export async function markDirectMessageSentAction(businessId: string, productId: string, prospectId: string, messageId: string) {
+  const message = await getMessage(messageId);
+  if (!message || message.prospect_id !== prospectId) throw new Error("Message not found.");
+  if (message.channel === "email") throw new Error("An email is sent with Send, not marked as sent.");
+  if (message.status === "draft") await approveMessage(messageId);
+  await markMessageSent(messageId);
+  revalidatePath(`${await businessPath(businessId)}/discovery/offerings/${productId}`, "layout");
+}
+
+/**
+ * DISC-REACH-P0-01.1: Send for an email draft whose prospect has no address yet. The person
+ * types the address beside Send: it is saved as a contact they provided, then the email goes
+ * through the same approve-and-send path as any other. A malformed address is refused
+ * before anything is saved.
+ */
+export async function sendToTypedAddressAction(
+  businessId: string,
+  productId: string,
+  workspaceId: string,
+  prospectId: string,
+  messageId: string,
+  _prevState: AiActionState,
+  formData: FormData,
+): Promise<AiActionState> {
+  return runAiAction(async () => {
+    const email = String(formData.get("toEmail") ?? "").trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) || email.length > 254) throw new Error("Enter a valid email address.");
+    const contact = await createContact(workspaceId, prospectId, { email });
+    await updateMessageContact(messageId, contact.id);
+    await approveMessage(messageId);
+    await sendMessage(messageId);
+    revalidatePath(await prospectPath(businessId, productId, prospectId));
+  });
 }
 
 /** Email-channel "Approve" (docs/prospects-pipeline-redesign-requirements.md R1) --

@@ -105,7 +105,7 @@ Once an offering is set up (described, and its ideal customer approved), it has 
 
 | Tab | What it shows |
 |---|---|
-| **To do** | The only list you work from, most urgent first: **Answer replies**, **Follow up with** (no reply and no activity for 7 days), **Send ready messages**, campaign steps you do by hand, then **New prospects to approve** and imported prospects to pick. Tap one to open it at that step. The tab shows how many are waiting. Empty means nothing needs you; **Find more prospects** searches for more. |
+| **To do** | The only list you work from, most urgent first: **Answer replies**, **Follow up with** (no reply and no activity for 7 days), **Send ready emails**, **Message on Instagram** (or another platform), **Add an email address**, campaign steps you do by hand, then **New prospects to approve** and imported prospects to pick. Tap one to open it at that step. The tab shows how many are waiting. Empty means nothing needs you; **Find more prospects** searches for more. |
 | **Prospects** | Everyone you approved and how far each has got: your groups first (the same as To do), then **To prepare**, **Waiting for a reply** and **Closed**. No buttons: you choose what to prepare on To do. On the **Companies** list, **Campaigns** below is the other way to reach them. |
 | **Results** | Performance, and discovery effectiveness once there are opportunities, with **Conversions** and **What people say** below. |
 
@@ -282,6 +282,26 @@ would stop every prospect (AI credits used up, your AI key refused or missing, t
 provider busy or down), it stops once and says why, with **Fix the AI key** when the key is
 the problem.
 
+**How each prospect is reached.** A message is written for the way the prospect can
+actually be reached, and To do groups them that way:
+
+- **Send ready emails** — there is an address. Open one, check it and press **Send**.
+- **Message on Instagram** (or Facebook, LinkedIn) — a channel found on that platform
+  with no email address gets a short direct message instead of an email. WonderArk never
+  sends on these platforms. Press **Copy and open Instagram**: the message is copied and
+  the channel's page opens in a new tab. Paste it into a message there and send it, then
+  press **Mark as sent**. Tap the name to edit the message first.
+- **Add an email address** — an email is written but there is nowhere to send it. Open
+  it and type the address in the **To** box beside **Send**: it is saved as a contact and
+  the email goes out in one step.
+
+A channel's enquiry address arrives with the search result when the channel itself
+published one; it is saved as the channel's contact, marked with where it was published.
+Before you approve a channel, its **Reach** line says how it can be reached: by email, by
+a message on its platform, or that no address was found. A channel that already had an
+email written before it could be sent appears under **Prepare prospects** again, to get a
+direct message written.
+
 **Send automatically** (off unless you turn it on, in **Setup** → **Sending**). With it on,
 the first email to each prospect you approve is sent as soon as it is written, through the
 same path as pressing **Send**: unsubscribed and suppressed addresses are never sent to,
@@ -293,7 +313,7 @@ Only an owner or admin can change it, and every change is recorded.
 
 **Prospects** lists everyone you approved, grouped by how far each has got. Your groups come
 first, in the same order as **To do**: **Answer replies**, **Follow up with**, **Send ready
-messages**. Then **To prepare** (not researched, scored or written to yet),
+emails**, direct messages to send, and emails with no address yet. Then **To prepare** (not researched, scored or written to yet),
 **Waiting for a reply** and **Closed**. Tap a prospect to open it at its step. A fit score
 shows once a prospect is scored, and a search box appears once the list is longer than ten.
 

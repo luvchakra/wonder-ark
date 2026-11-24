@@ -4,7 +4,8 @@ import { publish } from "@cofounderai/core/events/mutations";
 import { getBusinessIdForWorkspace, getProduct, getWorkspace } from "../tenancy/queries";
 import { backfillCustomerContactsForWonProspect, ensureProspectParty, markProspectPartyWon } from "./party-sync";
 import { cleanText, fieldSourcesFor } from "../data-sources/suggestions";
-import { channelProspectFields } from "../data-sources/channels";
+import { channelOf, channelProspectFields } from "../data-sources/channels";
+import { createContact } from "../contacts/mutations";
 import { WEB_SEARCH_SOURCE_ID } from "../data-sources/types";
 import { findDuplicateProspect } from "./duplicates";
 import type { Prospect, ProspectOutcome, ProspectStatus, ProspectSuggestion } from "./types";
@@ -424,6 +425,29 @@ export async function approveProspectSuggestionsWithProspects(
   }
 
   await linkPartiesForProspects(workspaceId, inserted);
+
+  // DISC-REACH-P0-01.2: an enquiry address the channel itself published arrives with the
+  // search result, so it becomes the channel's contact here, with where it was published.
+  // Best effort: a failure leaves the prospect without a contact, never fails the approval.
+  for (const [i, suggestion] of accepted.entries()) {
+    const prospect = inserted[i];
+    const channel = suggestion.kind === "channel" ? channelOf(suggestion.payload) : null;
+    if (!prospect || !channel?.contactEmail) continue;
+    try {
+      await createContact(
+        workspaceId,
+        prospect.id,
+        { email: channel.contactEmail, jobTitle: "Enquiries" },
+        {
+          emailStatus: null,
+          source: `Published by the channel${channel.contactEmailSource ? ` (${channel.contactEmailSource})` : ""}, via ${suggestion.source_name ?? suggestion.source ?? "a search"}`,
+          retrievedAt: channel.observedAt ?? pickedAt,
+        },
+      );
+    } catch (error) {
+      console.error("Could not save a channel's published address:", error instanceof Error ? error.message : error);
+    }
+  }
 
   const researchRows = accepted
     .map((suggestion, i) => ({ suggestion, prospect: inserted[i] }))

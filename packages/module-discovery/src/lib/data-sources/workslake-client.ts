@@ -162,6 +162,10 @@ export const ChannelItemSchema = z.object({
   language: nullableText,
   location: z.object({ text: nullableText, country: nullableText }),
   contactUrl: nullableText,
+  /** DISC-REACH-P0-01.2: an enquiry address the channel itself published, and where it was
+   * published ("channel description", "channel's website"). Absent from older gateways. */
+  contactEmail: nullableText.optional(),
+  contactEmailSource: nullableText.optional(),
   description: nullableText,
   source: GatewayItemSourceSchema,
   observedAt: text,
