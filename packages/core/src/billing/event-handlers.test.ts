@@ -1,8 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createFakeSupabase, type RecordedQuery } from "../test-support/fake-supabase";
 
-const { createAdminClient } = vi.hoisted(() => ({ createAdminClient: vi.fn() }));
+const { createAdminClient, mailer } = vi.hoisted(() => ({
+  createAdminClient: vi.fn(),
+  mailer: { sender: null as { fromEmail: string; fromName: string } | null, send: vi.fn() },
+}));
 vi.mock("../db/admin", () => ({ createAdminClient }));
+// EMAIL-SMTP-01: billing emails go through the platform's SMTP mailbox.
+vi.mock("../email/platform-mailer", () => ({
+  platformSender: async () => mailer.sender,
+  sendPlatformEmail: (...args: unknown[]) => mailer.send(...args),
+}));
 
 const { sendBillingEmail } = await import("./event-handlers");
 const { getEventHandlers } = await import("../events/registry");
@@ -35,27 +43,29 @@ describe("BILL-35 billing emails", () => {
     for (const type of BILLING_NOTIFICATION_TYPES) expect(getEventHandlers(type).length).toBeGreaterThan(0);
   });
 
-  it("does nothing when email isn't configured", async () => {
-    vi.stubEnv("RESEND_API_KEY", "");
-    const fetchMock = vi.fn();
-    vi.stubGlobal("fetch", fetchMock);
+  it("does nothing when the SMTP mailbox isn't set up", async () => {
+    mailer.sender = null;
     expect(await sendBillingEmail(event("billing.payment_failed"))).toBe("skipped");
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(mailer.send).not.toHaveBeenCalled();
   });
 
   it("emails the account's owners and admins with a link to the business's billing page", async () => {
-    vi.stubEnv("RESEND_API_KEY", "re_test");
-    vi.stubEnv("RESEND_FROM_EMAIL", "billing@example.com");
+    mailer.sender = { fromEmail: "billing@example.com", fromName: "WonderArk" };
+    mailer.send.mockResolvedValue({ status: "sent", messageId: "<m1>" });
     wire();
-    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
-    vi.stubGlobal("fetch", fetchMock);
     expect(await sendBillingEmail(event("billing.payment_failed", { amount: "₹2,999.00" }))).toBe("sent");
-    const [url, init] = fetchMock.mock.calls[0]!;
-    expect(url).toBe("https://api.resend.com/emails");
-    const body = JSON.parse(init.body);
-    expect(body.to).toEqual(["owner@example.com"]);
-    expect(body.subject).toBe("Payment needs attention");
-    expect(body.text).toContain("/acme/billing");
-    expect(init.headers["Idempotency-Key"]).toBe("billing-evt-1");
+    const email = mailer.send.mock.calls[0]![0];
+    expect(email.to).toEqual(["owner@example.com"]);
+    expect(email.subject).toBe("Payment needs attention");
+    expect(email.text).toContain("/acme/billing");
+  });
+
+  it("throws for a retry only when the email surely didn't go, never on an unknown outcome", async () => {
+    mailer.sender = { fromEmail: "billing@example.com", fromName: "WonderArk" };
+    wire();
+    mailer.send.mockResolvedValueOnce({ status: "failed", reason: "The mail server refused the sign-in." });
+    await expect(sendBillingEmail(event("billing.payment_failed"))).rejects.toThrow("refused the sign-in");
+    mailer.send.mockResolvedValueOnce({ status: "unknown", reason: "Outcome unknown" });
+    await expect(sendBillingEmail(event("billing.payment_failed"))).resolves.toBe("sent");
   });
 });

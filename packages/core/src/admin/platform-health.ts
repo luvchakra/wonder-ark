@@ -1,4 +1,5 @@
 import { createAdminClient } from "../db/admin";
+import { platformSender } from "../email/platform-mailer";
 import { requireSuperadmin } from "../rbac/platform-admin";
 import { platformKey } from "./platform-key-store";
 
@@ -67,7 +68,7 @@ export type HealthSnapshot = {
     last24h: WindowCount;
     last7d: WindowCount;
   };
-  email: { sendConfigured: boolean; statusWebhookConfigured: boolean; failed24h: number; failed7d: number };
+  email: { sendConfigured: boolean; failed24h: number; failed7d: number };
   whatsapp: { webhookConfigured: boolean; connections: Record<string, number>; errors24h: number; errors7d: number };
   storage: { ok: boolean; missing: string[]; error: string | null };
   queues: QueueRow[];
@@ -282,10 +283,9 @@ export async function collectHealthSnapshot(): Promise<HealthSnapshot> {
   const dayAgo = Date.now() - DAY;
 
   // PLATFORM-P1-14.1: "configured" means on the platform's Keys page or in the deployment.
-  const [resendKey, resendFrom, resendWebhook, whatsappSecret, whatsappToken] = await Promise.all([
-    platformKey("RESEND_API_KEY"),
-    platformKey("RESEND_FROM_EMAIL"),
-    platformKey("RESEND_WEBHOOK_SECRET"),
+  // EMAIL-SMTP-01: email is configured when the platform's SMTP mailbox is.
+  const [emailSender, whatsappSecret, whatsappToken] = await Promise.all([
+    platformSender(),
     platformKey("CRM_WHATSAPP_APP_SECRET"),
     platformKey("CRM_WHATSAPP_WEBHOOK_VERIFY_TOKEN"),
   ]);
@@ -301,8 +301,7 @@ export async function collectHealthSnapshot(): Promise<HealthSnapshot> {
       last7d: ai7,
     },
     email: {
-      sendConfigured: Boolean(resendKey && resendFrom),
-      statusWebhookConfigured: Boolean(resendWebhook),
+      sendConfigured: emailSender !== null,
       failed24h: emailFailed24,
       failed7d: emailFailed7,
     },
@@ -339,7 +338,7 @@ function emptySnapshot(database: HealthSnapshot["database"]): HealthSnapshot {
     checkedAt: new Date().toISOString(),
     database,
     ai: { enabledProviders: 0, configuredProviders: 0, platformKeyEnv: false, last24h: none, last7d: none },
-    email: { sendConfigured: false, statusWebhookConfigured: false, failed24h: 0, failed7d: 0 },
+    email: { sendConfigured: false, failed24h: 0, failed7d: 0 },
     whatsapp: { webhookConfigured: false, connections: {}, errors24h: 0, errors7d: 0 },
     storage: { ok: false, missing: [], error: "Not checked: the database is unreachable." },
     queues: [],
@@ -391,8 +390,8 @@ export function deriveComponents(s: HealthSnapshot): HealthComponent[] {
     label: "Email",
     status: !s.email.sendConfigured ? "needs_setup" : "ok",
     detail: !s.email.sendConfigured
-      ? "RESEND_API_KEY / RESEND_FROM_EMAIL not set"
-      : `${s.email.failed24h} outreach emails bounced or failed in 24h${s.email.statusWebhookConfigured ? "" : " (delivery status webhook not set)"}`,
+      ? "SMTP mailbox not set on Keys"
+      : `${s.email.failed24h} outreach emails bounced or failed in 24h`,
   });
 
   const waTotal = Object.values(s.whatsapp.connections).reduce((a, b) => a + b, 0);

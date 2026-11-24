@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { platformSender, sendPlatformEmail } from "@cofounderai/core/email/platform-mailer";
 import { createClient as createCoreClient } from "@cofounderai/core/db/server";
 import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render";
 import { requireModule } from "@cofounderai/core/licensing/queries";
@@ -165,13 +165,12 @@ async function resolveEventCustomerEmail(businessId: string, eventId: string): P
  * infrastructure decision (a new external dependency, API keys, per-message cost)
  * bigger than this one action justifies on its own, so it's deferred rather than
  * silently dropped; F-9 (automatic customer reminders, which also needs SMS) will need
- * the same provider decision. Reuses module-discovery's own Resend pattern exactly, same
- * as F-4's `sendEstimate`. Advances `scheduled -> en_route`; safe to call again (a
+ * the same provider decision. Sent through the platform's SMTP mailbox (EMAIL-SMTP-01),
+ * same as F-4's `sendEstimate`. Advances `scheduled -> en_route`; safe to call again (a
  * second notify just re-sends the email without erroring). */
 /** Best-effort side effect of `notifyOnTheWay()` below -- a failed/unsendable email
- * (no email on file, Resend not configured, or -- the common case on an unverified
- * Resend account -- its sandbox mode rejecting anything but the account owner's own
- * address) should never block the tech from actually being marked en route, which is
+ * (no email on file, the SMTP mailbox not set up, or the mail server refusing it)
+ * should never block the tech from actually being marked en route, which is
  * the button's own primary, always-expected effect. Same "swallow, don't block the real
  * action" reasoning as `tryAdvanceJobToScheduled()` above, just for an external side
  * effect instead of a DB one. */
@@ -183,19 +182,16 @@ async function tryNotifyCustomerOnTheWay(businessId: string, eventId: string): P
     const { data: business } = await core.from("businesses").select("name, website").eq("id", businessId).maybeSingle();
     const brandName = business?.name ?? "Your service provider";
 
-    const apiKey = await platformKey("RESEND_API_KEY");
-    const fromAddress = await platformKey("RESEND_FROM_EMAIL");
-    if (!apiKey || !fromAddress) return;
-
-    const resend = new Resend(apiKey);
-    const result = await resend.emails.send({
-      from: fromAddress,
+    // EMAIL-SMTP-01: the platform's SMTP mailbox (Platform admin → Keys).
+    const fromAddress = (await platformSender())?.fromEmail;
+    if (!fromAddress) return;
+    const result = await sendPlatformEmail({
       to: toEmail,
       subject: `${brandName} is on the way`,
       text: renderEmailText("Your technician is on the way."),
       html: renderEmailHtml({ brandName, body: "Your technician is **on the way**.", websiteUrl: business?.website ?? null, replyToEmail: fromAddress }),
     });
-    if (result.error) console.error(`notifyOnTheWay: could not send the notification email: ${result.error.message}`);
+    if (result.status !== "sent") console.error(`notifyOnTheWay: the notification email wasn't confirmed sent: ${result.reason}`);
   } catch (err) {
     console.error("notifyOnTheWay: could not send the notification email", err);
   }

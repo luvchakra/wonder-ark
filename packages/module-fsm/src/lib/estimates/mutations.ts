@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { EMAIL_NOT_SET_UP, platformSender, sendPlatformEmail } from "@cofounderai/core/email/platform-mailer";
 import { createClient as createCoreClient } from "@cofounderai/core/db/server";
 import { createAdminClient as createCoreAdminClient } from "@cofounderai/core/db/admin";
 import { aggregateGst, computeLineGst, resolveStateCode } from "@cofounderai/core/lib/gst";
@@ -274,10 +274,10 @@ export async function sendEstimate(businessId: string, opportunityId: string, es
   const { data: business } = await core.from("businesses").select("name, website").eq("id", businessId).maybeSingle();
   const brandName = business?.name ?? "Your service provider";
 
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
-  if (!apiKey || !fromAddress) {
-    throw new Error("Email sending isn't configured yet -- set RESEND_API_KEY and RESEND_FROM_EMAIL.");
+  // EMAIL-SMTP-01: the platform's SMTP mailbox (Platform admin → Keys).
+  const fromAddress = (await platformSender())?.fromEmail;
+  if (!fromAddress) {
+    throw new Error(EMAIL_NOT_SET_UP);
   }
 
   const rawToken = generatePortalToken();
@@ -295,9 +295,7 @@ export async function sendEstimate(businessId: string, opportunityId: string, es
   if (tokenError) throw tokenError;
 
   const publicUrl = `${SITE_URL}/p/e/${rawToken}`;
-  const resend = new Resend(apiKey);
-  const result = await resend.emails.send({
-    from: fromAddress,
+  const result = await sendPlatformEmail({
     to: toEmail,
     subject: `Estimate from ${brandName}`,
     text: renderEmailText(`Your estimate is ready to review.\n\n${publicUrl}`),
@@ -308,7 +306,7 @@ export async function sendEstimate(businessId: string, opportunityId: string, es
       replyToEmail: fromAddress,
     }),
   });
-  if (result.error) throw new Error(`Could not send the estimate email: ${result.error.message}`);
+  if (result.status !== "sent") throw new Error(`Could not send the estimate email: ${result.reason}`);
 
   if (doc.status === "draft") {
     await core.from("documents").update({ status: "sent" }).eq("id", estimateId);

@@ -1,13 +1,13 @@
-import { Resend } from "resend";
+import { EMAIL_NOT_SET_UP, platformSender, sendPlatformEmail } from "@cofounderai/core/email/platform-mailer";
 import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render";
 import { prepareOutreachEmail } from "@cofounderai/core/privacy/suppression";
-import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 /**
- * FND-11 — the investor-outreach delivery adapter (§27.3). Uses the same provider and
- * email rendering as Discovery's prospect outreach (lib/messages/send.ts) without
- * reshaping that stable code around investors. It reports only what the provider said:
- * success carries the provider's message id, anything else is a failure with its reason.
+ * FND-11 — the investor-outreach delivery adapter (§27.3). Sent through the platform's SMTP
+ * mailbox (EMAIL-SMTP-01), with the same email rendering as Discovery's prospect outreach.
+ * It reports only what the mail server said: success carries its message id, anything
+ * else is a failure with its reason (an unknown outcome included: it may have gone, and is
+ * never retried on its own).
  */
 export type DeliveryResult = { ok: true; provider: string; messageId: string } | { ok: false; provider: string; reason: string };
 
@@ -19,19 +19,17 @@ export async function deliverInvestorEmail(input: {
   brandName: string;
   websiteUrl: string | null;
 }): Promise<DeliveryResult> {
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const from = await platformKey("RESEND_FROM_EMAIL");
-  if (!apiKey || !from) {
-    return { ok: false, provider: "resend", reason: "Email sending isn't configured yet (RESEND_API_KEY and RESEND_FROM_EMAIL)." };
+  // EMAIL-SMTP-01: the platform's SMTP mailbox (Platform admin → Keys).
+  const from = (await platformSender())?.fromEmail;
+  if (!from) {
+    return { ok: false, provider: "smtp", reason: EMAIL_NOT_SET_UP };
   }
   // PRIV-1: an investor who opted out of this business's email isn't emailed again.
   const compliance = await prepareOutreachEmail(input.businessId, input.to);
   if (compliance.suppressed) {
-    return { ok: false, provider: "resend", reason: "This investor unsubscribed from your emails, so it wasn't sent." };
+    return { ok: false, provider: "smtp", reason: "This investor unsubscribed from your emails, so it wasn't sent." };
   }
-  const resend = new Resend(apiKey);
-  const result = await resend.emails.send({
-    from,
+  const result = await sendPlatformEmail({
     to: input.to,
     subject: input.subject,
     headers: compliance.headers,
@@ -44,8 +42,6 @@ export async function deliverInvestorEmail(input: {
       unsubscribeUrl: compliance.unsubscribeUrl,
     }),
   });
-  if (result.error || !result.data?.id) {
-    return { ok: false, provider: "resend", reason: result.error?.message ?? "The email provider did not confirm the send." };
-  }
-  return { ok: true, provider: "resend", messageId: result.data.id };
+  if (result.status !== "sent") return { ok: false, provider: "smtp", reason: result.reason };
+  return { ok: true, provider: "smtp", messageId: result.messageId ?? "" };
 }

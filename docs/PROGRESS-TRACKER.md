@@ -264,7 +264,7 @@ Source: [`docs/plan/09-PLATFORM-ADMIN-PORTAL-BACKLOG.md`](./plan/09-PLATFORM-ADM
 
 | ID | Story | Status | Evidence / note |
 |---|---|---|---|
-| `PLATFORM-P0-09.1` | Internal AI Provider Registry | ✅ Done | `apps/web/app/platform/(protected)/ai-providers/actions.ts` +11 |
+| `PLATFORM-P0-09.1` | Internal AI Provider Registry | ✅ Done | `apps/web/app/platform/(protected)/ai-providers/actions.ts` +10 |
 | `PLATFORM-P0-09.2` | Secure API Key Storage | ✅ Done | `apps/web/app/platform/(protected)/ai-providers/actions.ts` +11 |
 | `PLATFORM-P0-09.3` | Provider Routing | ✅ Done | `apps/web/app/platform/(protected)/ai-feature-policies/page.tsx` +11 |
 | `PLATFORM-P0-09.4` | AI Feature Policies | ✅ Done | `apps/web/app/platform/(protected)/ai-feature-policies/actions.ts` +8 |
@@ -1334,10 +1334,10 @@ Source: [`docs/plan/19-DISCOVERY-OUTREACH-CAMPAIGNS.md`](./plan/19-DISCOVERY-OUT
 | `DISC-CAMP-P0-02.1` | Enrolment from the audience filter, with reasons for those left out | ✅ Done | `packages/module-discovery/src/lib/campaigns/audience.test.ts` +4 |
 | `DISC-CAMP-P0-02.2` | Tick | ✅ Done | `packages/core/src/privacy/suppression.ts` +3 |
 | `DISC-CAMP-P0-02.3` | sendMessage compare-and-set, audit entry, provider idempotency key | ✅ Done | `packages/module-discovery/src/lib/messages/send.test.ts` +3 |
-| `DISC-CAMP-P0-02.4` | Sender mailbox | ✅ Done | `packages/module-discovery/src/lib/campaigns/host-guard.test.ts` +10 |
+| `DISC-CAMP-P0-02.4` | Sender mailbox | ✅ Done | `packages/core/src/email/host-guard.ts` +10 |
 | `DISC-CAMP-P0-03.1` | Write messages per step and line of work; merge-field renderer; edit and provenance labels | ✅ Done | `packages/core/src/ai/operation-registry.ts` +5 |
 | `DISC-CAMP-P0-03.2` | Optional personal opening line, validated and metered | ✅ Done | `packages/core/src/ai/operation-registry.ts` +12 |
-| `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ✅ Done | `packages/module-discovery/src/exports/customer-acquisition/queries.ts` +13 |
+| `DISC-CAMP-P0-04.1` | Stops on reply, bounce, complaint, unsubscribe, outcome; suppression rows; reading the mailbox for replies and bounces | ✅ Done | `packages/module-discovery/src/exports/customer-acquisition/queries.ts` +12 |
 | `DISC-CAMP-P0-04.2` | Reply matched to the right workspace; redelivery safe; draft answer for interested replies | ✅ Done | `apps/web/app/api/webhooks/email-inbound/route.ts` +3 |
 | `DISC-CAMP-P0-04.3` | Automatic pause on bounce or complaint rate | ✅ Done | `packages/module-discovery/src/lib/campaigns/tick.ts` |
 | `DISC-CAMP-P0-05.1` | Campaigns page, new campaign, Launch dialog, pause and resume | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/campaigns/[campaignId]/page.tsx` +7 |

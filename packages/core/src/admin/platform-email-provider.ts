@@ -18,14 +18,10 @@ import { getPlatformBranding } from "./platform-branding";
  *    through `platform.branding`'s own draft/publish workflow (`/platform/branding`,
  *    PLATFORM-P0-03.5) -- this file has no `emailFromName` write path, deliberately, so
  *    there is never a second place that writes it.
- * 2. **This is configuration only -- no real email ever routes through it.** Real outbound
- *    email already exists in this codebase (`resend`, called directly from
- *    `module-discovery`/`module-fsm`/`module-gst`, all reading `RESEND_API_KEY`/
- *    `RESEND_FROM_EMAIL` env vars) and is entirely untouched by this file. See the
- *    migration's own docstring for the full list of call sites and why wiring any of them
- *    to this table is out of this story's scope (the same "config registry now, real
- *    wiring is a later, separate story" split PLATFORM-P0-09.1 already established for AI
- *    providers).
+ * 2. **This is configuration only -- no email routes through it.** Every email the
+ *    platform sends goes through the SMTP mailbox set on the Keys page (EMAIL-SMTP-01,
+ *    `email/platform-mailer.ts`, owner 2026-11-24: GoDaddy over SMTP; Resend is not used
+ *    anywhere). This table only records the provider name and reply-to shown here.
  */
 
 export type EmailProviderConfig = {

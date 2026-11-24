@@ -6,7 +6,7 @@ import { PLATFORM_KEYS, type PlatformKeyName } from "./platform-key-registry";
  * PLATFORM-P1-14.1 ("Platform Keys"): how the running application reads one of the
  * platform's own keys or settings.
  *
- * `platformKey("RESEND_API_KEY")` returns the value saved on the Platform Admin portal's
+ * `platformKey("SMTP_HOST")` returns the value saved on the Platform Admin portal's
  * Keys page, or else the deployment's environment variable of the same name, or undefined.
  * The saved value wins for the same reason the AI Providers page's key wins over
  * `PLATFORM_AI_API_KEY` (`ai/platform-credential.ts`): it is the more deliberate act, and it

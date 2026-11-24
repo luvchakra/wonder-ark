@@ -25,7 +25,6 @@ vi.mock("@cofounderai/core/privacy/suppression", () => ({ recordUnsubscribe: h.r
 vi.mock("../tenancy/queries", () => ({ getBusinessIdForWorkspace: h.getBusinessIdForWorkspace }));
 
 const { ingestInboundEmail } = await import("../conversations/ingest-inbound-email");
-const { ingestSendStatus } = await import("../messages/ingest-send-status");
 
 const ADDRESS = "buyer@shared.example";
 const reply = { from: "Buyer@Shared.example ", subject: "Re: An idea", text: "Tell me more" };
@@ -149,55 +148,5 @@ describe("a reply and the opt-out list", () => {
     expect(await ingestInboundEmail(reply)).toMatchObject({ matched: true });
     expect(db.rows("outreach_enrollments")[0]).toMatchObject({ status: "replied" });
     expect(h.recordUnsubscribe).not.toHaveBeenCalled();
-  });
-});
-
-describe("a bounce or a complaint", () => {
-  const sent = () => ({
-    contacts: [contact("k1", "w1", "p1")],
-    messages: [outbound("m1", "w1", "p1", "k1", "2026-11-10T00:00:00Z", { provider_message_id: "prov-1" })],
-    outreach_enrollments: [enrollment("e1", "w1", "p1")],
-    outreach_sends: [{ id: "s1", message_id: "m1", workspace_id: "w1", status: "sent", bounced_at: null }],
-  });
-
-  it.each([
-    ["bounced", "bounce", "The email bounced"],
-    ["complained", "complaint", "Reported the email as unwanted"],
-  ] as const)("%s: marks the send, stops the enrollment and suppresses the address", async (status, reason, stopReason) => {
-    setup(sent());
-
-    const result = await ingestSendStatus({ providerMessageId: "prov-1", status });
-
-    expect(result.matched).toBe(true);
-    expect(db.rows("messages")[0]).toMatchObject({ status: "failed" });
-    expect(db.rows("outreach_sends")[0]!.bounced_at).toEqual(expect.any(String));
-    expect(db.rows("outreach_enrollments")[0]).toMatchObject({ status: "stopped", stop_reason: stopReason });
-    expect(h.recordUnsubscribe).toHaveBeenCalledWith("business-of-w1", emailHash(ADDRESS), reason);
-  });
-
-  it("is safe to deliver twice", async () => {
-    setup(sent());
-    await ingestSendStatus({ providerMessageId: "prov-1", status: "bounced" });
-    const first = db.rows("outreach_sends")[0]!.bounced_at;
-    await ingestSendStatus({ providerMessageId: "prov-1", status: "bounced" });
-    expect(db.rows("outreach_sends")[0]!.bounced_at).toBe(first);
-    expect(db.rows("outreach_enrollments")[0]).toMatchObject({ status: "stopped", stop_reason: "The email bounced" });
-  });
-
-  it("does not suppress an address, or stop anything, for a plain failure", async () => {
-    setup(sent());
-    await ingestSendStatus({ providerMessageId: "prov-1", status: "failed", reason: "rate limited" });
-    expect(h.recordUnsubscribe).not.toHaveBeenCalled();
-    expect(db.rows("outreach_enrollments")[0]).toMatchObject({ status: "active" });
-    expect(db.rows("outreach_sends")[0]).toMatchObject({ bounced_at: null });
-  });
-
-  it("suppresses the general company email when that is where the message went", async () => {
-    setup({
-      prospects: [{ id: "p1", workspace_id: "w1", company_email: "info@acme.example" }],
-      messages: [outbound("m1", "w1", "p1", null, "2026-11-10T00:00:00Z", { provider_message_id: "prov-1" })],
-    });
-    await ingestSendStatus({ providerMessageId: "prov-1", status: "bounced" });
-    expect(h.recordUnsubscribe).toHaveBeenCalledWith("business-of-w1", emailHash("info@acme.example"), "bounce");
   });
 });

@@ -5,9 +5,8 @@ import { prepareOutreachEmail } from "@cofounderai/core/privacy/suppression";
 import { SITE_URL } from "@cofounderai/core/site";
 import { loadMailboxForSending } from "../campaigns/mailbox";
 import { sendViaSmtp, type SendResult, type SmtpDeps } from "../campaigns/smtp";
-import { sendViaPlatform } from "../messages/send";
+import { EMAIL_NOT_SET_UP, platformSender, sendPlatformEmail } from "@cofounderai/core/email/platform-mailer";
 import { messagingRefusal } from "./rules";
-import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
 /**
  * DISC-CONS-P0-03.3 / 05.2: every email to a person on an offering's list goes through
@@ -90,15 +89,13 @@ export async function sendLeadEmail(input: {
   const unsubscribeUrl = unsubscribeUrlFor(lead.lead_token);
   const headers = { "List-Unsubscribe": `<${unsubscribeUrl}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" };
   const mailbox = await loadMailboxForSending(lead.workspace_id);
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const fromAddress = mailbox?.fromEmail ?? (await platformKey("RESEND_FROM_EMAIL"));
-  if (!mailbox && (!apiKey || !fromAddress)) {
-    return { status: "failed", message: "Needs setup: email sending isn't configured yet." };
-  }
+  // EMAIL-SMTP-01: the workspace's own mailbox, otherwise the platform's SMTP mailbox.
+  const fromAddress = mailbox?.fromEmail ?? (await platformSender())?.fromEmail;
+  if (!fromAddress) return { status: "failed", message: `Needs setup: ${EMAIL_NOT_SET_UP}` };
 
   const brandName = context.businessName;
   const text = renderEmailText(input.body, unsubscribeUrl);
-  const html = renderEmailHtml({ brandName, body: input.body, websiteUrl: context.website, replyToEmail: fromAddress!, unsubscribeUrl });
+  const html = renderEmailHtml({ brandName, body: input.body, websiteUrl: context.website, replyToEmail: fromAddress, unsubscribeUrl });
 
   let result: SendResult;
   if (mailbox) {
@@ -108,7 +105,7 @@ export async function sendLeadEmail(input: {
       input.smtp,
     );
   } else {
-    result = await sendViaPlatform(apiKey!, input.idempotencyKey, { from: fromAddress, to: lead.email, subject: input.subject, headers, text, html });
+    result = await sendPlatformEmail({ to: lead.email, subject: input.subject, headers, text, html }, input.smtp);
   }
 
   const sent = result.status === "sent";

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { updateEmailProviderConfigSchema } from "./platform-email-provider";
 
 const validInput = {
-  provider: "Resend",
+  provider: "GoDaddy (SMTP)",
   fromEmail: "notifications@wonderark.com",
   replyTo: "support@wonderark.com",
   reason: "Recording our real ESP after the initial platform launch review.",

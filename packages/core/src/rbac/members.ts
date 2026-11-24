@@ -1,11 +1,11 @@
 import { createHash, randomBytes } from "node:crypto";
+import { platformSender, sendPlatformEmail } from "../email/platform-mailer";
 import { z } from "zod";
 import { createAdminClient } from "../db/admin";
 import { createClient } from "../db/server";
 import { renderEmailHtml, renderEmailText } from "../email/render";
 import { BRAND_NAME } from "../lib/brand";
 import { SITE_URL } from "../site";
-import { platformKey } from "../admin/platform-key-store";
 
 /**
  * RBAC-07..RBAC-17, RBAC-25..RBAC-30 -- people and roles in a business.
@@ -270,9 +270,9 @@ export async function inviteMember(input: z.input<typeof inviteSchema>): Promise
 }
 
 async function sendInvitationEmail(businessId: string, email: string, roleId: string, token: string, message: string | null): Promise<boolean> {
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const from = await platformKey("RESEND_FROM_EMAIL");
-  if (!apiKey || !from) return false;
+  // EMAIL-SMTP-01: through the platform's SMTP mailbox.
+  const sender = await platformSender();
+  if (!sender) return false;
   const admin = createAdminClient({ schema: "core" });
   const [{ data: business }, { data: role }] = await Promise.all([
     admin.from("businesses").select("name").eq("id", businessId).single(),
@@ -288,18 +288,13 @@ async function sendInvitationEmail(businessId: string, email: string, roleId: st
     .filter(Boolean)
     .join("\n\n");
   try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        from,
-        to: [email],
-        subject: `You're invited to ${business?.name ?? BRAND_NAME}`,
-        html: renderEmailHtml({ brandName: BRAND_NAME, body, websiteUrl: SITE_URL, replyToEmail: from, platform: true }),
-        text: renderEmailText(body),
-      }),
+    const result = await sendPlatformEmail({
+      to: email,
+      subject: `You're invited to ${business?.name ?? BRAND_NAME}`,
+      html: renderEmailHtml({ brandName: BRAND_NAME, body, websiteUrl: SITE_URL, replyToEmail: sender.fromEmail, platform: true }),
+      text: renderEmailText(body),
     });
-    return response.ok;
+    return result.status === "sent";
   } catch {
     return false;
   }

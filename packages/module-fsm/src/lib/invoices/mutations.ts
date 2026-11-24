@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { EMAIL_NOT_SET_UP, platformSender, sendPlatformEmail } from "@cofounderai/core/email/platform-mailer";
 import { createClient as createCoreClient } from "@cofounderai/core/db/server";
 import { createAdminClient as createCoreAdminClient } from "@cofounderai/core/db/admin";
 import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render";
@@ -148,9 +148,9 @@ export async function sendInvoice(businessId: string, jobId: string, invoiceId: 
   const { data: business } = await core.from("businesses").select("name, website").eq("id", businessId).maybeSingle();
   const brandName = business?.name ?? "Your service provider";
 
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
-  if (!apiKey || !fromAddress) throw new Error("Email sending isn't configured yet -- set RESEND_API_KEY and RESEND_FROM_EMAIL.");
+  // EMAIL-SMTP-01: the platform's SMTP mailbox (Platform admin → Keys).
+  const fromAddress = (await platformSender())?.fromEmail;
+  if (!fromAddress) throw new Error(EMAIL_NOT_SET_UP);
 
   const rawToken = generatePortalToken();
   const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString();
@@ -162,15 +162,13 @@ export async function sendInvoice(businessId: string, jobId: string, invoiceId: 
   if (tokenError) throw tokenError;
 
   const publicUrl = `${SITE_URL}/p/i/${rawToken}`;
-  const resend = new Resend(apiKey);
-  const result = await resend.emails.send({
-    from: fromAddress,
+  const result = await sendPlatformEmail({
     to: toEmail,
     subject: `Invoice from ${brandName}`,
     text: renderEmailText(`Your invoice is ready.\n\n${publicUrl}`),
     html: renderEmailHtml({ brandName, body: `Your invoice is ready. **View it at the link below:**\n\n${publicUrl}`, websiteUrl: business?.website ?? null, replyToEmail: fromAddress }),
   });
-  if (result.error) throw new Error(`Could not send the invoice email: ${result.error.message}`);
+  if (result.status !== "sent") throw new Error(`Could not send the invoice email: ${result.reason}`);
 
   if (invoice.status === "issued") {
     const { error: sentError } = await core.from("documents").update({ status: "sent" }).eq("id", invoiceId);

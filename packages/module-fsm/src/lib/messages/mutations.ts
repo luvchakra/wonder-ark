@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { EMAIL_NOT_SET_UP, platformSender, sendPlatformEmail } from "@cofounderai/core/email/platform-mailer";
 import { createClient as createCoreClient } from "@cofounderai/core/db/server";
 import { createAdminClient as createCoreAdminClient } from "@cofounderai/core/db/admin";
 import { getOrCreateThread, postMessage } from "@cofounderai/core/messages/mutations";
@@ -59,9 +59,9 @@ async function resolveJobParticipantEmails(businessId: string, jobId: string): P
 }
 
 async function sendParticipantNotification(businessId: string, jobId: string, message: Message): Promise<void> {
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
-  if (!apiKey || !fromAddress) return; // same documented gap every other Resend-sending mutation in this module has
+  // EMAIL-SMTP-01: the platform's SMTP mailbox (Platform admin → Keys).
+  const fromAddress = (await platformSender())?.fromEmail;
+  if (!fromAddress) return; // no mailbox set up: nothing to send
 
   const emails = await resolveJobParticipantEmails(businessId, jobId);
   if (emails.length === 0) return;
@@ -69,11 +69,7 @@ async function sendParticipantNotification(businessId: string, jobId: string, me
   const core = createCoreAdminClient({ schema: "core" });
   const { data: business } = await core.from("businesses").select("name, website").eq("id", businessId).maybeSingle();
   const brandName = business?.name ?? "Your business";
-
-  const resend = new Resend(apiKey);
-  await resend.emails
-    .send({
-      from: fromAddress,
+  await sendPlatformEmail({
       to: emails,
       subject: "New customer reply",
       text: renderEmailText(`A customer replied on a job:\n\n${message.body}`),
@@ -89,9 +85,9 @@ export async function sendJobMessage(businessId: string, jobId: string, body: st
   const trimmed = body.trim();
   if (!trimmed) throw new Error("A message body is required.");
 
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
-  if (!apiKey || !fromAddress) throw new Error("Email sending isn't configured yet -- set RESEND_API_KEY and RESEND_FROM_EMAIL.");
+  // EMAIL-SMTP-01: the platform's SMTP mailbox (Platform admin → Keys).
+  const fromAddress = (await platformSender())?.fromEmail;
+  if (!fromAddress) throw new Error(EMAIL_NOT_SET_UP);
 
   const toEmail = await resolveJobCustomerEmail(businessId, jobId);
   const thread = await getOrCreateThread(businessId, "job", jobId);
@@ -102,16 +98,13 @@ export async function sendJobMessage(businessId: string, jobId: string, body: st
   } = await core.auth.getUser();
   const { data: business } = await core.from("businesses").select("name, website").eq("id", businessId).maybeSingle();
   const brandName = business?.name ?? "Your service provider";
-
-  const resend = new Resend(apiKey);
-  const result = await resend.emails.send({
-    from: fromAddress,
+  const result = await sendPlatformEmail({
     to: toEmail,
     subject: subject?.trim() || `Message from ${brandName}`,
     text: renderEmailText(trimmed),
     html: renderEmailHtml({ brandName, body: trimmed, websiteUrl: business?.website ?? null, replyToEmail: fromAddress }),
   });
-  if (result.error) throw new Error(`Could not send the message: ${result.error.message}`);
+  if (result.status !== "sent") throw new Error(`Could not send the message: ${result.reason}`);
 
   await postMessage({
     businessId,

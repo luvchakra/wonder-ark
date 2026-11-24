@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { platformSender, sendPlatformEmail } from "@cofounderai/core/email/platform-mailer";
 import { createAdminClient as createCoreAdmin } from "@cofounderai/core/db/admin";
 import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render";
 import { createAdminClient as createGstAdmin } from "../../db/admin";
@@ -161,23 +161,20 @@ async function sendReminderEmail(
   obligation: { returnType: GstReturnType; period: Period; dueDate: string },
   leadDays: number,
 ): Promise<boolean> {
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
-  // Same documented gap every other Resend-sending mutation in this platform has --
-  // nothing to send without it, and a cron run shouldn't throw over missing config.
-  if (!apiKey || !fromAddress) return false;
+  // EMAIL-SMTP-01: the platform's SMTP mailbox (Platform admin → Keys).
+  const fromAddress = (await platformSender())?.fromEmail;
+  // Nothing to send without the mailbox, and a cron run shouldn't throw over missing config.
+  if (!fromAddress) return false;
 
   const returnLabel = obligation.returnType.toUpperCase();
   const daysLabel = leadDays === 0 ? "today" : `in ${leadDays} day${leadDays === 1 ? "" : "s"}`;
   const body = `Your **${returnLabel}** return for the period ${obligation.period.periodStart} to ${obligation.period.periodEnd} is due **${daysLabel}** (${obligation.dueDate}).`;
-
-  const resend = new Resend(apiKey);
-  const result = await resend.emails.send({
-    from: fromAddress,
+  const result = await sendPlatformEmail({
     to: toEmails,
     subject: `${returnLabel} filing due ${daysLabel} (${obligation.dueDate})`,
     text: renderEmailText(body),
     html: renderEmailHtml({ brandName, body, websiteUrl: website, replyToEmail: fromAddress }),
   });
-  return !result.error;
+  // An unknown outcome is marked as sent, so the next run never sends a second reminder.
+  return result.status !== "failed";
 }

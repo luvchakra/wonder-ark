@@ -13,7 +13,7 @@ function healthy(overrides: Partial<HealthSnapshot> = {}): HealthSnapshot {
     checkedAt: NOW,
     database: { ok: true, latencyMs: 12, error: null },
     ai: { enabledProviders: 1, configuredProviders: 1, platformKeyEnv: false, last24h: { failed: 0, total: 40 }, last7d: { failed: 1, total: 300 } },
-    email: { sendConfigured: true, statusWebhookConfigured: true, failed24h: 0, failed7d: 0 },
+    email: { sendConfigured: true, failed24h: 0, failed7d: 0 },
     whatsapp: { webhookConfigured: true, connections: { connected: 2 }, errors24h: 0, errors7d: 0 },
     storage: { ok: true, missing: [], error: null },
     queues: [queue("domain_events"), queue("billing_events"), queue("export_jobs", { retrying: null })],

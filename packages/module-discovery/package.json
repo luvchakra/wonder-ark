@@ -31,7 +31,6 @@
     "nodemailer": "^10.5.0",
     "pdf-parse": "^1.1.4",
     "react": "19.2.8",
-    "resend": "^6.26.0",
     "zod": "^4.5.4"
   },
   "peerDependencies": {

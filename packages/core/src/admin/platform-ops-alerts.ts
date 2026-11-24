@@ -1,10 +1,10 @@
 import { createAdminClient } from "../db/admin";
+import { EMAIL_NOT_SET_UP, platformSender, sendPlatformEmail } from "../email/platform-mailer";
 import { requireSuperadmin } from "../rbac/platform-admin";
 import { renderEmailHtml, renderEmailText } from "../email/render";
 import { BRAND_NAME } from "../lib/brand";
 import { SITE_URL } from "../site";
 import { collectHealthSnapshot, evaluateAlerts, type OpsAlert } from "./platform-health";
-import { platformKey } from "./platform-key-store";
 
 /**
  * PLATFORM-P1-07.4 ("Operational Alerts"): runs the health checks, records each alert
@@ -40,24 +40,19 @@ async function operatorEmails(): Promise<string[]> {
 
 /** Sends one email per opened episode. Returns null when sent, otherwise why it wasn't. */
 async function emailOperators(alert: OpenedAlert, to: string[]): Promise<string | null> {
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const from = await platformKey("RESEND_FROM_EMAIL");
-  if (!apiKey || !from) return "Email isn't configured (RESEND_API_KEY / RESEND_FROM_EMAIL).";
+  // EMAIL-SMTP-01: through the platform's SMTP mailbox.
+  const sender = await platformSender();
+  if (!sender) return EMAIL_NOT_SET_UP;
   if (to.length === 0) return "No platform operator has an email address.";
 
   const body = `${alert.message}\n\nSee the details on the system health page: ${SITE_URL}/platform/health`;
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": `ops-alert-${alert.id}` },
-    body: JSON.stringify({
-      from,
-      to,
-      subject: `[${alert.severity === "critical" ? "Critical" : "Warning"}] ${alert.message}`,
-      html: renderEmailHtml({ brandName: BRAND_NAME, body, websiteUrl: SITE_URL, replyToEmail: from, platform: true }),
-      text: renderEmailText(body),
-    }),
+  const result = await sendPlatformEmail({
+    to,
+    subject: `[${alert.severity === "critical" ? "Critical" : "Warning"}] ${alert.message}`,
+    html: renderEmailHtml({ brandName: BRAND_NAME, body, websiteUrl: SITE_URL, replyToEmail: sender.fromEmail, platform: true }),
+    text: renderEmailText(body),
   });
-  return response.ok ? null : `Email provider answered ${response.status}.`;
+  return result.status === "sent" ? null : result.reason;
 }
 
 export async function runOpsAlertCheck(): Promise<OpsAlertRunResult> {

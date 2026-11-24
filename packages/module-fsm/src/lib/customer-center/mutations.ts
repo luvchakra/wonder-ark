@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { EMAIL_NOT_SET_UP, platformSender, sendPlatformEmail } from "@cofounderai/core/email/platform-mailer";
 import { createClient as createCoreClient } from "@cofounderai/core/db/server";
 import { createAdminClient as createCoreAdminClient } from "@cofounderai/core/db/admin";
 import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render";
@@ -36,9 +36,9 @@ export async function sendCustomerCenterAccess(businessId: string, partyId: stri
   const { data: party } = await core.from("parties").select("email").eq("id", partyId).eq("business_id", businessId).maybeSingle();
   if (!party?.email) throw new Error("No email on file for this customer -- add one before sending Customer Center access.");
 
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
-  if (!apiKey || !fromAddress) throw new Error("Email sending isn't configured yet -- set RESEND_API_KEY and RESEND_FROM_EMAIL.");
+  // EMAIL-SMTP-01: the platform's SMTP mailbox (Platform admin → Keys).
+  const fromAddress = (await platformSender())?.fromEmail;
+  if (!fromAddress) throw new Error(EMAIL_NOT_SET_UP);
 
   const { data: business } = await core.from("businesses").select("name, website").eq("id", businessId).maybeSingle();
   const brandName = business?.name ?? "Your service provider";
@@ -51,9 +51,7 @@ export async function sendCustomerCenterAccess(businessId: string, partyId: stri
   if (tokenError) throw tokenError;
 
   const publicUrl = `${SITE_URL}/p/center/${rawToken}`;
-  const resend = new Resend(apiKey);
-  const result = await resend.emails.send({
-    from: fromAddress,
+  const result = await sendPlatformEmail({
     to: party.email,
     subject: `Your Customer Center from ${brandName}`,
     text: renderEmailText(`View your estimates, invoices, and upcoming work anytime.\n\n${publicUrl}`),
@@ -64,7 +62,7 @@ export async function sendCustomerCenterAccess(businessId: string, partyId: stri
       replyToEmail: fromAddress,
     }),
   });
-  if (result.error) throw new Error(`Could not send the Customer Center email: ${result.error.message}`);
+  if (result.status !== "sent") throw new Error(`Could not send the Customer Center email: ${result.reason}`);
 }
 
 /** Mints a short-lived, single-purpose estimate token and immediately calls the

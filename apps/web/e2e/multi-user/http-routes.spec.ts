@@ -51,14 +51,6 @@ test.describe("SEC-HTTP-02 webhooks verify the sender before trusting a payload"
     expect((await request.post("/api/webhooks/email-inbound", { data: body, headers: { "x-webhook-secret": "wrong" } })).status()).toBe(401);
   });
 
-  test("Resend delivery status without a valid svix signature", async ({ request }) => {
-    const res = await request.post("/api/webhooks/email-status", {
-      data: { type: "email.bounced", data: { email_id: "x" } },
-      headers: { "svix-id": "msg_1", "svix-timestamp": `${Math.floor(Date.now() / 1000)}`, "svix-signature": "v1,Zm9yZ2Vk" },
-    });
-    expect([401, 503]).toContain(res.status());
-  });
-
   test("Meta / WhatsApp messages without a valid X-Hub signature", async ({ request }) => {
     for (const route of ["crm-meta", "crm-whatsapp"]) {
       const res = await request.post(`/api/webhooks/${route}`, { data: { object: "page", entry: [] }, headers: { "x-hub-signature-256": "sha256=deadbeef" } });

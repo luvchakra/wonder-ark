@@ -156,7 +156,7 @@ describe("outreach", () => {
       },
       () => ({ data: { email: "p@fund.vc" }, error: null }),
     );
-    h.deliver.mockResolvedValue({ ok: true, provider: "resend", messageId: "msg_123" });
+    h.deliver.mockResolvedValue({ ok: true, provider: "smtp", messageId: "msg_123" });
 
     await expect(m.sendApprovedOutreach(BUSINESS, "o1")).resolves.toEqual({ ok: true });
     expect(h.deliver).toHaveBeenCalledWith(expect.objectContaining({ to: "p@fund.vc", subject: "Intro" }));
@@ -169,11 +169,11 @@ describe("outreach", () => {
 
   it("records a provider failure as failed, with its reason, and reports it", async () => {
     useFake((call) => (isUpdate(call) ? { data: [{ id: "o1" }], error: null } : { data: approvedDraft, error: null }), () => ({ data: { email: "p@fund.vc" }, error: null }));
-    h.deliver.mockResolvedValue({ ok: false, provider: "resend", reason: "Domain not verified" });
+    h.deliver.mockResolvedValue({ ok: false, provider: "smtp", reason: "The mail server refused the sign-in." });
 
-    await expect(m.sendApprovedOutreach(BUSINESS, "o1")).resolves.toEqual({ ok: false, reason: "Domain not verified" });
+    await expect(m.sendApprovedOutreach(BUSINESS, "o1")).resolves.toEqual({ ok: false, reason: "The mail server refused the sign-in." });
     const updates = fake.queries("investor_outreach").filter((q) => q.ops.some((o) => o.method === "update"));
-    expect(writtenRow(updates[1]!)).toMatchObject({ status: "failed", failure_reason: "Domain not verified" });
+    expect(writtenRow(updates[1]!)).toMatchObject({ status: "failed", failure_reason: "The mail server refused the sign-in." });
     expect(fake.queries("investor_interactions")).toHaveLength(0);
   });
 

@@ -55,9 +55,9 @@ beforeEach(() => {
 describe("only a superadmin", () => {
   it.each([
     ["read the overview", () => getPlatformKeysOverview({})],
-    ["set a key", () => setPlatformKey({ name: "RESEND_API_KEY", value: SECRET, reason: "why" })],
-    ["remove a key", () => removePlatformKey({ name: "RESEND_API_KEY", reason: "why" })],
-    ["import from the deployment", () => importPlatformKeysFromDeployment({ reason: "why" }, { RESEND_API_KEY: SECRET })],
+    ["set a key", () => setPlatformKey({ name: "SMTP_PASSWORD", value: SECRET, reason: "why" })],
+    ["remove a key", () => removePlatformKey({ name: "SMTP_PASSWORD", reason: "why" })],
+    ["import from the deployment", () => importPlatformKeysFromDeployment({ reason: "why" }, { SMTP_PASSWORD: SECRET })],
   ])("may %s", async (_label, run) => {
     h.requireSuperadmin.mockRejectedValue(new Error("Forbidden: this account does not have SUPERADMIN access."));
     await expect(run()).rejects.toThrow("Forbidden");
@@ -68,10 +68,10 @@ describe("only a superadmin", () => {
 
 describe("setPlatformKey", () => {
   it("sends the ciphertext, a hint and a fingerprint, never the value", async () => {
-    expect(await setPlatformKey({ name: "RESEND_API_KEY", value: `  ${SECRET}  `, reason: " rotating " })).toEqual({ ok: true });
+    expect(await setPlatformKey({ name: "SMTP_PASSWORD", value: `  ${SECRET}  `, reason: " rotating " })).toEqual({ ok: true });
     expect(setCalls()).toEqual([
       {
-        p_name: "RESEND_API_KEY",
+        p_name: "SMTP_PASSWORD",
         p_encrypted_value: `enc(${SECRET.length})`,
         p_value_hint: "••••1234",
         p_value_fingerprint: `fp-${SECRET.length}-34`,
@@ -90,8 +90,8 @@ describe("setPlatformKey", () => {
 
   it.each([
     ["a name not in the registry", { name: "SUPABASE_SERVICE_ROLE_KEY", value: "x".repeat(20), reason: "why" }],
-    ["no reason", { name: "RESEND_API_KEY", value: SECRET, reason: "   " }],
-    ["no value", { name: "RESEND_API_KEY", value: "  ", reason: "why" }],
+    ["no reason", { name: "SMTP_PASSWORD", value: SECRET, reason: "   " }],
+    ["no value", { name: "SMTP_PASSWORD", value: "  ", reason: "why" }],
     ["a gateway address that is not https", { name: "WORKSLAKE_GATEWAY_URL", value: "http://works.example", reason: "why" }],
   ])("refuses %s and saves nothing", async (_label, input) => {
     expect(await setPlatformKey(input)).toMatchObject({ ok: false, error: expect.any(String) });
@@ -101,40 +101,40 @@ describe("setPlatformKey", () => {
 
   it("reports the database's refusal and does not claim the key changed", async () => {
     h.rpcError = { message: "Forbidden: only a SUPERADMIN can set a platform key." };
-    expect(await setPlatformKey({ name: "RESEND_API_KEY", value: SECRET, reason: "why" })).toEqual({ ok: false, error: h.rpcError.message });
+    expect(await setPlatformKey({ name: "SMTP_PASSWORD", value: SECRET, reason: "why" })).toEqual({ ok: false, error: h.rpcError.message });
     expect(h.resetCache).not.toHaveBeenCalled();
   });
 });
 
 describe("removePlatformKey", () => {
   it("removes through the audited function, with the reason", async () => {
-    expect(await removePlatformKey({ name: "RESEND_API_KEY", reason: "no longer used" })).toEqual({ ok: true });
-    expect(h.rpc).toHaveBeenCalledWith("remove_platform_key", { p_name: "RESEND_API_KEY", p_reason: "no longer used" });
+    expect(await removePlatformKey({ name: "SMTP_PASSWORD", reason: "no longer used" })).toEqual({ ok: true });
+    expect(h.rpc).toHaveBeenCalledWith("remove_platform_key", { p_name: "SMTP_PASSWORD", p_reason: "no longer used" });
     expect(h.resetCache).toHaveBeenCalledTimes(1);
   });
 
   it("refuses an unknown name or a missing reason", async () => {
     expect((await removePlatformKey({ name: "NOT_A_KEY", reason: "why" })).ok).toBe(false);
-    expect((await removePlatformKey({ name: "RESEND_API_KEY", reason: "" })).ok).toBe(false);
+    expect((await removePlatformKey({ name: "SMTP_PASSWORD", reason: "" })).ok).toBe(false);
     expect(h.rpc).not.toHaveBeenCalled();
   });
 });
 
 describe("getPlatformKeysOverview", () => {
   it("says where each key is set, and never shows a deployment secret", async () => {
-    h.statusRows = [{ name: "RESEND_API_KEY", value_hint: "••••1234", value_fingerprint: `fp-${SECRET.length}-34`, origin: "deployment", updated_at: "2026-11-20T10:00:00Z" }];
+    h.statusRows = [{ name: "SMTP_PASSWORD", value_hint: "••••1234", value_fingerprint: `fp-${SECRET.length}-34`, origin: "deployment", updated_at: "2026-11-20T10:00:00Z" }];
     const overview = await getPlatformKeysOverview({
-      RESEND_API_KEY: SECRET,
+      SMTP_PASSWORD: SECRET,
       WORKSLAKE_GATEWAY_URL: "https://works.example",
       WORKSLAKE_GATEWAY_API_KEY: "wlg_deployment_secret_value",
       CRON_SECRET: "cron",
     });
     const key = (name: string) => overview.keys.find((item) => item.name === name)!;
 
-    expect(key("RESEND_API_KEY")).toMatchObject({ state: "platform", shown: "••••1234", origin: "deployment", inDeployment: true, deploymentRedundant: true });
+    expect(key("SMTP_PASSWORD")).toMatchObject({ state: "platform", shown: "••••1234", origin: "deployment", inDeployment: true, deploymentRedundant: true });
     expect(key("WORKSLAKE_GATEWAY_URL")).toMatchObject({ state: "deployment", shown: "https://works.example" });
     expect(key("WORKSLAKE_GATEWAY_API_KEY")).toMatchObject({ state: "deployment", shown: null });
-    expect(key("RESEND_FROM_EMAIL")).toMatchObject({ state: "unset", shown: null, inDeployment: false });
+    expect(key("SMTP_FROM_EMAIL")).toMatchObject({ state: "unset", shown: null, inDeployment: false });
     expect(overview.importable).toBe(2);
     expect(overview.deploymentOnly.find((item) => item.name === "CRON_SECRET")).toMatchObject({ set: true });
     expect(overview.deploymentOnly.find((item) => item.name === "BASE_APP_HOST")).toMatchObject({ set: false });
@@ -143,9 +143,9 @@ describe("getPlatformKeysOverview", () => {
   });
 
   it("does not call a deployment variable redundant when its value differs from the saved one", async () => {
-    h.statusRows = [{ name: "RESEND_API_KEY", value_hint: "••••9999", value_fingerprint: "fp-of-another-value", origin: "admin", updated_at: "2026-11-20T10:00:00Z" }];
-    const overview = await getPlatformKeysOverview({ RESEND_API_KEY: SECRET });
-    expect(overview.keys.find((item) => item.name === "RESEND_API_KEY")).toMatchObject({ state: "platform", inDeployment: true, deploymentRedundant: false });
+    h.statusRows = [{ name: "SMTP_PASSWORD", value_hint: "••••9999", value_fingerprint: "fp-of-another-value", origin: "admin", updated_at: "2026-11-20T10:00:00Z" }];
+    const overview = await getPlatformKeysOverview({ SMTP_PASSWORD: SECRET });
+    expect(overview.keys.find((item) => item.name === "SMTP_PASSWORD")).toMatchObject({ state: "platform", inDeployment: true, deploymentRedundant: false });
   });
 
   it("counts the AI key as importable only while no enabled provider has one", async () => {
@@ -159,15 +159,15 @@ describe("getPlatformKeysOverview", () => {
 });
 
 describe("importPlatformKeysFromDeployment", () => {
-  const env = { RESEND_API_KEY: SECRET, RESEND_FROM_EMAIL: "team@example.com", WORKSLAKE_GATEWAY_URL: "https://works.example", UNRELATED: "x" };
+  const env = { SMTP_PASSWORD: SECRET, SMTP_FROM_EMAIL: "team@example.com", WORKSLAKE_GATEWAY_URL: "https://works.example", UNRELATED: "x" };
 
   it("copies what the deployment sets and the platform lacks, marked as imported, by name only", async () => {
-    h.statusRows = [{ name: "RESEND_FROM_EMAIL", value_hint: "other@example.com", value_fingerprint: "fp", origin: "admin", updated_at: "2026-11-20T10:00:00Z" }];
+    h.statusRows = [{ name: "SMTP_FROM_EMAIL", value_hint: "other@example.com", value_fingerprint: "fp", origin: "admin", updated_at: "2026-11-20T10:00:00Z" }];
     const result = await importPlatformKeysFromDeployment({ reason: "moving off the hosting dashboard" }, env);
 
-    expect(result).toEqual({ ok: true, outcome: { imported: ["RESEND_API_KEY", "WORKSLAKE_GATEWAY_URL"], failed: [] } });
+    expect(result).toEqual({ ok: true, outcome: { imported: ["SMTP_PASSWORD", "WORKSLAKE_GATEWAY_URL"], failed: [] } });
     expect(setCalls().map((call) => [call.p_name, call.p_origin])).toEqual([
-      ["RESEND_API_KEY", "deployment"],
+      ["SMTP_PASSWORD", "deployment"],
       ["WORKSLAKE_GATEWAY_URL", "deployment"],
     ]);
     expect(setCalls()[0].p_reason).toBe("Imported from the deployment: moving off the hosting dashboard");
@@ -177,7 +177,7 @@ describe("importPlatformKeysFromDeployment", () => {
   });
 
   it("copies nothing the second time", async () => {
-    h.statusRows = ["RESEND_API_KEY", "RESEND_FROM_EMAIL", "WORKSLAKE_GATEWAY_URL"].map((name) => ({ name, value_hint: "h", value_fingerprint: "f", origin: "deployment", updated_at: "2026-11-20T10:00:00Z" }));
+    h.statusRows = ["SMTP_PASSWORD", "SMTP_FROM_EMAIL", "WORKSLAKE_GATEWAY_URL"].map((name) => ({ name, value_hint: "h", value_fingerprint: "f", origin: "deployment", updated_at: "2026-11-20T10:00:00Z" }));
     const result = await importPlatformKeysFromDeployment({ reason: "again" }, env);
     expect(result).toEqual({ ok: true, outcome: { imported: [], failed: [] } });
     expect(setCalls()).toEqual([]);
@@ -191,7 +191,7 @@ describe("importPlatformKeysFromDeployment", () => {
 
   it("reports a value it could not save by name, and still copies the rest", async () => {
     const result = await importPlatformKeysFromDeployment({ reason: "move" }, { ...env, WORKSLAKE_GATEWAY_URL: "http://not-https.example" });
-    expect(result).toMatchObject({ ok: true, outcome: { imported: ["RESEND_API_KEY", "RESEND_FROM_EMAIL"], failed: [{ name: "WORKSLAKE_GATEWAY_URL", error: expect.any(String) }] } });
+    expect(result).toMatchObject({ ok: true, outcome: { imported: ["SMTP_PASSWORD", "SMTP_FROM_EMAIL"], failed: [{ name: "WORKSLAKE_GATEWAY_URL", error: expect.any(String) }] } });
   });
 
   it("moves the AI key to the AI Providers store, tested first, and switches its provider on", async () => {

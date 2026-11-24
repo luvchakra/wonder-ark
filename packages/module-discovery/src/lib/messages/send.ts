@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { EMAIL_NOT_SET_UP, platformSender, sendPlatformEmail } from "@cofounderai/core/email/platform-mailer";
 import { writeAuditLog } from "@cofounderai/core/audit/mutations";
 import { createClient } from "../../db/server";
 import { loadMailboxForSending } from "../campaigns/mailbox";
@@ -11,33 +11,25 @@ import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render
 import { prepareOutreachEmail } from "@cofounderai/core/privacy/suppression";
 import { INVALID_ADDRESS_MESSAGE, emailSendCheck, unconfirmedAddressMessage } from "./email-status";
 import type { Message } from "./types";
-import { platformKey } from "@cofounderai/core/admin/platform-key-store";
 
-/** Sends an approved outbound email via Resend and records the real outcome on the
- * message row (docs/prospects-pipeline-redesign-requirements.md R1/R2) -- status
- * becomes the provider's actual result ('sent' or 'failed' with a reason), never a
- * manual self-report. Only the email channel has a send integration; linkedin/whatsapp
- * messages are still marked sent by the founder by hand after delivering them.
+/** Sends an approved outbound email and records the real outcome on the message row
+ * (docs/prospects-pipeline-redesign-requirements.md R1/R2) -- status becomes the mail
+ * server's actual result ('sent' or 'failed' with a reason), never a manual self-report.
+ * Only the email channel has a send integration; LinkedIn, WhatsApp, Instagram and
+ * Facebook messages are marked sent by the person after sending them themselves.
  *
- * A message generated from a Resend template (`resend_template_id` set -- see
- * lib/ai/generate-message.ts) sends via Resend's own `template: { id, variables }` API
- * instead of our rendered html/text -- Resend substitutes the variables and applies the
- * template's own subject/from at send time, so `message.subject`/content are display-only
- * for these.
- *
- * DISC-CAMP-P0-02.3 / 02.4:
- *  - **One send per message.** Before the provider is called the message is claimed with
- *    a compare-and-set (`send_claimed_at` set only where it was empty). A second click,
- *    or a second request for the same click, does not get the claim and sends nothing.
- *    The write goes through the person's own session, so RLS (Discovery licensed and
- *    discovery.manage) decides whether they may send at all.
+ * DISC-CAMP-P0-02.3 / 02.4, EMAIL-SMTP-01:
+ *  - **One send per message.** Before the mail server is called the message is claimed
+ *    with a compare-and-set (`send_claimed_at` set only where it was empty). A second
+ *    click, or a second request for the same click, does not get the claim and sends
+ *    nothing. The write goes through the person's own session, so RLS (Discovery licensed
+ *    and discovery.manage) decides whether they may send at all.
  *  - **Where it goes from.** When the workspace has a verified mailbox the email goes
- *    through it. Without one, it goes through the platform's provider as before.
- *  - **Idempotency.** On the provider path the request carries an idempotency key made of
- *    the message and its attempt number, so a repeat of the same attempt is recognised
- *    by the provider. SMTP has no such key: if the outcome is not known the message is
- *    marked failed with "Outcome unknown" and is never retried here; a person may choose
- *    to send it again.
+ *    through it. Without one, it goes through the platform's SMTP mailbox (Platform admin
+ *    → Keys; owner 2026-11-24: GoDaddy). Both are SMTP; there is no other provider.
+ *  - **Unknown outcomes.** SMTP has no idempotency key: if the outcome is not known the
+ *    message is marked failed with "Outcome unknown" and is never retried here; a person
+ *    may choose to send it again.
  *  - **Audit.** The outcome is written to `core.audit_log`, without the address or the
  *    text.
  */
@@ -62,6 +54,10 @@ export async function sendMessage(
 
   if (message.channel !== "email") {
     throw new Error("Automatic sending is only available for the email channel.");
+  }
+  // EMAIL-SMTP-01: a message written for a Resend template has no text of its own to send.
+  if (message.resend_template_id) {
+    throw new Error("This message was written for an email template, which can no longer be sent. Generate a new message.");
   }
   if (message.status !== "approved" && message.status !== "failed") {
     throw new Error("Approve the message before sending.");
@@ -113,14 +109,10 @@ export async function sendMessage(
   // Reading it needs the service role (a member cannot read the password); the person's
   // right to send is established by the claim below, which goes through their session.
   const mailbox = await loadMailboxForSending(message.workspace_id);
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const fromAddress = mailbox?.fromEmail ?? (await platformKey("RESEND_FROM_EMAIL"));
-  if (!mailbox && (!apiKey || !fromAddress)) {
-    throw new Error(
-      "Email sending isn't configured yet -- set RESEND_API_KEY and RESEND_FROM_EMAIL.",
-    );
-  }
-  if (!fromAddress) throw new Error("Email sending isn't configured yet.");
+  // EMAIL-SMTP-01: otherwise the platform's SMTP mailbox (Platform admin → Keys). There is
+  // no other provider.
+  const fromAddress = mailbox?.fromEmail ?? (await platformSender())?.fromEmail;
+  if (!fromAddress) throw new Error(EMAIL_NOT_SET_UP);
 
   const workspace = await getWorkspace(message.workspace_id);
   const product = workspace ? await getProduct(workspace.product_id) : null;
@@ -182,24 +174,22 @@ export async function sendMessage(
       options.smtp,
     );
   } else {
-    result = await sendViaPlatform(apiKey!, `discovery-message/${messageId}/${attempt}`, {
-      from: fromAddress,
-      to: toEmail,
-      headers: compliance.headers,
-      ...(message.resend_template_id
-        ? { template: { id: message.resend_template_id, variables: message.template_variables ?? undefined } }
-        : {
-            subject,
-            text: renderEmailText(message.content, compliance.unsubscribeUrl),
-            html: renderEmailHtml({
-              brandName,
-              body: message.content,
-              websiteUrl,
-              replyToEmail: fromAddress,
-              unsubscribeUrl: compliance.unsubscribeUrl,
-            }),
-          }),
-    });
+    result = await sendPlatformEmail(
+      {
+        to: toEmail,
+        subject,
+        headers: compliance.headers,
+        text: renderEmailText(message.content, compliance.unsubscribeUrl),
+        html: renderEmailHtml({
+          brandName,
+          body: message.content,
+          websiteUrl,
+          replyToEmail: fromAddress,
+          unsubscribeUrl: compliance.unsubscribeUrl,
+        }),
+      },
+      options.smtp,
+    );
   }
 
   const audit = async (action: "discovery.message.sent" | "discovery.message.send_failed", reason?: string) => {
@@ -223,11 +213,10 @@ export async function sendMessage(
       .update({
         status: "failed",
         failure_reason: result.reason,
-        // The claim is released so a person can send again. A definite failure starts a
-        // new attempt (a new idempotency key); an unknown outcome on the provider path
-        // keeps the attempt, so sending again is recognised as the same request.
+        // The claim is released so a person can send again; the failure reason says when
+        // it may already have gone (SMTP has no idempotency key).
         send_claimed_at: null,
-        ...(result.status === "failed" || via === "mailbox" ? { send_attempt: attempt + 1 } : {}),
+        send_attempt: attempt + 1,
       })
       .eq("id", messageId)
       .select()
@@ -265,19 +254,3 @@ export async function sendMessage(
 
 /** How long a claim with no recorded outcome is taken to mean "still sending". */
 const SEND_CLAIM_STALE_MS = 10 * 60 * 1000;
-
-/**
- * The platform's provider, with an idempotency key. Its own rejection is "failed" with
- * its reason, as before; a request that threw says nothing about what the provider did
- * with it, so that is "unknown".
- */
-export async function sendViaPlatform(apiKey: string, idempotencyKey: string, payload: Record<string, unknown>): Promise<SendResult> {
-  const resend = new Resend(apiKey);
-  try {
-    const result = await resend.emails.send(payload as unknown as Parameters<typeof resend.emails.send>[0], { idempotencyKey });
-    if (result.error) return { status: "failed", reason: result.error.message };
-    return { status: "sent", messageId: result.data?.id ?? null };
-  } catch {
-    return { status: "unknown", reason: OUTCOME_UNKNOWN_REASON };
-  }
-}

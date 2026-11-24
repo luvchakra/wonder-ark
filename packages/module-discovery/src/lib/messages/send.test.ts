@@ -25,11 +25,16 @@ const h = vi.hoisted(() => ({
   // Arg typed explicitly: an inferred zero-arg mock gives `mock.calls` an empty tuple
   // type, and the assertions below read the payload it was called with.
   send: vi.fn((_payload: { to: string; subject: string; text: string; html: string }) => undefined as unknown),
-  Resend: vi.fn(),
   prepareOutreachEmail: vi.fn(),
+  sender: null as { fromEmail: string; fromName: string } | null,
 }));
 
-vi.mock("resend", () => ({ Resend: h.Resend }));
+// EMAIL-SMTP-01: without a mailbox of its own, a workspace sends through the platform's SMTP mailbox.
+vi.mock("@cofounderai/core/email/platform-mailer", () => ({
+  EMAIL_NOT_SET_UP: "Email sending isn't set up yet: add the SMTP mailbox on Platform admin → Keys.",
+  platformSender: async () => h.sender,
+  sendPlatformEmail: (...args: unknown[]) => h.send(...(args as [never])),
+}));
 vi.mock("../../db/server", () => ({ createClient: h.createClient }));
 vi.mock("../contacts/queries", () => ({ listContacts: h.listContacts }));
 vi.mock("../prospects/queries", () => ({ getProspect: h.getProspect }));
@@ -87,14 +92,8 @@ beforeEach(() => {
   h.getBusiness.mockResolvedValue({ id: "b1", name: "Acme Co", website: null });
   h.getOrCreateConversation.mockResolvedValue({ id: "conv-1" });
   h.prepareOutreachEmail.mockResolvedValue({ suppressed: false, unsubscribeUrl: UNSUBSCRIBE_URL, headers: UNSUBSCRIBE_HEADERS });
-  h.send.mockResolvedValue({ data: { id: "resend-1" }, error: null });
-  h.Resend.mockImplementation(
-    class {
-      emails = { send: h.send };
-    } as unknown as (...args: unknown[]) => unknown,
-  );
-  vi.stubEnv("RESEND_API_KEY", "re_key");
-  vi.stubEnv("RESEND_FROM_EMAIL", "founder@widgets.example");
+  h.send.mockResolvedValue({ status: "sent", messageId: "smtp-1" });
+  h.sender = { fromEmail: "founder@widgets.example", fromName: "Widgets" };
 });
 
 afterEach(() => vi.unstubAllEnvs());
@@ -137,14 +136,11 @@ describe("sendMessage — guards", () => {
     expect(h.send).not.toHaveBeenCalled();
   });
 
-  it.each([
-    ["no API key", "RESEND_API_KEY"],
-    ["no from address", "RESEND_FROM_EMAIL"],
-  ])("refuses with %s configured, rather than failing mid-send", async (_label, missing) => {
+  it("refuses without a mailbox or the platform's SMTP mailbox, rather than failing mid-send", async () => {
     mock();
-    vi.stubEnv(missing, "");
+    h.sender = null;
 
-    await expect(sendMessage("m1")).rejects.toThrow(/isn't configured/);
+    await expect(sendMessage("m1")).rejects.toThrow(/isn't set up yet/);
     expect(h.send).not.toHaveBeenCalled();
   });
 });
@@ -239,7 +235,7 @@ describe("sendMessage — outcome", () => {
     expect(writtenRow(update)).toMatchObject({
       status: "sent",
       conversation_id: "conv-1",
-      provider_message_id: "resend-1",
+      provider_message_id: "smtp-1",
       failure_reason: null,
     });
   });
@@ -254,7 +250,7 @@ describe("sendMessage — outcome", () => {
 
   it("records the provider's own failure reason rather than a generic one", async () => {
     const supabase = mock();
-    h.send.mockResolvedValue({ data: null, error: { message: "domain not verified" } });
+    h.send.mockResolvedValue({ status: "failed", reason: "domain not verified" });
 
     await sendMessage("m1");
 
@@ -264,7 +260,7 @@ describe("sendMessage — outcome", () => {
 
   it("opens no conversation for a send that failed", async () => {
     mock();
-    h.send.mockResolvedValue({ data: null, error: { message: "bounced" } });
+    h.send.mockResolvedValue({ status: "failed", reason: "bounced" });
 
     await sendMessage("m1");
 
@@ -272,9 +268,9 @@ describe("sendMessage — outcome", () => {
     expect(h.markConversationAwaitingReply).not.toHaveBeenCalled();
   });
 
-  it("tolerates a provider response with no message id", async () => {
+  it("tolerates a mail server that gives no message id", async () => {
     const supabase = mock();
-    h.send.mockResolvedValue({ data: null, error: null });
+    h.send.mockResolvedValue({ status: "sent", messageId: null });
 
     await sendMessage("m1");
 
@@ -311,7 +307,7 @@ describe("sendMessage — status write failures", () => {
   });
 
   it("propagates a failure to record the provider's rejection", async () => {
-    h.send.mockResolvedValue({ data: null, error: { message: "Mailbox does not exist" } });
+    h.send.mockResolvedValue({ status: "failed", reason: "Mailbox does not exist" });
     mockUpdateFailure();
 
     await expect(sendMessage("m1")).rejects.toThrow("status write denied");
@@ -355,12 +351,6 @@ describe("sendMessage — opt-outs (PRIV-1)", () => {
     expect((h.send.mock.calls[0]![0] as unknown as { headers: unknown }).headers).toEqual(UNSUBSCRIBE_HEADERS);
     expect(h.renderEmailHtml.mock.calls[0]![0]).toMatchObject({ unsubscribeUrl: UNSUBSCRIBE_URL });
     expect(h.renderEmailText).toHaveBeenCalledWith("Hello there", UNSUBSCRIBE_URL);
-  });
-
-  it("carries the headers on template sends too", async () => {
-    mock({ ...MESSAGE, resend_template_id: "tmpl_1", template_variables: { name: "Ravi" } });
-    await sendMessage("m1");
-    expect((h.send.mock.calls[0]![0] as unknown as { headers: unknown }).headers).toEqual(UNSUBSCRIBE_HEADERS);
   });
 });
 
@@ -438,22 +428,16 @@ describe("sendMessage — claim, mailbox and audit (DISC-CAMP-P0-02.3)", () => {
     expect(String(writtenRow(update)!.failure_reason)).toContain("Outcome unknown");
   });
 
-  it("sends with an idempotency key made of the message and its attempt", async () => {
-    mock({ ...MESSAGE, send_attempt: 2 });
-    await sendMessage("m1");
-    expect(h.send.mock.calls[0]![1 as never]).toEqual({ idempotencyKey: "discovery-message/m1/2" });
-  });
-
-  it("keeps the attempt, so the same key is reused, when the provider request itself threw", async () => {
+  it("marks an unknown outcome from the platform's mailbox as failed and never retries it", async () => {
     const supabase = mock();
-    h.send.mockRejectedValue(new Error("socket hang up"));
+    h.send.mockResolvedValue({ status: "unknown", reason: "Outcome unknown: the connection to the mail server ended." });
 
     await sendMessage("m1");
 
+    expect(h.send).toHaveBeenCalledTimes(1);
     const update = supabase.queries("messages").filter((c) => usedOp(c, "update")).at(-1)!;
-    expect(writtenRow(update)).toMatchObject({ status: "failed", send_claimed_at: null });
+    expect(writtenRow(update)).toMatchObject({ status: "failed", send_claimed_at: null, send_attempt: 1 });
     expect(String(writtenRow(update)!.failure_reason)).toContain("Outcome unknown");
-    expect(writtenRow(update)).not.toHaveProperty("send_attempt");
   });
 
   it("writes the outcome to the audit log without the address or the text", async () => {
@@ -471,7 +455,7 @@ describe("sendMessage — claim, mailbox and audit (DISC-CAMP-P0-02.3)", () => {
 
     writeAuditLog.mockClear();
     mock();
-    h.send.mockResolvedValue({ data: null, error: { message: "domain not verified" } });
+    h.send.mockResolvedValue({ status: "failed", reason: "domain not verified" });
     await sendMessage("m1");
     expect(writeAuditLog).toHaveBeenCalledWith(expect.objectContaining({ action: "discovery.message.send_failed" }));
   });
@@ -511,8 +495,7 @@ describe("sendMessage — claim, mailbox and audit (DISC-CAMP-P0-02.3)", () => {
 
   it("sends through the mailbox even when the platform's provider is not configured", async () => {
     mock();
-    vi.stubEnv("RESEND_API_KEY", "");
-    vi.stubEnv("RESEND_FROM_EMAIL", "");
+    h.sender = null;
     (await mailboxLoader()).mockResolvedValueOnce(MAILBOX);
     const sendMail = vi.fn(async () => ({ messageId: "<smtp-2@acme.example>" }));
     await expect(sendMessage("m1", { smtp: { lookup: publicLookup, createTransport: () => ({ sendMail }) } })).resolves.toBeDefined();

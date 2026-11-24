@@ -13,11 +13,15 @@ const h = vi.hoisted(() => ({
   createClient: vi.fn(),
   listContacts: vi.fn(),
   send: vi.fn((_payload: { to: string }) => undefined as unknown),
-  Resend: vi.fn(),
   prepareOutreachEmail: vi.fn(),
 }));
 
-vi.mock("resend", () => ({ Resend: h.Resend }));
+// EMAIL-SMTP-01: the platform's SMTP mailbox sends when the workspace has none of its own.
+vi.mock("@cofounderai/core/email/platform-mailer", () => ({
+  EMAIL_NOT_SET_UP: "Email sending isn't set up yet.",
+  platformSender: async () => ({ fromEmail: "founder@widgets.example", fromName: "Widgets" }),
+  sendPlatformEmail: (...args: unknown[]) => h.send(...(args as [never])),
+}));
 vi.mock("../../db/server", () => ({ createClient: h.createClient }));
 vi.mock("../contacts/queries", () => ({ listContacts: h.listContacts }));
 vi.mock("../prospects/queries", () => ({ getProspect: vi.fn(async () => ({ id: "p1", company_name: "Acme" })) }));
@@ -58,14 +62,7 @@ function recipient(emailStatus: string | null | undefined) {
 beforeEach(() => {
   vi.clearAllMocks();
   h.prepareOutreachEmail.mockResolvedValue({ suppressed: false, unsubscribeUrl: "https://app.example/u", headers: {} });
-  h.send.mockResolvedValue({ data: { id: "resend-1" }, error: null });
-  h.Resend.mockImplementation(
-    class {
-      emails = { send: h.send };
-    } as unknown as (...args: unknown[]) => unknown,
-  );
-  vi.stubEnv("RESEND_API_KEY", "re_key");
-  vi.stubEnv("RESEND_FROM_EMAIL", "founder@widgets.example");
+  h.send.mockResolvedValue({ status: "sent", messageId: "smtp-1" });
 });
 
 afterEach(() => vi.unstubAllEnvs());

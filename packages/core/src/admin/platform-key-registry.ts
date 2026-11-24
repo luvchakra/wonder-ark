@@ -37,28 +37,55 @@ export interface PlatformKeySpec {
 }
 
 export const PLATFORM_KEYS: readonly PlatformKeySpec[] = [
+  // EMAIL-SMTP-01 (owner, 2026-11-24): the platform's own email goes out through one SMTP
+  // mailbox (GoDaddy), set here. Resend is not used anywhere.
   {
     group: "email",
-    name: "RESEND_API_KEY",
-    label: "Resend API key",
+    name: "SMTP_HOST",
+    label: "SMTP server",
+    plain: true,
     usedBy:
-      "Every email WonderArk sends itself: team invitations, billing notices, sign-up confirmations, service reminders, invoices and estimates, GST reminders, and outreach when a business has no mailbox of its own.",
-    source: "resend.com → API Keys",
+      "Every email WonderArk sends itself: team invitations, billing notices, service reminders, invoices and estimates, GST reminders, alerts, and outreach when a business has no mailbox of its own.",
+    source: "GoDaddy Workspace Email: smtpout.secureserver.net. Microsoft 365 from GoDaddy: smtp.office365.com",
   },
   {
     group: "email",
-    name: "RESEND_FROM_EMAIL",
+    name: "SMTP_PORT",
+    label: "SMTP port",
+    plain: true,
+    usedBy: "465 (secure from the start) or 587 (upgraded with STARTTLS). Nothing is ever sent unencrypted.",
+    source: "GoDaddy Workspace Email: 465. Microsoft 365: 587",
+  },
+  {
+    group: "email",
+    name: "SMTP_USERNAME",
+    label: "SMTP username",
+    plain: true,
+    usedBy: "Signs in to the mailbox. Usually the full email address.",
+    source: "The mailbox's own email address",
+  },
+  {
+    group: "email",
+    name: "SMTP_PASSWORD",
+    label: "SMTP password",
+    usedBy: "Signs in to the mailbox. Stored encrypted and never shown again.",
+    source: "The mailbox's password (or an app password, where the mailbox asks for one)",
+  },
+  {
+    group: "email",
+    name: "SMTP_FROM_EMAIL",
     label: "From address",
     plain: true,
-    usedBy: "The address those emails are sent from. Its domain must be verified in Resend.",
-    source: "resend.com → Domains",
+    usedBy: "The address those emails are sent from and replied to. Usually the same as the username.",
+    source: "An address of the mailbox above",
   },
   {
     group: "email",
-    name: "RESEND_WEBHOOK_SECRET",
-    label: "Resend webhook signing secret",
-    usedBy: "Checks that delivery, bounce and complaint notices at /api/webhooks/email-status really come from Resend. Without it they are refused.",
-    source: "resend.com → Webhooks → Signing secret",
+    name: "SMTP_FROM_NAME",
+    label: "From name",
+    plain: true,
+    usedBy: "The name people see beside the from address. Left empty, the product name.",
+    source: "Your choice, e.g. WonderArk",
   },
   {
     group: "email",
@@ -163,12 +190,10 @@ export function platformKeyProblem(spec: PlatformKeySpec, value: string): string
       return "Enter the gateway's full address, starting with https://.";
     }
   }
-  if (spec.name === "RESEND_FROM_EMAIL") {
-    // "team@example.com" or "WonderArk <team@example.com>".
-    const address = (/<([^<>]+)>\s*$/.exec(value)?.[1] ?? value).trim();
-    if (!/^[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+$/.test(address)) {
-      return "Enter an email address, or a name followed by the address in angle brackets.";
-    }
+  if (spec.name === "SMTP_FROM_EMAIL" && !/^[^@\s<>]+@[^@\s<>]+\.[^@\s<>]+$/.test(value)) return "Enter an email address.";
+  if (spec.name === "SMTP_PORT" && value !== "465" && value !== "587") return "Use 465 or 587.";
+  if (spec.name === "SMTP_HOST" && !/^(?=.{1,253}$)([a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i.test(value)) {
+    return "Enter the server's host name only, e.g. smtpout.secureserver.net.";
   }
   return null;
 }
