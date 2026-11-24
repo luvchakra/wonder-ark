@@ -24,8 +24,7 @@
   "dependencies": {
     "@cofounderai/core": "*",
     "@cofounderai/module-inventory": "*",
-    "react": "19.2.8",
-    "resend": "^6.26.0"
+    "react": "19.2.8"
   },
   "peerDependencies": {
     "next": "16.4.6"

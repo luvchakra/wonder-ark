@@ -587,10 +587,9 @@ then **Mark sent** once you've sent it yourself. Sending email needs a contact w
 address and email set up for the deployment. An address a contact lookup marked **Invalid**
 can't be sent to; one marked **Risky** or **Not verified** asks you to confirm once before
 it sends. If a send fails, the message shows "Send failed"
-with the reason, and you can **Retry send**. Emails can use a saved template ("No template
-(AI writes freely)" is the default). Pressing send twice sends the email once. When the
-offering has a verified mailbox under **Campaigns → Sending from**, these emails go out
-from that mailbox too. If a send's outcome can't be confirmed, the message shows as failed
+with the reason, and you can **Retry send**. Pressing send twice sends the email once. When
+the offering has a verified mailbox under **Campaigns → Sending from**, these emails go out
+from that mailbox; otherwise from the platform's own mailbox, which its operator sets up. If a send's outcome can't be confirmed, the message shows as failed
 with "Outcome unknown" and is not sent again unless you choose to.
 
 Sending a message (or marking it sent) starts a **Conversation** thread. Use

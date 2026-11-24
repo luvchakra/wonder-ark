@@ -4,6 +4,8 @@ import { createFakeSupabase } from "../test-support/fake-supabase";
 const { createClient } = vi.hoisted(() => ({ createClient: vi.fn() }));
 vi.mock("../db/server", () => ({ createClient }));
 vi.mock("../db/admin", () => ({ createAdminClient: vi.fn() }));
+// EMAIL-SMTP-01: no SMTP mailbox set up in these tests, so an invitation is not emailed.
+vi.mock("../email/platform-mailer", () => ({ platformSender: async () => null, sendPlatformEmail: vi.fn() }));
 
 const { modulesVisibleTo } = await import("./effective");
 const { hashInvitationToken, inviteMember, changeMemberRole, createRole } = await import("./members");
@@ -30,7 +32,6 @@ describe("RBAC-07 / RBAC-36 invitations", () => {
   });
 
   it("sends the database a hash and an expiry, never the token", async () => {
-    vi.stubEnv("RESEND_API_KEY", "");
     const fake = createFakeSupabase({ rpc: () => ({ data: "inv-1", error: null }) });
     createClient.mockResolvedValue(fake);
     const result = await inviteMember({ businessId: "00000000-0000-4000-8000-000000000001", email: " Neha@Acme.com ", roleId: "00000000-0000-4000-8000-000000000002" });

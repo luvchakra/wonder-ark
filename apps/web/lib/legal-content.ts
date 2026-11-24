@@ -202,7 +202,7 @@ We do not sell personal data, we do not show advertising in the Service, and we 
 
 - **Supabase** — database, authentication and file storage (hosted in Mumbai, India)
 - **Vercel** — application hosting and content delivery
-- **Resend** — sending and receiving email
+- **GoDaddy** — sending email
 - **Razorpay** — payment processing
 - **OpenAI, Anthropic and Google** — AI features, only when you use them
 - **Google** — sign-in, only if you choose to sign in with Google

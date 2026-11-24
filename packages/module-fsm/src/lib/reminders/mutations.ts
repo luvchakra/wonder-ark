@@ -1,4 +1,4 @@
-import { Resend } from "resend";
+import { platformSender, sendPlatformEmail } from "@cofounderai/core/email/platform-mailer";
 import { createAdminClient as createCoreAdmin } from "@cofounderai/core/db/admin";
 import { renderEmailHtml, renderEmailText } from "@cofounderai/core/email/render";
 import { createAdminClient as createFsmAdmin } from "../../db/admin";
@@ -65,14 +65,12 @@ export async function sendDueReminders(): Promise<{ internalSent: number; custom
   if (settingsRes.error) throw settingsRes.error;
 
   const leadHoursByBusiness = new Map(settingsRes.data.map((s) => [s.business_id as string, s.reminder_lead_hours as number]));
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const fromAddress = await platformKey("RESEND_FROM_EMAIL");
-  if (!apiKey || !fromAddress) {
-    // Same documented gap every other Resend-sending mutation in this module has --
-    // nothing to send without it, and a cron run shouldn't throw over missing config.
+  // EMAIL-SMTP-01: the platform's SMTP mailbox (Platform admin → Keys).
+  const fromAddress = (await platformSender())?.fromEmail;
+  if (!fromAddress) {
+    // Nothing to send without the mailbox, and a cron run shouldn't throw over missing config.
     return { internalSent: 0, customerSent: 0, skipped: eventsRes.data.length };
   }
-  const resend = new Resend(apiKey);
 
   let internalSent = 0;
   let customerSent = 0;
@@ -101,7 +99,7 @@ export async function sendDueReminders(): Promise<{ internalSent: number; custom
 
     try {
       if (event.kind === "reminder") {
-        const sent = await sendInternalReminder(fsm, core, resend, fromAddress, event);
+        const sent = await sendInternalReminder(fsm, core, fromAddress, event);
         if (sent) {
           internalSent++;
           await fsm.from("events").update({ internal_reminder_sent_at: new Date().toISOString() }).eq("id", event.id);
@@ -109,7 +107,7 @@ export async function sendDueReminders(): Promise<{ internalSent: number; custom
           skipped++;
         }
       } else if (event.status === "scheduled") {
-        const sent = await sendCustomerReminder(fsm, core, resend, fromAddress, event);
+        const sent = await sendCustomerReminder(fsm, core, fromAddress, event);
         if (sent) {
           customerSent++;
           await fsm.from("events").update({ customer_reminder_sent_at: new Date().toISOString() }).eq("id", event.id);
@@ -120,7 +118,7 @@ export async function sendDueReminders(): Promise<{ internalSent: number; custom
         skipped++;
       }
     } catch {
-      // One event's failure (no email on file, Resend error, etc.) shouldn't abort the
+      // One event's failure (no email on file, the mail server refusing it, etc.) shouldn't abort the
       // rest of the cron run -- it stays unmarked and is simply retried on the next run.
       skipped++;
     }
@@ -149,7 +147,6 @@ async function resolveSubjectLabelAndParty(
 async function sendCustomerReminder(
   fsm: ReturnType<typeof createFsmAdmin>,
   core: ReturnType<typeof createCoreAdmin>,
-  resend: Resend,
   fromAddress: string,
   event: EventRow,
 ): Promise<boolean> {
@@ -175,8 +172,7 @@ async function sendCustomerReminder(
       ? `, between ${new Date(event.arrival_window_start).toLocaleTimeString("en-IN", { timeStyle: "short" })} and ${new Date(event.arrival_window_end).toLocaleTimeString("en-IN", { timeStyle: "short" })}`
       : "";
 
-  const result = await resend.emails.send({
-    from: fromAddress,
+  const result = await sendPlatformEmail({
     to: toEmail,
     subject: `Upcoming appointment reminder from ${brandName}`,
     text: renderEmailText(`This is a reminder about your upcoming appointment on ${when}${arrivalWindow}.`),
@@ -187,13 +183,14 @@ async function sendCustomerReminder(
       replyToEmail: fromAddress,
     }),
   });
-  return !result.error;
+  // An unknown outcome (the connection ended after the server may have taken it) is
+  // marked as sent, so the next run never sends a second reminder.
+  return result.status !== "failed";
 }
 
 async function sendInternalReminder(
   fsm: ReturnType<typeof createFsmAdmin>,
   core: ReturnType<typeof createCoreAdmin>,
-  resend: Resend,
   fromAddress: string,
   event: EventRow,
 ): Promise<boolean> {
@@ -213,12 +210,13 @@ async function sendInternalReminder(
   const when = new Date(event.starts_at).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" });
   const body = event.description ? `Reminder: ${event.description} -- ${when}.` : `Reminder for ${when}.`;
 
-  const result = await resend.emails.send({
-    from: fromAddress,
+  const result = await sendPlatformEmail({
     to: emails,
     subject: `Reminder: ${when}`,
     text: renderEmailText(body),
     html: renderEmailHtml({ brandName, body, websiteUrl: business?.website ?? null, replyToEmail: fromAddress }),
   });
-  return !result.error;
+  // An unknown outcome (the connection ended after the server may have taken it) is
+  // marked as sent, so the next run never sends a second reminder.
+  return result.status !== "failed";
 }

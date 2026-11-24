@@ -1,4 +1,5 @@
 import { createAdminClient } from "../db/admin";
+import { platformSender, sendPlatformEmail } from "../email/platform-mailer";
 import { renderEmailHtml, renderEmailText } from "../email/render";
 import { registerEventHandler } from "../events/registry";
 import type { DomainEvent } from "../events/types";
@@ -7,13 +8,12 @@ import { BRAND_NAME } from "../lib/brand";
 import { BILLING_NOTIFICATION_TYPES, type BillingNotificationType } from "./notifications";
 import { getLifecyclePolicy } from "./lifecycle-policy";
 import { logBilling } from "./observability";
-import { platformKey } from "../admin/platform-key-store";
 
 /**
  * BILL-35 -- billing emails, sent by the domain-event drain (§61), to the account owners
- * and admins of the business (the people who manage billing). Sent through Resend's HTTP
- * API with the deployment's RESEND_API_KEY / RESEND_FROM_EMAIL, the same sender every
- * other platform email uses. When email isn't configured the event is acknowledged and
+ * and admins of the business (the people who manage billing). Sent through the platform's
+ * SMTP mailbox (EMAIL-SMTP-01, `email/platform-mailer.ts`), the same sender every other
+ * platform email uses. When email isn't configured the event is acknowledged and
  * nothing is sent -- the in-app billing page and bell (BILL-34) still say the same thing.
  * Imported for its side effect from apps/web/app/api/cron/drain-events/route.ts.
  */
@@ -74,9 +74,9 @@ async function recipients(businessId: string): Promise<{ emails: string[]; busin
 }
 
 export async function sendBillingEmail(event: DomainEvent): Promise<"sent" | "skipped"> {
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const from = await platformKey("RESEND_FROM_EMAIL");
-  if (!apiKey || !from) return "skipped";
+  // EMAIL-SMTP-01: through the platform's SMTP mailbox; not set up, skipped.
+  const sender = await platformSender();
+  if (!sender) return "skipped";
   const type = event.type as BillingNotificationType;
   const { emails, businessName, slug } = await recipients(event.business_id);
   if (emails.length === 0) return "skipped";
@@ -85,20 +85,16 @@ export async function sendBillingEmail(event: DomainEvent): Promise<"sent" | "sk
   const { subject, body } = COPY[type](event.payload as Payload, businessName, featureGraceDays);
   const link = slug ? `${SITE_URL}/${slug}/billing` : `${SITE_URL}/dashboard/settings/billing`;
   const fullBody = `${body}\n\nManage your plan: ${link}`;
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": `billing-${event.id}` },
-    body: JSON.stringify({
-      from,
-      to: emails,
-      subject,
-      html: renderEmailHtml({ brandName: BRAND_NAME, body: fullBody, websiteUrl: SITE_URL, replyToEmail: from, platform: true }),
-      text: renderEmailText(fullBody),
-    }),
+  // Thrown only when it surely didn't go, so the event's retry can't send it twice.
+  const result = await sendPlatformEmail({
+    to: emails,
+    subject,
+    html: renderEmailHtml({ brandName: BRAND_NAME, body: fullBody, websiteUrl: SITE_URL, replyToEmail: sender.fromEmail, platform: true }),
+    text: renderEmailText(fullBody),
   });
-  if (!response.ok) {
-    logBilling("billing.notification", { business_id: event.business_id, operation: type, status: "failed", error_code: `http_${response.status}` });
-    throw new Error(`Billing email failed (${response.status}).`);
+  if (result.status === "failed") {
+    logBilling("billing.notification", { business_id: event.business_id, operation: type, status: "failed", error_code: "smtp_failed" });
+    throw new Error(`Billing email failed: ${result.reason}`);
   }
   return "sent";
 }

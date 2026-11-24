@@ -41,7 +41,7 @@ describe("the registry", () => {
   });
 
   it("holds the values that were set in the deployment, and none that must stay there", () => {
-    for (const name of ["RESEND_API_KEY", "RESEND_FROM_EMAIL", "WORKSLAKE_GATEWAY_URL", "WORKSLAKE_GATEWAY_API_KEY"]) {
+    for (const name of ["SMTP_PASSWORD", "SMTP_FROM_EMAIL", "WORKSLAKE_GATEWAY_URL", "WORKSLAKE_GATEWAY_API_KEY"]) {
       expect(platformKeySpec(name), name).not.toBeNull();
     }
     const stays = new Set(DEPLOYMENT_ONLY_VARIABLES.map((variable) => variable.name));
@@ -57,8 +57,8 @@ describe("the registry", () => {
 
 describe("platformKeyHint", () => {
   it("shows the last four characters of a secret, and nothing of a short one", () => {
-    expect(platformKeyHint(spec("RESEND_API_KEY"), "re_1234567890abcd")).toBe("••••abcd");
-    expect(platformKeyHint(spec("RESEND_API_KEY"), "short")).toBe("••••");
+    expect(platformKeyHint(spec("SMTP_PASSWORD"), "mailbox-password-1234abcd")).toBe("••••abcd");
+    expect(platformKeyHint(spec("SMTP_PASSWORD"), "short")).toBe("••••");
   });
 
   it("shows a value that is not secret in full", () => {
@@ -68,19 +68,26 @@ describe("platformKeyHint", () => {
 
 describe("platformKeyProblem", () => {
   it("accepts ordinary values", () => {
-    expect(platformKeyProblem(spec("RESEND_API_KEY"), "re_1234567890abcd")).toBeNull();
+    expect(platformKeyProblem(spec("SMTP_PASSWORD"), "mailbox-password-1234abcd")).toBeNull();
     expect(platformKeyProblem(spec("WORKSLAKE_GATEWAY_URL"), "https://works.example")).toBeNull();
-    expect(platformKeyProblem(spec("RESEND_FROM_EMAIL"), "team@example.com")).toBeNull();
-    expect(platformKeyProblem(spec("RESEND_FROM_EMAIL"), "WonderArk <team@example.com>")).toBeNull();
+    expect(platformKeyProblem(spec("SMTP_FROM_EMAIL"), "team@example.com")).toBeNull();
+    // EMAIL-SMTP-01: the platform's SMTP mailbox (GoDaddy).
+    expect(platformKeyProblem(spec("SMTP_HOST"), "smtpout.secureserver.net")).toBeNull();
+    expect(platformKeyProblem(spec("SMTP_PORT"), "465")).toBeNull();
+    expect(platformKeyProblem(spec("SMTP_PORT"), "587")).toBeNull();
   });
 
   it.each([
-    ["an empty value", "RESEND_API_KEY", ""],
-    ["two lines", "RESEND_API_KEY", "re_123\nre_456"],
-    ["a value too long to be a key", "RESEND_API_KEY", "x".repeat(5000)],
+    ["an empty value", "SMTP_PASSWORD", ""],
+    ["two lines", "SMTP_PASSWORD", "pass\nword"],
+    ["a value too long to be a key", "SMTP_PASSWORD", "x".repeat(5000)],
     ["a gateway address that is not https", "WORKSLAKE_GATEWAY_URL", "http://works.example"],
     ["a gateway address that is not an address", "WORKSLAKE_GATEWAY_URL", "works"],
-    ["a From value with no address", "RESEND_FROM_EMAIL", "WonderArk"],
+    ["a From value with no address", "SMTP_FROM_EMAIL", "WonderArk"],
+    ["a From value with a name around the address", "SMTP_FROM_EMAIL", "WonderArk <team@example.com>"],
+    ["a plain-text SMTP port", "SMTP_PORT", "25"],
+    ["an SMTP host with a scheme", "SMTP_HOST", "smtp://smtpout.secureserver.net"],
+    ["an SMTP host with a port", "SMTP_HOST", "smtpout.secureserver.net:465"],
   ])("refuses %s", (_label, name, value) => {
     expect(platformKeyProblem(spec(name), value)).toEqual(expect.any(String));
   });

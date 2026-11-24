@@ -88,7 +88,7 @@ export function EmailProviderDialog({ config }: { config: EmailProviderConfig })
               id="provider"
               name="provider"
               defaultValue={config.provider ?? ""}
-              placeholder="e.g. Resend, SendGrid, Amazon SES"
+              placeholder="e.g. GoDaddy (SMTP)"
               className={FIELD_CLASS}
               aria-invalid={Boolean(fieldErrors.provider)}
             />

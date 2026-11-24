@@ -1,16 +1,16 @@
 import { createAdminClient } from "../db/admin";
+import { platformSender, sendPlatformEmail } from "../email/platform-mailer";
 import { renderEmailHtml, renderEmailText } from "../email/render";
 import { registerEventHandler } from "../events/registry";
 import type { DomainEvent } from "../events/types";
 import { BRAND_NAME } from "../lib/brand";
 import { SITE_URL } from "../site";
-import { platformKey } from "../admin/platform-key-store";
 
 /**
  * RBAC-32 / §52 -- membership notifications, sent by the domain-event drain (never from a
  * database trigger). The member hears about their own role change, suspension, removal or
- * reactivation; the inviter hears that an invitation was accepted. Without
- * RESEND_API_KEY / RESEND_FROM_EMAIL the events are acknowledged and nothing is sent.
+ * reactivation; the inviter hears that an invitation was accepted. Without the platform's
+ * SMTP mailbox (EMAIL-SMTP-01) the events are acknowledged and nothing is sent.
  * Imported for its side effect from apps/web/app/api/cron/drain-events/route.ts.
  */
 
@@ -32,9 +32,9 @@ async function emailFor(userId: string | undefined): Promise<{ email: string | n
 }
 
 export async function sendMemberEmail(event: DomainEvent): Promise<"sent" | "skipped"> {
-  const apiKey = await platformKey("RESEND_API_KEY");
-  const from = await platformKey("RESEND_FROM_EMAIL");
-  if (!apiKey || !from) return "skipped";
+  // EMAIL-SMTP-01: through the platform's SMTP mailbox; not set up, skipped.
+  const sender = await platformSender();
+  if (!sender) return "skipped";
   const payload = event.payload as Payload;
   const core = createAdminClient({ schema: "core" });
   const [{ data: business }, { data: role }] = await Promise.all([
@@ -70,18 +70,14 @@ export async function sendMemberEmail(event: DomainEvent): Promise<"sent" | "ski
   }
   if (!to) return "skipped";
   const full = `${body}\n\n${SITE_URL}/dashboard`;
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json", "Idempotency-Key": `member-${event.id}` },
-    body: JSON.stringify({
-      from,
-      to: [to],
-      subject,
-      html: renderEmailHtml({ brandName: BRAND_NAME, body: full, websiteUrl: SITE_URL, replyToEmail: from, platform: true }),
-      text: renderEmailText(full),
-    }),
+  // Thrown only when it surely didn't go, so the event's retry can't send it twice.
+  const result = await sendPlatformEmail({
+    to,
+    subject,
+    html: renderEmailHtml({ brandName: BRAND_NAME, body: full, websiteUrl: SITE_URL, replyToEmail: sender.fromEmail, platform: true }),
+    text: renderEmailText(full),
   });
-  if (!response.ok) throw new Error(`Member email failed (${response.status}).`);
+  if (result.status === "failed") throw new Error(`Member email failed: ${result.reason}`);
   return "sent";
 }
 

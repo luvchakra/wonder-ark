@@ -45,20 +45,20 @@ afterEach(() => {
 
 describe("platformKey", () => {
   it("returns the value saved on the platform, over the deployment's variable", async () => {
-    h.rows = [{ name: "RESEND_API_KEY", encrypted_value: `enc:${SECRET}` }];
-    expect(await platformKey("RESEND_API_KEY", { RESEND_API_KEY: "from-deployment" })).toBe(SECRET);
-    expect(await platformKeySource("RESEND_API_KEY", { RESEND_API_KEY: "from-deployment" })).toBe("platform");
+    h.rows = [{ name: "SMTP_PASSWORD", encrypted_value: `enc:${SECRET}` }];
+    expect(await platformKey("SMTP_PASSWORD", { SMTP_PASSWORD: "from-deployment" })).toBe(SECRET);
+    expect(await platformKeySource("SMTP_PASSWORD", { SMTP_PASSWORD: "from-deployment" })).toBe("platform");
     expect(h.createAdminClient).toHaveBeenCalledWith({ schema: "platform" });
   });
 
   it("falls back to the deployment's variable, trimmed, when nothing is saved", async () => {
-    expect(await platformKey("RESEND_API_KEY", { RESEND_API_KEY: "  from-deployment \n" })).toBe("from-deployment");
-    expect(await platformKeySource("RESEND_API_KEY", { RESEND_API_KEY: "from-deployment" })).toBe("deployment");
+    expect(await platformKey("SMTP_PASSWORD", { SMTP_PASSWORD: "  from-deployment \n" })).toBe("from-deployment");
+    expect(await platformKeySource("SMTP_PASSWORD", { SMTP_PASSWORD: "from-deployment" })).toBe("deployment");
   });
 
   it("is undefined when neither holds a value", async () => {
-    expect(await platformKey("RESEND_API_KEY", { RESEND_API_KEY: "   " })).toBeUndefined();
-    expect(await platformKeySource("RESEND_API_KEY", {})).toBeNull();
+    expect(await platformKey("SMTP_PASSWORD", { SMTP_PASSWORD: "   " })).toBeUndefined();
+    expect(await platformKeySource("SMTP_PASSWORD", {})).toBeNull();
   });
 
   it("ignores a saved row whose name is not in the registry", async () => {
@@ -67,9 +67,9 @@ describe("platformKey", () => {
   });
 
   it("reads the database once for many keys, and again only after a minute", async () => {
-    h.rows = [{ name: "RESEND_API_KEY", encrypted_value: `enc:${SECRET}` }];
-    await Promise.all([platformKey("RESEND_API_KEY", {}), platformKey("RESEND_FROM_EMAIL", {}), platformKey("WORKSLAKE_GATEWAY_URL", {})]);
-    await platformKey("RESEND_API_KEY", {});
+    h.rows = [{ name: "SMTP_PASSWORD", encrypted_value: `enc:${SECRET}` }];
+    await Promise.all([platformKey("SMTP_PASSWORD", {}), platformKey("SMTP_FROM_EMAIL", {}), platformKey("WORKSLAKE_GATEWAY_URL", {})]);
+    await platformKey("SMTP_PASSWORD", {});
     expect(h.selects).toBe(1);
 
     const start = Date.now();
@@ -80,12 +80,12 @@ describe("platformKey", () => {
   });
 
   it("picks up a replaced key on a forced read, as after a save", async () => {
-    h.rows = [{ name: "RESEND_API_KEY", encrypted_value: "enc:old-key-value" }];
-    expect(await platformKey("RESEND_API_KEY", {})).toBe("old-key-value");
-    h.rows = [{ name: "RESEND_API_KEY", encrypted_value: "enc:new-key-value" }];
-    expect(await platformKey("RESEND_API_KEY", {})).toBe("old-key-value");
+    h.rows = [{ name: "SMTP_PASSWORD", encrypted_value: "enc:old-key-value" }];
+    expect(await platformKey("SMTP_PASSWORD", {})).toBe("old-key-value");
+    h.rows = [{ name: "SMTP_PASSWORD", encrypted_value: "enc:new-key-value" }];
+    expect(await platformKey("SMTP_PASSWORD", {})).toBe("old-key-value");
     await loadPlatformKeys({ force: true });
-    expect(await platformKey("RESEND_API_KEY", {})).toBe("new-key-value");
+    expect(await platformKey("SMTP_PASSWORD", {})).toBe("new-key-value");
   });
 });
 
@@ -93,30 +93,30 @@ describe("when the saved keys cannot be read", () => {
   it("uses the deployment's variable when the database is down, and logs no value", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     h.error = { message: "connection refused" };
-    expect(await platformKey("RESEND_API_KEY", { RESEND_API_KEY: "from-deployment" })).toBe("from-deployment");
+    expect(await platformKey("SMTP_PASSWORD", { SMTP_PASSWORD: "from-deployment" })).toBe("from-deployment");
     expect(warn).toHaveBeenCalledTimes(1);
     expect(JSON.stringify(warn.mock.calls)).not.toContain("from-deployment");
   });
 
   it("keeps the last values it read when a later read fails", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
-    h.rows = [{ name: "RESEND_API_KEY", encrypted_value: `enc:${SECRET}` }];
-    expect(await platformKey("RESEND_API_KEY", {})).toBe(SECRET);
+    h.rows = [{ name: "SMTP_PASSWORD", encrypted_value: `enc:${SECRET}` }];
+    expect(await platformKey("SMTP_PASSWORD", {})).toBe(SECRET);
     h.error = { message: "timeout" };
     await loadPlatformKeys({ force: true });
-    expect(await platformKey("RESEND_API_KEY", {})).toBe(SECRET);
+    expect(await platformKey("SMTP_PASSWORD", {})).toBe(SECRET);
   });
 
   it("falls back, without logging the ciphertext, when a saved value no longer decrypts", async () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    h.rows = [{ name: "RESEND_API_KEY", encrypted_value: "garbled-ciphertext" }];
-    expect(await platformKey("RESEND_API_KEY", { RESEND_API_KEY: "from-deployment" })).toBe("from-deployment");
+    h.rows = [{ name: "SMTP_PASSWORD", encrypted_value: "garbled-ciphertext" }];
+    expect(await platformKey("SMTP_PASSWORD", { SMTP_PASSWORD: "from-deployment" })).toBe("from-deployment");
     expect(JSON.stringify(warn.mock.calls)).not.toContain("garbled-ciphertext");
   });
 
   it("does not try the database at all when none is configured", async () => {
     vi.stubEnv("SUPABASE_SERVICE_ROLE_KEY", "");
-    expect(await platformKey("RESEND_API_KEY", { RESEND_API_KEY: "from-deployment" })).toBe("from-deployment");
+    expect(await platformKey("SMTP_PASSWORD", { SMTP_PASSWORD: "from-deployment" })).toBe("from-deployment");
     expect(h.createAdminClient).not.toHaveBeenCalled();
   });
 });

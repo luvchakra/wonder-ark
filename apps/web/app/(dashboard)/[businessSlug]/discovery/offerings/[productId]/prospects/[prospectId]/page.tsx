@@ -16,7 +16,6 @@ import { listRecentProspectScores } from "@cofounderai/module-discovery/lib/scor
 import { WEIGHTS as SCORE_WEIGHTS } from "@cofounderai/module-discovery/lib/scoring/score-prospect";
 import { getLatestOutreachStrategy } from "@cofounderai/module-discovery/lib/outreach/queries";
 import { listMessages } from "@cofounderai/module-discovery/lib/messages/queries";
-import { listResendTemplates } from "@cofounderai/module-discovery/lib/messages/resend-templates";
 import { listConversations } from "@cofounderai/module-discovery/lib/conversations/queries";
 import {
   deriveProspectPipelineState,
@@ -227,8 +226,7 @@ function OutboundMessageCard({
         ) : null}
         {message.resend_template_id ? (
           <p className="text-xs text-muted-foreground">
-            Resend applies this template&apos;s own subject at send time. Edit the values
-            below (one &quot;KEY: value&quot; per line).
+            Written for an email template, which can no longer be sent. Generate a new message.
           </p>
         ) : null}
         <Textarea
@@ -405,13 +403,6 @@ export default async function ProspectDetailPage({
   const researchAiRun = research?.ai_run_id ? await getAiRun(research.ai_run_id) : null;
   const researchCacheStatus = research ? computeResearchCacheStatus(research) : null;
 
-  // Template selection is an optional enhancement to message generation -- a Resend
-  // outage or missing RESEND_API_KEY should never break this whole page, just fall back
-  // to the free-form "Generate message" path with no template picker shown.
-  const resendTemplates =
-    strategy?.status === "approved" && strategy.channel === "email"
-      ? await listResendTemplates().catch(() => [])
-      : [];
   const score = scores[0] ?? null;
   // DISC-NAV-P0-01.4: each step is a folded section; the first one not done yet opens.
   const previousScore = scores[1] ?? null;
@@ -1058,16 +1049,6 @@ export default async function ProspectDetailPage({
               pendingText="Generating..."
               formClassName="flex flex-wrap items-center gap-2"
             >
-              {resendTemplates.length > 0 ? (
-                <NativeSelect name="resendTemplateId" defaultValue="" className="w-auto max-w-56">
-                  <option value="">No template (AI writes freely)</option>
-                  {resendTemplates.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </NativeSelect>
-              ) : null}
             </AiActionForm>
           ) : null}
         </div>

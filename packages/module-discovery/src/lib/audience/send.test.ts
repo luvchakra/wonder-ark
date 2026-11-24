@@ -13,6 +13,7 @@ const h = vi.hoisted(() => ({
   sendViaSmtp: vi.fn(),
   coreFrom: vi.fn(),
   coreRpc: vi.fn(),
+  sender: null as { fromEmail: string; fromName: string } | null,
 }));
 vi.mock("@cofounderai/core/privacy/suppression", () => ({ prepareOutreachEmail: h.prepareOutreachEmail }));
 vi.mock("@cofounderai/core/db/admin", () => ({
@@ -24,7 +25,12 @@ vi.mock("@cofounderai/core/db/admin", () => ({
 vi.mock("@cofounderai/core/site", () => ({ SITE_URL: "https://app.example" }));
 vi.mock("../campaigns/mailbox", () => ({ loadMailboxForSending: h.loadMailboxForSending }));
 vi.mock("../campaigns/smtp", () => ({ sendViaSmtp: h.sendViaSmtp }));
-vi.mock("../messages/send", () => ({ sendViaPlatform: h.sendViaPlatform }));
+// EMAIL-SMTP-01: without a mailbox of its own, the platform's SMTP mailbox sends.
+vi.mock("@cofounderai/core/email/platform-mailer", () => ({
+  EMAIL_NOT_SET_UP: "Email sending isn't set up yet.",
+  platformSender: async () => h.sender,
+  sendPlatformEmail: (...args: unknown[]) => h.sendViaPlatform(...args),
+}));
 
 const { sendLeadEmail } = await import("./send");
 
@@ -42,8 +48,7 @@ function db() {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.stubEnv("RESEND_API_KEY", "re_test");
-  vi.stubEnv("RESEND_FROM_EMAIL", "hello@tidy.example");
+  h.sender = { fromEmail: "hello@tidy.example", fromName: "Tidy" };
   h.prepareOutreachEmail.mockResolvedValue({ suppressed: false, unsubscribeUrl: "x", headers: {} });
   h.loadMailboxForSending.mockResolvedValue(null);
   h.sendViaPlatform.mockResolvedValue({ status: "sent", messageId: "m1" });
@@ -70,10 +75,10 @@ describe("sendLeadEmail", () => {
     expect(h.sendViaPlatform).not.toHaveBeenCalled();
   });
 
-  it("sends with the person's own unsubscribe link, the one-click headers and the idempotency key", async () => {
+  it("sends with the person's own unsubscribe link and the one-click headers", async () => {
     await expect(send()).resolves.toEqual({ status: "sent" });
-    const [, key, payload] = h.sendViaPlatform.mock.calls[0]!;
-    expect(key).toBe("audience-message/lead-1/k");
+    const [payload] = h.sendViaPlatform.mock.calls[0]!;
+    expect(payload.to).toBe("asha@example.com");
     const unsubscribe = `https://app.example/api/audience/unsubscribe?t=${LEAD.lead_token}`;
     expect(payload.headers).toEqual({ "List-Unsubscribe": `<${unsubscribe}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" });
     expect(payload.text).toContain(unsubscribe);
@@ -82,9 +87,10 @@ describe("sendLeadEmail", () => {
     expect(JSON.stringify(h.coreRpc.mock.calls)).not.toContain("asha@example.com");
   });
 
-  it("says Needs setup when no mail provider or mailbox is configured", async () => {
-    vi.stubEnv("RESEND_API_KEY", "");
-    await expect(send()).resolves.toEqual({ status: "failed", message: "Needs setup: email sending isn't configured yet." });
+  it("says Needs setup when there is neither a mailbox nor the platform's SMTP mailbox", async () => {
+    h.sender = null;
+    await expect(send()).resolves.toEqual({ status: "failed", message: "Needs setup: Email sending isn't set up yet." });
+    expect(h.sendViaPlatform).not.toHaveBeenCalled();
   });
 
   it("reports an unknown outcome as a failure that is not retried", async () => {
