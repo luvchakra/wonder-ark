@@ -9,7 +9,7 @@ import { TodayList } from "@cofounderai/module-discovery/components/prospects/to
 import { SuggestionReviewList } from "@cofounderai/module-discovery/components/prospects/suggestion-review-list";
 import { approveSuggestionsAction, discardSuggestionsAction } from "./prospects/discover/actions";
 import { markTaskDoneAction } from "./campaigns/actions";
-import { markDirectMessageSentAction } from "./prospects/[prospectId]/actions";
+import { editDirectMessageAction, markDirectMessageSentAction, rewriteDirectMessageAction } from "./prospects/[prospectId]/actions";
 import { listDirectDrafts } from "@cofounderai/module-discovery/lib/messages/queries";
 import { DmCard } from "@cofounderai/module-discovery/components/prospects/dm-card";
 import { DM_LABEL } from "@cofounderai/module-discovery/lib/channels/reach";
@@ -102,6 +102,8 @@ export async function TodoView({
                     profileLink={safeHttpUrl(p.source_ref ?? null) ?? safeHttpUrl(p.website ?? null)}
                     prospectHref={`${base}/prospects/${p.id}#messages`}
                     markSentAction={markDirectMessageSentAction.bind(null, businessId, productId, p.id, draft.id)}
+                    editAction={editDirectMessageAction.bind(null, businessId, productId, p.id, draft.id)}
+                    rewriteAction={rewriteDirectMessageAction.bind(null, businessId, productId, p.id, draft.id)}
                   />
                 );
               }

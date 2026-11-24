@@ -288,10 +288,12 @@ actually be reached, and To do groups them that way:
 
 - **Send ready emails** — there is an address. Open one, check it and press **Send**.
 - **Message on Instagram** (or Facebook, LinkedIn) — a channel found on that platform
-  with no email address gets a short direct message instead of an email. WonderArk never
-  sends on these platforms. Press **Copy and open Instagram**: the message is copied and
+  with no email address gets a short, professional direct message instead of an email:
+  a line about their content, why their audience would care, and one question to answer,
+  with at most two emojis (none on LinkedIn). WonderArk never sends on these platforms. Press **Copy and open Instagram**: the message is copied and
   the channel's page opens in a new tab. Paste it into a message there and send it, then
-  press **Mark as sent**. Tap the name to edit the message first.
+  press **Mark as sent**. To change it first, press **Edit**: change the text and press
+  **Save**, or press **Rewrite with AI** for a new version.
 - **Add an email address** — an email is written but there is nowhere to send it. Open
   it and type the address in the **To** box beside **Send**: it is saved as a contact and
   the email goes out in one step.
