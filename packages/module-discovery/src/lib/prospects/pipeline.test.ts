@@ -4,6 +4,7 @@ import {
   deriveProspectPipelineState,
   latestTimestamp,
   type ProspectPipelineSignals,
+  openSectionFor,
 } from "./pipeline";
 
 const baseSignals: ProspectPipelineSignals = {
@@ -112,5 +113,29 @@ describe("latestTimestamp", () => {
 
   it("ignores null and undefined entries", () => {
     expect(latestTimestamp(null, "2026-01-01T00:00:00Z", undefined)).toBe("2026-01-01T00:00:00Z");
+  });
+});
+
+// DISC-REACH-P0-01.3: the page opens on the section holding what there is to do.
+describe("openSectionFor", () => {
+  const base = { nextAction: null as string | null, hasUnsentMessage: false, hasConversation: false, isChannel: false };
+
+  it("opens Messages whenever a message waits, whatever else is undone", () => {
+    expect(openSectionFor({ ...base, nextAction: "Review message", hasUnsentMessage: true })).toBe("messages");
+    // An imported prospect with a draft but no research: the draft is still what To do linked to.
+    expect(openSectionFor({ ...base, nextAction: "Research", hasUnsentMessage: true })).toBe("messages");
+  });
+
+  it("opens Conversations for a reply to answer or a sent message to follow up", () => {
+    expect(openSectionFor({ ...base, nextAction: "Generate reply", hasUnsentMessage: true, hasConversation: true })).toBe("conversations");
+    expect(openSectionFor({ ...base, hasConversation: true })).toBe("conversations");
+  });
+
+  it("otherwise opens the step still to do; a channel has no plan step", () => {
+    expect(openSectionFor({ ...base, nextAction: "Research" })).toBe("research");
+    expect(openSectionFor({ ...base, nextAction: "Score" })).toBe("score");
+    expect(openSectionFor({ ...base, nextAction: "Approve strategy" })).toBe("strategy");
+    expect(openSectionFor({ ...base, nextAction: "Generate strategy", isChannel: true })).toBe("messages");
+    expect(openSectionFor({ ...base, nextAction: "Generate message" })).toBe("messages");
   });
 });

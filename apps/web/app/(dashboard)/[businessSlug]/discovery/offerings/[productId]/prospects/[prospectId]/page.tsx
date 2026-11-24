@@ -22,6 +22,7 @@ import {
   deriveProspectPipelineState,
   latestTimestamp,
   NEXT_ACTION_ANCHOR,
+  openSectionFor,
 } from "@cofounderai/module-discovery/lib/prospects/pipeline";
 import type { Message } from "@cofounderai/module-discovery/lib/messages/types";
 import type { Contact } from "@cofounderai/module-discovery/lib/contacts/types";
@@ -413,7 +414,6 @@ export default async function ProspectDetailPage({
       : [];
   const score = scores[0] ?? null;
   // DISC-NAV-P0-01.4: each step is a folded section; the first one not done yet opens.
-  const openStep = !research ? "research" : !score ? "score" : strategy?.status !== "approved" ? "strategy" : "messages";
   const previousScore = scores[1] ?? null;
   const drafts = messages.filter((m) => !m.conversation_id);
   const threadForConversation = (conversationId: string) =>
@@ -456,6 +456,13 @@ export default async function ProspectDetailPage({
       ...messages.map((m) => m.created_at),
       latestConversation?.last_message_at,
     ),
+  });
+  // DISC-REACH-P0-01.3: the section holding what there is to do opens.
+  const openStep = openSectionFor({
+    nextAction,
+    hasUnsentMessage: drafts.some((m) => m.status !== "sent"),
+    hasConversation: conversations.length > 0,
+    isChannel: !isCompany,
   });
 
   const discoveryOutcomeStage = computeDiscoveryOutcomeStage({
@@ -1091,7 +1098,7 @@ export default async function ProspectDetailPage({
         )}
       </SectionFold>
 
-      <SectionFold id="conversations" title="Conversations" done={conversations.length > 0} hint={conversations.length ? `${conversations.length} ${conversations.length === 1 ? "conversation" : "conversations"}` : "None yet"}>
+      <SectionFold id="conversations" title="Conversations" done={conversations.length > 0} open={openStep === "conversations"} hint={conversations.length ? `${conversations.length} ${conversations.length === 1 ? "conversation" : "conversations"}` : "None yet"}>
         <h2 className="font-medium">Conversations</h2>
         {conversations.length === 0 ? (
           <p className="text-sm text-muted-foreground">

@@ -11,7 +11,7 @@ offerings and data:
 - **Funding** — your funding profile, investor readiness, rounds, investors,
   outreach, data room and due diligence.
 
-Last updated: 2026-11-23
+Last updated: 2026-11-24
 
 
 ## How Discovery is organised
@@ -123,8 +123,9 @@ A prospect's own page works the same way. At the top, a row of ticks shows how f
 got (**Research**, **Score**, **Write**, **Send**, **Reply**, **Won**), with its next action
 below. Then come its sections: **Contacts** (with **Buyer intelligence** for those people),
 **Research** (with the **Research brief**), **Score**, **Outreach strategy**, **Messages**,
-**Conversations** and **Feedback**. A section that is done has a green tick, and the first
-step not done yet is open.
+**Conversations** and **Feedback**. A section that is done has a green tick, and the
+section holding what there is to do is open: **Messages** when a message is waiting,
+**Conversations** when there is a reply to answer, otherwise the first step not done yet.
 
 ### Setup
 
