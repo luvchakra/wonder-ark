@@ -190,3 +190,27 @@ export function latestTimestamp(...timestamps: Array<string | null | undefined>)
     .filter((t): t is string => Boolean(t))
     .reduce((latest, t) => (t > latest ? t : latest));
 }
+
+/**
+ * DISC-REACH-P0-01.3: which section of a prospect's page is open when it loads: the one
+ * holding what there is to do. To do links land on `#messages` or `#conversations`, so that
+ * section must be open, not folded shut (seen live: the To box beside Send was hidden in a
+ * closed Messages section).
+ */
+export type ProspectSection = "research" | "score" | "strategy" | "messages" | "conversations";
+
+export function openSectionFor(input: {
+  nextAction: string | null;
+  hasUnsentMessage: boolean;
+  hasConversation: boolean;
+  isChannel: boolean;
+}): ProspectSection {
+  if (input.nextAction === "Generate reply") return "conversations";
+  if (input.hasUnsentMessage) return "messages";
+  if (input.nextAction === null) return input.hasConversation ? "conversations" : "messages";
+  if (input.nextAction === "Research") return "research";
+  if (input.nextAction === "Score") return "score";
+  // A channel has no plan step: its message is written straight after scoring.
+  if (input.nextAction === "Generate strategy" || input.nextAction === "Approve strategy") return input.isChannel ? "messages" : "strategy";
+  return "messages";
+}
