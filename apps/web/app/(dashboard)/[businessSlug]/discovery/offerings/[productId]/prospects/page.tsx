@@ -95,7 +95,6 @@ export default async function ProspectsPage({
   // the offering has more than one; picking happens on Find.
   const lists: ProspectList[] =
     audienceType === "consumer" ? ["channels", "people"] : audienceType === "both" ? ["companies", "channels", "people"] : ["companies"];
-  const waiting = await listProspects(workspace.id, { shortlisted: false });
   const currentList: ProspectList = lists.find((entry) => entry === query.list) ?? lists[0]!;
   const kind =
     currentList === "channels" ? ("channel" as const) : currentList === "companies" && audienceType !== "business" ? ("company" as const) : undefined;
@@ -117,45 +116,37 @@ export default async function ProspectsPage({
   const showCampaigns = currentList === "companies";
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Prospects</h1>
-        {/* DISC-NAV-P0-01.13: the page's actions are the list's own; adding by hand and the
-            export are rare, so they sit under More. */}
-        <MoreActions>
+    <div className="flex flex-col gap-4">
+      {/* DISC-NAV-P0-02.3: the tab already says "Prospects", so the page has no heading of
+          its own. One row: the lists as chips, and the rare actions (add by hand, export)
+          behind a three-dot button at its end. Imported prospects waiting to be picked
+          are on To do, which counts them, so they are not repeated here. */}
+      <div className="flex items-center justify-between gap-3">
+        {lists.length > 1 ? (
+          <nav aria-label="Lists" className="flex min-w-0 flex-wrap gap-1.5">
+            {lists.map((entry) => (
+              <Link
+                key={entry}
+                href={`${basePath}?list=${entry}`}
+                aria-current={entry === currentList ? "page" : undefined}
+                className={
+                  entry === currentList
+                    ? "rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
+                    : "rounded-full border px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
+                }
+              >
+                {LIST_LABEL[entry]}
+              </Link>
+            ))}
+          </nav>
+        ) : (
+          <h1 className="sr-only">Prospects</h1>
+        )}
+        <MoreActions compact className="ml-auto shrink-0">
           <ProspectToolbarActions createAction={createProspectAction.bind(null, businessId, productId, workspace.id)} />
           <ExportMenu exportId="discovery.prospects" businessSlug={businessSlug} params={{ productId, list: currentList }} />
         </MoreActions>
       </div>
-
-      {lists.length > 1 ? (
-        <nav aria-label="Lists" className="flex flex-wrap gap-1.5">
-          {lists.map((entry) => (
-            <Link
-              key={entry}
-              href={`${basePath}?list=${entry}`}
-              aria-current={entry === currentList ? "page" : undefined}
-              className={
-                entry === currentList
-                  ? "rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"
-                  : "rounded-full border px-3 py-1 text-xs text-muted-foreground hover:text-foreground"
-              }
-            >
-              {LIST_LABEL[entry]}
-            </Link>
-          ))}
-        </nav>
-      ) : null}
-      {waiting.length > 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {waiting.length} imported {waiting.length === 1 ? "prospect is" : "prospects are"} waiting to be picked on{" "}
-          <Link href={`${basePath}/discover#to-pick`} className="font-medium text-foreground underline-offset-4 hover:underline">
-            Find
-          </Link>
-          .
-        </p>
-      ) : null}
-
 
       <AutoPopulateStepBanner
         step="prospects"

@@ -24,8 +24,9 @@ type Phase = "choose" | "running" | "paused" | "done" | "stopped";
  * DISC-AUTO-P0-01.3: preparing picked prospects (research, score, plan, first-message
  * draft), only the ones the person chooses and only when they press Prepare, so no AI
  * credits are spent on prospects they didn't pick (owner, 2026-11-23). On To do it lists the
- * prospects still to prepare with a box each; elsewhere one line says how many and links to
- * To do. Running, it shows a progress bar of steps done and a Pause button; paused, Resume.
+ * prospects still to prepare with a box each; on the other tabs it shows nothing unless a
+ * run is going (owner, 2026-11-27), then one slim line with its progress and Pause.
+ * Running, it shows a progress bar of steps done and a Pause button; paused, Resume.
  * Each step is one short server call; Pause lets the step in flight finish and starts no
  * other. Stops, and says why, on a failure every prospect would hit (AI key, credits, daily
  * send limit); skips, and says why, a prospect that fails on its own.
@@ -152,20 +153,34 @@ export function PrepRunner({
   const active = phase === "running" || phase === "paused";
   if (!active && phase !== "done" && phase !== "stopped" && candidates.length === 0) return null;
 
-  // Away from To do, idle: one line pointing there.
+  const percent = total > 0 ? Math.round(((total - stepsLeft) / total) * 100) : 0;
+
+  // DISC-NAV-P0-02.3: choosing and its results belong to To do alone. On the other tabs
+  // there is nothing, except one slim line while a run the person started is going, so it
+  // is never out of sight or out of reach.
   const onTodo = pathname === todoPath;
-  if (phase === "choose" && !onTodo) {
+  if (!onTodo) {
+    if (!active) return null;
     return (
-      <p className="rounded-lg border bg-card px-4 py-2.5 text-sm">
-        {candidates.length} {candidates.length === 1 ? "prospect" : "prospects"} to prepare.{" "}
-        <Link href={todoPath} className="font-medium text-primary hover:underline">
-          Choose on To do
-        </Link>
-      </p>
+      <section aria-label="Prepare prospects" className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 text-xs">
+        <span role="status" className="shrink-0 font-medium">
+          {phase === "paused" ? "Paused" : "Preparing"}: {remaining} left
+        </span>
+        <Progress value={percent} aria-label={`${percent}% prepared`} className="min-w-0 flex-1" />
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          onClick={phase === "running" ? pause : resume}
+          aria-label={phase === "running" ? "Pause" : "Resume"}
+          className="size-7 shrink-0"
+        >
+          {phase === "running" ? <Pause className="size-4" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />}
+        </Button>
+      </section>
     );
   }
 
-  const percent = total > 0 ? Math.round(((total - stepsLeft) / total) * 100) : 0;
   const allSelected = candidates.length > 0 && selected.size === candidates.length;
 
   return (

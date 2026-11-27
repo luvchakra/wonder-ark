@@ -1,4 +1,5 @@
 import type { OfferingPerformanceAnalysis, RateBucket } from "../../lib/performance-analysis/types";
+import { SectionFold } from "../ui/section-fold";
 
 function RateBucketList({ buckets, emptyMessage }: { buckets: RateBucket[]; emptyMessage: string }) {
   if (buckets.length === 0) {
@@ -19,19 +20,35 @@ function RateBucketList({ buckets, emptyMessage }: { buckets: RateBucket[]; empt
 }
 
 /**
+ * DISC-NAV-P0-02.3: a section's answer in one line, from its own rows and nothing else: the
+ * row with the most matches (ties go to the higher rate), or that there are none yet.
+ */
+export function leadingLine(buckets: RateBucket[], emptyMessage: string, noneYet: string): string {
+  if (buckets.length === 0) return emptyMessage;
+  const best = [...buckets].sort((a, b) => b.matched - a.matched || b.rate - a.rate)[0]!;
+  if (best.matched === 0) return noneYet;
+  return `${best.label}: ${best.rate}% (${best.matched}/${best.total})`;
+}
+
+/**
  * DISC-OFFER-P1-02.3 "Offering Performance Analysis" -- the doc's five questions, each its
  * own section. Plays are answered per Discovery Definition (see types.ts).
+ *
+ * DISC-NAV-P0-02.3: each question is a closed fold whose summary line is its leading
+ * answer, so Results reads as five lines until one is opened (owner, 2026-11-27).
  */
 export function OfferingPerformanceAnalysisView({ analysis }: { analysis: OfferingPerformanceAnalysis }) {
+  const places = [...analysis.industryConversionRates, ...analysis.locationConversionRates];
   return (
-    <div className="flex flex-col gap-6">
-      <section className="flex flex-col gap-2 rounded-md border p-4">
-        <h2 className="font-medium">Which signals produce conversations?</h2>
+    <div className="flex flex-col gap-3">
+      <SectionFold
+        title="Signals that start conversations"
+        hint={leadingLine(analysis.signalsProducingConversations, "No signals recorded yet.", "No conversations from a signal yet.")}
+      >
         <RateBucketList buckets={analysis.signalsProducingConversations} emptyMessage="No signals recorded yet." />
-      </section>
+      </SectionFold>
 
-      <section className="flex flex-col gap-2 rounded-md border p-4">
-        <h2 className="font-medium">Which ICP attributes produce conversions?</h2>
+      <SectionFold title="Industries and places that convert" hint={leadingLine(places, "No prospects with an industry or a location yet.", "None won yet.")}>
         <p className="text-xs text-muted-foreground">Won rate by each prospect&apos;s own industry and location.</p>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1.5">
@@ -43,25 +60,28 @@ export function OfferingPerformanceAnalysisView({ analysis }: { analysis: Offeri
             <RateBucketList buckets={analysis.locationConversionRates} emptyMessage="No prospects with a location on file yet." />
           </div>
         </div>
-      </section>
+      </SectionFold>
 
-      <section className="flex flex-col gap-2 rounded-md border p-4">
-        <h2 className="font-medium">Which buyer roles respond?</h2>
+      <SectionFold
+        title="Buyer roles that reply"
+        hint={leadingLine(analysis.buyerRolesThatRespond, "No conversations linked to a named contact yet.", "No replies yet.")}
+      >
         <p className="text-xs text-muted-foreground">Reply rate by contact job title, among conversations linked to a named contact.</p>
         <RateBucketList buckets={analysis.buyerRolesThatRespond} emptyMessage="No conversations linked to a named contact yet." />
-      </section>
+      </SectionFold>
 
-      <section className="flex flex-col gap-2 rounded-md border p-4">
-        <h2 className="font-medium">Does a higher score correlate with better outcomes?</h2>
+      <SectionFold title="Score against outcome" hint={leadingLine(analysis.scoreVsOutcome, "No scored prospects yet.", "None won yet.")}>
         <p className="text-xs text-muted-foreground">Won rate by score range.</p>
         <RateBucketList buckets={analysis.scoreVsOutcome} emptyMessage="No scored prospects yet." />
-      </section>
+      </SectionFold>
 
-      <section className="flex flex-col gap-2 rounded-md border p-4">
-        <h2 className="font-medium">Which Discovery Plays perform best?</h2>
+      <SectionFold
+        title="Discovery Plays"
+        hint={leadingLine(analysis.playsPerformance, "No opportunities found by a Discovery Play yet.", "None sent to CRM yet.")}
+      >
         <p className="text-xs text-muted-foreground">Share of each play&apos;s opportunities sent to CRM.</p>
         <RateBucketList buckets={analysis.playsPerformance} emptyMessage="No opportunities found by a Discovery Play yet." />
-      </section>
+      </SectionFold>
     </div>
   );
 }

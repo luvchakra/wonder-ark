@@ -28,6 +28,17 @@ describe("MoreActions", () => {
     expect(html).toContain("More");
     expect(visibleActions(html)).toEqual([]);
   });
+
+  it("compact is a three-dot button named More, still closed (DISC-NAV-P0-02.3)", () => {
+    const html = renderToStaticMarkup(
+      <MoreActions compact>
+        <button type="button">Add</button>
+      </MoreActions>,
+    );
+    expect(html).toMatch(/<summary[^>]*aria-label="More"/);
+    expect(html).not.toMatch(/<details[^>]*\sopen/);
+    expect(visibleActions(html)).toEqual([]);
+  });
 });
 
 describe("the Setup tab's top opportunity", () => {

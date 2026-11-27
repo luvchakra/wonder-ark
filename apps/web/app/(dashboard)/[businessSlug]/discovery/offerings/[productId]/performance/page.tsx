@@ -8,6 +8,7 @@ import { OfferingPerformanceAnalysisView } from "@cofounderai/module-discovery/c
 import { getOpportunityOutcomeFunnel } from "@cofounderai/module-discovery/lib/opportunities/queries";
 import { OutcomeFunnelSummary } from "@cofounderai/module-discovery/components/offerings/offering-overview-summary";
 import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
+import { MoreActions } from "@cofounderai/module-discovery/components/ui/more-actions";
 import ConversionsPage from "../conversions/page";
 import PeopleSayPage from "../people-say/page";
 
@@ -29,15 +30,15 @@ export default async function PerformanceAnalysisPage({
   const analysis = computeOfferingPerformanceAnalysis(raw);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-medium">Performance analysis</h1>
-          <p className="text-sm text-muted-foreground">What&apos;s actually working for this offering, computed from everything discovered so far.</p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
+    <div className="flex flex-col gap-3">
+      {/* DISC-NAV-P0-02.3: the tab says "Results" and its line says what they are, so the
+          page has no heading of its own; the export sits behind the same three-dot button
+          as on Prospects. */}
+      <div className="flex items-center justify-end">
+        <h1 className="sr-only">Results</h1>
+        <MoreActions compact>
           <ExportMenu exportId="discovery.performance" businessSlug={businessSlug} params={{ productId }} kind="report" />
-        </div>
+        </MoreActions>
       </div>
       {/* DISC-OFFER-P1-04.2: the outcome numbers, moved here from the old Overview. */}
       <OutcomeFunnelSummary funnel={outcomeFunnel} />
