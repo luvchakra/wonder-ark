@@ -28,12 +28,11 @@ describe("PrepRunner", () => {
     expect(action).not.toHaveBeenCalled();
   });
 
-  it("away from To do, says how many wait and links there", () => {
-    h.pathname = "/b/discovery/offerings/p1/prospects";
-    const html = render();
-    expect(html).toContain("2 prospects to prepare.");
-    expect(html).toContain('href="/b/discovery/offerings/p1"');
-    expect(html).not.toContain('type="checkbox"');
+  it("shows nothing on the other tabs while no run is going (DISC-NAV-P0-02.3)", () => {
+    for (const tab of ["prospects", "performance", "prospects/x1"]) {
+      h.pathname = `/b/discovery/offerings/p1/${tab}`;
+      expect(render()).toBe("");
+    }
   });
 
   it("shows nothing when there is nothing to prepare", () => {

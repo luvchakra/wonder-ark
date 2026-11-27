@@ -11,7 +11,7 @@ offerings and data:
 - **Funding** — your funding profile, investor readiness, rounds, investors,
   outreach, data room and due diligence.
 
-Last updated: 2026-11-24
+Last updated: 2026-11-27
 
 
 ## How Discovery is organised
@@ -107,7 +107,7 @@ Once an offering is set up (described, and its ideal customer approved), it has 
 |---|---|
 | **To do** | The only list you work from, most urgent first: **Answer replies**, **Follow up with** (no reply and no activity for 7 days), **Send ready emails**, **Message on Instagram** (or another platform), **Add an email address**, campaign steps you do by hand, then **New prospects to approve** and imported prospects to pick. Tap one to open it at that step. The tab shows how many are waiting. Empty means nothing needs you; **Find more prospects** searches for more. |
 | **Prospects** | Everyone you approved and how far each has got: your groups first (the same as To do), then **To prepare**, **Waiting for a reply** and **Closed**. No buttons: you choose what to prepare on To do. On the **Companies** list, **Campaigns** below is the other way to reach them. |
-| **Results** | Performance, and discovery effectiveness once there are opportunities, with **Conversions** and **What people say** below. |
+| **Results** | Discovery effectiveness once there are opportunities, then one closed section per question (its leading answer on the section's line), with **Conversions** and **What people say** below. The export is under the three-dot button. |
 
 **Setup** (beside the tabs) holds what you sell and who buys it. Until it is done, the
 offering opens on Setup; after that it opens on To do. Approving the ideal customer starts the first
@@ -257,7 +257,7 @@ Everything that brings companies in is under the **Find** tab.
   people's own profiles.
 - **Import** loads a list from CSV, Excel or PDF, or pasted CSV. `company_name` is
   required; a file in another layout is restructured by AI for you to check before import.
-- **Add**, under **More** on **Prospects**, creates one prospect by hand.
+- **Add**, under the three-dot button on **Prospects**, creates one prospect by hand.
 
 ### Picking prospects
 
@@ -266,12 +266,12 @@ goes straight to **Prospects**. A file you import arrives unpicked: it waits on 
 **Imported, to pick** until you tick the ones you want and press **Pick these** (**To do** links to them). **Prospects**
 holds only picked prospects, as **Companies**, **Channels** or **People** chips when the
 offering has more than one. To unpick one, open it and choose **Move back to Find** under
-**More**. A prospect you add by hand (**More** → **Add**) is already picked.
+**More**. A prospect you add by hand (the three-dot button → **Add**) is already picked.
 
 ### Prospects, and what is prepared for you
 
 **Prepared when you choose.** Once the ideal customer is approved, prospects you pick wait
-under **Prepare prospects** at the top of **To do** (other tabs show one line linking there).
+under **Prepare prospects** at the top of **To do**. The other tabs do not show it; while a run you started is going, they show one thin line with its progress and **Pause**.
 Tick the ones you want, or **Select all**, and press **Prepare**: WonderArk researches and
 scores each one, plans the message and writes a first message draft (AI-generated). Nothing
 starts until you press Prepare, so AI credits are spent only on the ones you chose (about
@@ -638,10 +638,11 @@ offering you set it in.
 ## Performance analysis and run history
 
 **Results** answers "what's actually working for this offering?"
-from everything discovered so far: which signals produce conversations, which
-ICP attributes produce conversions, which buyer roles respond, and whether a
-higher score really correlates with better outcomes, and which Discovery Plays perform
-best. It can be exported as a report.
+from everything discovered so far, as five closed sections: **Signals that start
+conversations**, **Industries and places that convert**, **Buyer roles that reply**,
+**Score against outcome** and **Discovery Plays**. Each section's line shows its leading
+answer (or that there is none yet); click it for the full breakdown. The report export is
+under the three-dot button at the top right.
 
 The **History** section of **Find** is the audit list of every AI Discovery run for the
 offering — what started it (Run AI Discovery, Retry failed stage, or Save &
