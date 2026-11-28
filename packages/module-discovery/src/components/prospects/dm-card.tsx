@@ -10,7 +10,7 @@ import type { AiActionState } from "@cofounderai/core/actions/ai-action-state";
 type FormAction = (prevState: AiActionState, formData: FormData) => Promise<AiActionState>;
 
 /**
- * DISC-REACH-P0-01.1: one direct message on To do. WonderArk never sends on Instagram,
+ * DISC-REACH-P0-01.1: one direct message on the Prospects tab. WonderArk never sends on Instagram,
  * Facebook, LinkedIn or WhatsApp, so the card does the two things it can: "Copy and open"
  * puts the message on the clipboard and opens the channel's own page in a new tab, where
  * the person pastes and sends it; "Mark as sent" then records that they did. The link opens

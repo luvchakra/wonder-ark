@@ -46,16 +46,15 @@ export function businessNavLink(base: string, pathname: string | null): { href: 
 }
 
 /**
- * Acquisition opens the offering in focus: the one in the URL, else the one the
- * founder last worked in (`rememberedOfferingId`, DISC-OFFER-P0-03.1, ignored when it no
- * longer exists), else the first. With no offering yet it opens the Business page, which
- * is where one is added. Exactly one link is active on any Discovery page.
+ * PLATFORM-NAV-P0-03.3 (owner, 2026-11-29): Acquisition opens the business's offerings,
+ * for the person to choose one; it no longer jumps into the offering last worked in. With
+ * no offering yet it opens the Business page, which is where one is added. Exactly one
+ * link is active on any Discovery page.
  */
 export function buildDiscoveryNav(
   base: string,
   products: { id: string; name: string }[],
   pathname: string | null,
-  rememberedOfferingId?: string | null,
 ): DiscoveryNavLink[] {
   const path = pathname ?? "";
   const overviewHref = `${base}/discovery/dashboard`;
@@ -63,19 +62,12 @@ export function buildDiscoveryNav(
   const marketingRoot = `${base}/discovery/marketing`;
   const fundingRoot = `${base}/discovery/funding`;
 
-  const offeringInPath = offeringIdFromPath(base, path);
-  const focus =
-    products.find((p) => p.id === offeringInPath) ??
-    products.find((p) => p.id === rememberedOfferingId) ??
-    products[0] ??
-    null;
-
   return [
     { id: "overview", label: "Overview", href: overviewHref, icon: "LayoutDashboard", active: path === overviewHref },
     {
       id: "customer-acquisition",
       label: "Acquisition",
-      href: focus ? `${offeringsRoot}/${focus.id}` : `${base}/business`,
+      href: products.length > 0 ? offeringsRoot : `${base}/business`,
       icon: "Users",
       active: under(path, offeringsRoot),
     },

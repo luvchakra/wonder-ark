@@ -115,8 +115,8 @@ export function ProspectsBoard({
             : selectAction
               ? "Nothing waiting to be picked."
               : channels
-                ? "No channels yet. Find them on the Find tab."
-                : "No prospects yet. Find them on the Find tab."}
+                ? "No channels yet. Find them on Search."
+                : "No prospects yet. Find them on Search."}
         </p>
       ) : (
         <ProspectsCards

@@ -7,7 +7,15 @@ import {
 } from "@cofounderai/module-discovery/lib/tenancy/queries";
 import { listProspects } from "@cofounderai/module-discovery/lib/prospects/queries";
 import { ProspectToolbarActions } from "@cofounderai/module-discovery/components/prospects/prospect-toolbar-actions";
-import { ReachList } from "@cofounderai/module-discovery/components/prospects/reach-list";
+import { ReachList, type DirectMessage } from "@cofounderai/module-discovery/components/prospects/reach-list";
+import { TodayList } from "@cofounderai/module-discovery/components/prospects/today-list";
+import { needsYouCount, prospectGroups } from "@cofounderai/module-discovery/lib/journey/todo";
+import { listCampaignTasks } from "@cofounderai/module-discovery/lib/campaigns/tasks";
+import { listDirectDrafts } from "@cofounderai/module-discovery/lib/messages/queries";
+import { DM_LABEL } from "@cofounderai/module-discovery/lib/channels/reach";
+import { safeHttpUrl } from "@cofounderai/module-discovery/lib/data-sources/suggestions";
+import { markTaskDoneAction } from "../campaigns/actions";
+import { editDirectMessageAction, markDirectMessageSentAction, rewriteDirectMessageAction } from "./[prospectId]/actions";
 import { MoreActions } from "@cofounderai/module-discovery/components/ui/more-actions";
 import { AutoPopulateStepBanner } from "@cofounderai/module-discovery/components/tenancy/auto-populate-step-banner";
 import { AutoPopulateCompleteDialog } from "@cofounderai/module-discovery/components/tenancy/auto-populate-complete-dialog";
@@ -96,20 +104,45 @@ export default async function ProspectsPage({
   const lists: ProspectList[] =
     audienceType === "consumer" ? ["channels", "people"] : audienceType === "both" ? ["companies", "channels", "people"] : ["companies"];
   const currentList: ProspectList = lists.find((entry) => entry === query.list) ?? lists[0]!;
-  const kind =
-    currentList === "channels" ? ("channel" as const) : currentList === "companies" && audienceType !== "business" ? ("company" as const) : undefined;
   // DISC-CONS-P0-05.2: People are the offering's own list of those who opted in.
   const showPeople = currentList === "people";
   const [leads, signupPage, business] = showPeople
     ? await Promise.all([listLeads(workspace.id), getSignupPage(workspace.id), getBusiness(businessId)])
     : [[], null, null];
 
-  // DISC-NAV-P0-01.13: the list is a to-do list grouped by what to do next (ReachList), so
-  // it needs no filters or sort; the old filter addresses still open it, unfiltered.
-  const [prospects, campaigns] = await Promise.all([
-    listProspects(workspace.id, { kind, shortlisted: true }),
+  // DISC-NAV-P0-02.5: everything done with an approved prospect is on this tab. One read of
+  // every picked prospect: the list in view is filtered from it, and each chip counts what
+  // needs the person on its list, so nothing waits unseen behind another chip.
+  const [picked, campaigns, campaignTasks] = await Promise.all([
+    listProspects(workspace.id, { shortlisted: true }),
     listCampaignsWithCounts(workspace.id),
+    listCampaignTasks(workspace.id),
   ]);
+  const ofList = (entry: ProspectList) =>
+    entry === "people"
+      ? []
+      : entry === "channels"
+        ? picked.filter((p) => p.kind === "channel")
+        : audienceType === "business"
+          ? picked
+          : picked.filter((p) => p.kind !== "channel");
+  const prospects = ofList(currentList);
+  // DISC-REACH-P0-01.1: the text of each direct message, so its card can copy it.
+  const dmProspects = prospectGroups(prospects).find((group) => group.id === "dm")?.prospects ?? [];
+  const drafts = await listDirectDrafts(workspace.id, dmProspects.map((p) => p.id));
+  const directMessages: Record<string, DirectMessage> = {};
+  for (const p of dmProspects) {
+    const draft = drafts.find((m) => m.prospect_id === p.id);
+    if (!draft) continue;
+    directMessages[p.id] = {
+      text: draft.content,
+      platform: DM_LABEL[draft.channel as keyof typeof DM_LABEL] ?? "their page",
+      profileLink: safeHttpUrl(p.source_ref ?? null) ?? safeHttpUrl(p.website ?? null),
+      markSentAction: markDirectMessageSentAction.bind(null, businessId, productId, p.id, draft.id),
+      editAction: editDirectMessageAction.bind(null, businessId, productId, p.id, draft.id),
+      rewriteAction: rewriteDirectMessageAction.bind(null, businessId, productId, p.id, draft.id),
+    };
+  }
 
   const basePath = `/${businessSlug}/discovery/offerings/${productId}/prospects`;
   // Campaigns email companies only, so they are offered on the Companies list alone.
@@ -120,7 +153,7 @@ export default async function ProspectsPage({
       {/* DISC-NAV-P0-02.3: the tab already says "Prospects", so the page has no heading of
           its own. One row: the lists as chips, and the rare actions (add by hand, export)
           behind a three-dot button at its end. Imported prospects waiting to be picked
-          are on To do, which counts them, so they are not repeated here. */}
+          are on Search, which counts them, so they are not repeated here. */}
       <div className="flex items-center justify-between gap-3">
         {lists.length > 1 ? (
           <nav aria-label="Lists" className="flex min-w-0 flex-wrap gap-1.5">
@@ -136,6 +169,12 @@ export default async function ProspectsPage({
                 }
               >
                 {LIST_LABEL[entry]}
+                {needsYouCount(ofList(entry)) > 0 ? (
+                  <span className="ml-1.5 tabular-nums">
+                    {needsYouCount(ofList(entry))}
+                    <span className="sr-only"> need you</span>
+                  </span>
+                ) : null}
               </Link>
             ))}
           </nav>
@@ -182,11 +221,11 @@ export default async function ProspectsPage({
       ) : null}
       {query.shortlisted ? (
         <p className="rounded-md border bg-muted p-3 text-sm">
-          Picked {query.shortlisted}. WonderArk is preparing them: research, score and a first message for you to send.
+          Picked {query.shortlisted}. Open Prepare prospects above to choose which to research, score and write to.
         </p>
       ) : null}
       {query.unshortlisted ? (
-        <p className="rounded-md border bg-muted p-3 text-sm">Moved {query.unshortlisted} back to Find to pick again.</p>
+        <p className="rounded-md border bg-muted p-3 text-sm">Moved {query.unshortlisted} back to Search to pick again.</p>
       ) : null}
 
       {showPeople ? (
@@ -200,11 +239,13 @@ export default async function ProspectsPage({
           <PeopleList leads={leads} basePath={`${basePath}/people`} />
         </div>
       ) : (
-      <ReachList
-        prospects={prospects}
-        basePath={basePath}
-        channels={currentList === "channels"}
-      />
+        <>
+          {/* DISC-CAMP-P0-06.1: a running campaign's call, WhatsApp and LinkedIn steps that are due. */}
+          {showCampaigns ? (
+            <TodayList rows={[]} tasks={campaignTasks} taskAction={(enrollmentId) => markTaskDoneAction.bind(null, businessId, productId, enrollmentId)} />
+          ) : null}
+          <ReachList prospects={prospects} basePath={basePath} channels={currentList === "channels"} directMessages={directMessages} />
+        </>
       )}
 
       {/* DISC-NAV-P0-01.13: one other way to reach them, many at once: a campaign. Opportunities

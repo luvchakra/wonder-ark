@@ -1,6 +1,6 @@
 /** DISC-NAV-P0-02.1: the person's groups and everyone else's, from the offering's own rows. */
 import { describe, expect, it } from "vitest";
-import { prospectGroups, todoCount } from "./todo";
+import { needsYouCount, prospectGroups, toApproveCount } from "./todo";
 
 const p = (id: string, stage: string, nextAction: string | null, extra: Record<string, unknown> = {}) =>
   ({ id, stage, nextAction, isStuck: false, ...extra }) as Parameters<typeof prospectGroups>[0][number];
@@ -54,10 +54,15 @@ describe("a written message is grouped by how it can go out", () => {
   });
 });
 
-describe("todoCount", () => {
-  it("counts only what needs the person: replies, follow-ups, ready messages and approvals", () => {
+describe("the tab counts (DISC-NAV-P0-02.5)", () => {
+  it("Prospects counts only what needs the person: replies, follow-ups and ready messages", () => {
     const picked = [p("a", "replied", "Generate reply"), p("b", "new", "Research"), p("c", "messaged", "Retry send")];
-    expect(todoCount({ picked, suggestionCount: 3, waitingToPick: 1 })).toBe(6);
-    expect(todoCount({ picked: [p("b", "new", "Research")], suggestionCount: 0, waitingToPick: 0 })).toBe(0);
+    expect(needsYouCount(picked)).toBe(2);
+    expect(needsYouCount([p("b", "new", "Research")])).toBe(0);
+  });
+
+  it("Search counts what waits for approval: found and imported", () => {
+    expect(toApproveCount({ suggestionCount: 3, waitingToPick: 1 })).toBe(4);
+    expect(toApproveCount({ suggestionCount: 0, waitingToPick: 0 })).toBe(0);
   });
 });

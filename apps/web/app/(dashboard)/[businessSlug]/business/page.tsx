@@ -48,6 +48,15 @@ import { OfferingsTable, type OfferingRow } from "@cofounderai/module-discovery/
 import { WebsiteOnboardingPanel } from "@cofounderai/module-discovery/components/website-onboarding/website-onboarding-panel";
 import type { Product } from "@cofounderai/module-discovery/lib/tenancy/types";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@cofounderai/core/ui/collapsible";
+import { SectionFold } from "@cofounderai/module-discovery/components/ui/section-fold";
+
+/** The website import's state in one line, for its closed section. */
+const WEBSITE_RUN_HINT: Record<string, string> = {
+  pending: "Reading your website...",
+  running: "Reading your website...",
+  failed: "Couldn't read your website. Open for the reason.",
+  succeeded: "Read your website",
+};
 
 const CONTACT_FIELDS: [BusinessContactField, string][] = [
   ["opening_hours", "Add opening hours, e.g. Mon-Sat 10am-7pm"],
@@ -94,7 +103,7 @@ export default async function BusinessDetailPage({
     : [];
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8">
+    <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-6">
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-2">
           <Breadcrumbs items={[{ label: "Business" }]} />
@@ -139,14 +148,60 @@ export default async function BusinessDetailPage({
               textClassName="text-sm text-muted-foreground"
             />
           </div>
-          <div className="self-start">
-            <AutoPopulateProductsButton
+        </div>
+      </div>
+
+      {/* PLATFORM-NAV-P0-03.3 (owner, 2026-11-29): the offerings are what this page is
+          for, so they come first, with the ways to add them beside the list. The
+          business's own details, edited rarely, are one closed section below. */}
+      <section id="offerings" className="flex scroll-mt-4 flex-col gap-3">
+        <OfferingsTable
+          businessId={business.id}
+          rows={rows}
+          createAction={createOfferingAction.bind(null, business.id)}
+          updateAction={updateOfferingAction.bind(null, business.id)}
+          suggestAction={suggestOfferingProfileAction.bind(null, business.id)}
+          setStatusAction={setOfferingStatusAction.bind(null, business.id)}
+          duplicateAction={duplicateOfferingAction.bind(null, business.id)}
+          deleteAction={deleteProductAction.bind(null, business.id)}
+        />
+        <div className="flex flex-wrap items-center gap-2">
+          <AutoPopulateProductsButton
+            businessSlug={businessSlug}
+            disabled={!business.website}
+            disabledReason="Add a website above first."
+            importAction={importProductsAction.bind(null, business.id)}
+            quiet={rows.length > 0}
+          />
+          <ProductImportWizard
+            previewAction={previewProductImportAction.bind(null, business.id)}
+            importAction={importProductsAction.bind(null, business.id)}
+          />
+        </div>
+      </section>
+
+      <div className="flex flex-col gap-3">
+        {websiteOnboardingRun ? (
+          <SectionFold
+            id="website"
+            title="Website import"
+            hint={WEBSITE_RUN_HINT[websiteOnboardingRun.status] ?? null}
+            // Open while it is running or has results not yet used; a failed or finished one is one line.
+            open={websiteOnboardingRun.status === "pending" || websiteOnboardingRun.status === "running" || (websiteOnboardingRun.status === "succeeded" && !websiteOnboardingRun.activated_at)}
+          >
+            <WebsiteOnboardingPanel
               businessSlug={businessSlug}
-              disabled={!business.website}
-              disabledReason="Add a website above first."
-              importAction={importProductsAction.bind(null, business.id)}
+              initialRun={websiteOnboardingRun}
+              initialPages={websiteOnboardingPages}
+              initialOfferings={websiteOnboardingOfferingCandidates}
+              retryAction={retryWebsiteOnboardingAction.bind(null, business.id)}
+              applyAction={applyWebsiteOnboardingProfileAction.bind(null, business.id)}
+              activateOfferingsAction={createOfferingsFromWebsiteOnboardingAction.bind(null, business.id)}
             />
-          </div>
+          </SectionFold>
+        ) : null}
+
+        <SectionFold id="details" title="Business details" hint="Description, contact details, logo and AI approvals">
           <EditableText
             value={business.description}
             action={updateBusinessDescriptionAction.bind(null, business.id)}
@@ -176,45 +231,13 @@ export default async function BusinessDetailPage({
             canManage={canManageAiApprovals}
             action={updateAiApprovalModeAction.bind(null, business.id)}
           />
-        </div>
-      </div>
-
-      <BusinessLogoField
-        logoUrl={business.logo_url}
-        businessName={business.name}
-        action={updateBusinessLogoAction.bind(null, business.id)}
-      />
-
-      {websiteOnboardingRun ? (
-        <WebsiteOnboardingPanel
-          businessSlug={businessSlug}
-          initialRun={websiteOnboardingRun}
-          initialPages={websiteOnboardingPages}
-          initialOfferings={websiteOnboardingOfferingCandidates}
-          retryAction={retryWebsiteOnboardingAction.bind(null, business.id)}
-          applyAction={applyWebsiteOnboardingProfileAction.bind(null, business.id)}
-          activateOfferingsAction={createOfferingsFromWebsiteOnboardingAction.bind(null, business.id)}
-        />
-      ) : null}
-
-      <section className="flex flex-col gap-3">
-        <div className="flex justify-end">
-          <ProductImportWizard
-            previewAction={previewProductImportAction.bind(null, business.id)}
-            importAction={importProductsAction.bind(null, business.id)}
+          <BusinessLogoField
+            logoUrl={business.logo_url}
+            businessName={business.name}
+            action={updateBusinessLogoAction.bind(null, business.id)}
           />
-        </div>
-        <OfferingsTable
-          businessId={business.id}
-          rows={rows}
-          createAction={createOfferingAction.bind(null, business.id)}
-          updateAction={updateOfferingAction.bind(null, business.id)}
-          suggestAction={suggestOfferingProfileAction.bind(null, business.id)}
-          setStatusAction={setOfferingStatusAction.bind(null, business.id)}
-          duplicateAction={duplicateOfferingAction.bind(null, business.id)}
-          deleteAction={deleteProductAction.bind(null, business.id)}
-        />
-      </section>
+        </SectionFold>
+      </div>
     </main>
   );
 }

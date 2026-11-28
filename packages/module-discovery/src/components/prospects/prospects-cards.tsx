@@ -132,7 +132,7 @@ export function ProspectsCards({
                 ) : null}
                 {backToSelectAction ? (
                   <SubmitButton size="sm" variant="ghost" pendingText="Moving..." formAction={backToSelectAction}>
-                    Back to Find
+                    Back to Search
                   </SubmitButton>
                 ) : null}
               </>

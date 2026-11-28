@@ -464,16 +464,20 @@ test.describe("Funding flows", () => {
     await expect(page.getByRole("cell", { name: "Founder network" })).toBeVisible();
   });
 
-  test("the sidebar's Acquisition opens the offering, whose tabs are on the page", async ({ page }) => {
+  test("the sidebar's Acquisition opens the offerings to choose from; one opens with its tabs", async ({ page }) => {
     await page.goto(`/${slug}/discovery/dashboard`);
     await openSidebar(page);
-    // PLATFORM-NAV-P0-03.1: one link in the sidebar; the offering's four tabs are on its page.
+    // PLATFORM-NAV-P0-03.3: Acquisition opens the list of offerings; the person picks one.
     const acquisition = page.locator('nav[aria-label="Main"]').getByRole("link", { name: "Acquisition", exact: true });
-    await expect(acquisition).toHaveAttribute("href", new RegExp(`/${slug}/discovery/offerings/[0-9a-f-]{36}$`));
+    await expect(acquisition).toHaveAttribute("href", new RegExp(`/${slug}/discovery/offerings$`));
     await acquisition.click();
+    await expect(page).toHaveURL(new RegExp(`/${slug}/discovery/offerings$`));
+    await expectNoAppCrash(page);
+    await expect(page.getByRole("heading", { name: "Choose an offering" })).toBeVisible();
+    await page.locator(`main a[href^="/${slug}/discovery/offerings/"]`).first().click();
     await expect(page).toHaveURL(new RegExp(`/${slug}/discovery/offerings/[0-9a-f-]{36}$`));
     await expectNoAppCrash(page);
-    // The offering's own navigation: its four tabs once set up, its setup steps before.
+    // The offering's own navigation: its tabs once set up, its setup steps before.
     await expect(page.locator('nav[aria-label="Offering sections"], nav[aria-label="Product sections"]').first()).toBeVisible();
   });
 });

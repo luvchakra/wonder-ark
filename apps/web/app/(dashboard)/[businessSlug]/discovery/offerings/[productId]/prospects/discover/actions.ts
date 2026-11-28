@@ -14,6 +14,13 @@ import { discardProspectSuggestions } from "@cofounderai/module-discovery/lib/pr
 async function discoverPath(businessId: string, productId: string) {
   return `${await businessPath(businessId)}/discovery/offerings/${productId}/prospects/discover`;
 }
+/** DISC-NAV-P0-02.5: the search shows at two addresses, the offering's Search tab and its
+ * old one; both are refreshed. */
+async function revalidateSearch(businessId: string, productId: string) {
+  revalidatePath(await discoverPath(businessId, productId));
+  revalidatePath(await offeringPath(businessId, productId));
+}
+
 async function offeringPath(businessId: string, productId: string) {
   return `${await businessPath(businessId)}/discovery/offerings/${productId}`;
 }
@@ -50,7 +57,7 @@ export async function findAction(
       alsoLookFor: field("alsoLookFor") || undefined,
       hasWebsite: formData.get("hasWebsite") !== null,
     });
-    if (outcome.status === "completed") revalidatePath(await discoverPath(businessId, productId));
+    if (outcome.status === "completed") await revalidateSearch(businessId, productId);
     return outcome;
   } catch (error) {
     unstable_rethrow(error);
@@ -89,7 +96,7 @@ export async function saveWeeklySearchAction(
       },
       { replace: formData.get("replace") !== null },
     );
-    if (outcome.status === "saved") revalidatePath(await discoverPath(businessId, productId));
+    if (outcome.status === "saved") await revalidateSearch(businessId, productId);
     return outcome;
   } catch (error) {
     unstable_rethrow(error);
@@ -105,7 +112,7 @@ export async function setWeeklySearchEnabledAction(
   enabled: boolean,
 ) {
   await setSavedSearchEnabled(workspaceId, enabled);
-  revalidatePath(await discoverPath(businessId, productId));
+  await revalidateSearch(businessId, productId);
 }
 
 export async function approveSuggestionsAction(
@@ -124,11 +131,10 @@ export async function approveSuggestionsAction(
   if (enrichmentQueuedFor.length > 0) after(() => runQueuedEnrichmentNow(enrichmentQueuedFor));
 
   revalidatePath(await prospectsPath(businessId, productId));
-  revalidatePath(await discoverPath(businessId, productId));
+  await revalidateSearch(businessId, productId);
   const counts = `${duplicates > 0 ? `&duplicates=${duplicates}` : ""}`;
-  // DISC-NAV-P0-02.1: approved on To do, back to To do, which says what was added.
-  if (formData.get("returnTo") === "todo") {
-    revalidatePath(await offeringPath(businessId, productId));
+  // DISC-NAV-P0-02.5: approved on Search, back to Search, which says what was added.
+  if (formData.get("returnTo") === "search") {
     redirect(`${await offeringPath(businessId, productId)}?approved=${added}${counts}`);
   }
   // DISC-DATA-P0-03.3: a suggestion refused as a duplicate is reported, not counted as
@@ -144,9 +150,8 @@ export async function discardSuggestionsAction(
 ) {
   const ids = formData.getAll("ids").map(String);
   await discardProspectSuggestions(workspaceId, ids);
-  revalidatePath(await discoverPath(businessId, productId));
-  if (formData.get("returnTo") === "todo") {
-    revalidatePath(await offeringPath(businessId, productId));
+  await revalidateSearch(businessId, productId);
+  if (formData.get("returnTo") === "search") {
     redirect(await offeringPath(businessId, productId));
   }
   redirect(await discoverPath(businessId, productId));

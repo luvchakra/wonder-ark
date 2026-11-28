@@ -2,11 +2,12 @@ import { isFollowUpDue, type ProspectStage } from "../prospects/pipeline";
 import { DM_LABEL, type Reach } from "../channels/reach";
 
 /**
- * DISC-NAV-P0-02.1: what an offering's picked prospects need, grouped. The redesign the
- * owner approved on 2026-11-22: the person approves who to contact and sends what goes out;
- * WonderArk prepares the rest by itself (lib/prospects/prep.ts). So there are two kinds of
- * group: the person's (answer a reply, follow up, send a ready message), shown on To do,
- * and the rest, shown on Prospects to say how far each has got.
+ * DISC-NAV-P0-02.1: what an offering's picked prospects need, grouped. The person approves
+ * who to contact and sends what goes out; WonderArk prepares the ones they choose
+ * (lib/prospects/prep.ts). So there are two kinds of group: the person's (answer a reply,
+ * follow up, send a ready message) and the rest, which say how far each has got.
+ * DISC-NAV-P0-02.5 (owner, 2026-11-29): both are on the Prospects tab; Search only finds
+ * and approves new ones.
  *
  * Pure, so the pages and the tests share it.
  */
@@ -70,11 +71,16 @@ export function prospectGroups<T extends Prospect>(prospects: T[]): ProspectGrou
   });
 }
 
-/** How many things need the person: replies, follow-ups and ready messages, plus found and
- * imported prospects waiting for their approval. The To do tab's count. */
-export function todoCount(input: { picked: Prospect[]; suggestionCount: number; waitingToPick: number }): number {
-  const mine = prospectGroups(input.picked)
+/** DISC-NAV-P0-02.5: how many approved prospects need the person (a reply to answer, a
+ * follow-up, a message ready to go out). The Prospects tab's count, and each list chip's. */
+export function needsYouCount(picked: Prospect[]): number {
+  return prospectGroups(picked)
     .filter((g) => PERSON_GROUPS.includes(g.id))
     .reduce((sum, g) => sum + g.prospects.length, 0);
-  return mine + input.suggestionCount + input.waitingToPick;
+}
+
+/** DISC-NAV-P0-02.5: how many found or imported prospects wait for approval. The Search
+ * tab's count. */
+export function toApproveCount(input: { suggestionCount: number; waitingToPick: number }): number {
+  return input.suggestionCount + input.waitingToPick;
 }

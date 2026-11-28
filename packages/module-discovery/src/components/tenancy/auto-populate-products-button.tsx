@@ -39,12 +39,16 @@ export function AutoPopulateProductsButton({
   disabled,
   disabledReason,
   importAction,
+  quiet = false,
 }: {
   businessSlug: string;
   /** True when the business has no website configured yet -- there's nothing to
    * research against. */
   disabled: boolean;
   disabledReason?: string;
+  /** PLATFORM-NAV-P0-03.3: a small outline button, once the business has offerings and
+   * this is no longer the page's main action. */
+  quiet?: boolean;
   importAction: (rows: ProductImportRow[]) => Promise<{ inserted: number; duplicates: number }>;
 }) {
   const router = useRouter();
@@ -142,9 +146,16 @@ export function AutoPopulateProductsButton({
 
   return (
     <>
-      <Button onClick={launch} disabled={disabled} title={disabled ? disabledReason : undefined} className="shadow-sm">
+      <Button
+        onClick={launch}
+        disabled={disabled}
+        title={disabled ? disabledReason : undefined}
+        variant={quiet ? "outline" : "default"}
+        size={quiet ? "sm" : "default"}
+        className={quiet ? undefined : "shadow-sm"}
+      >
         <Sparkles className="size-4" aria-hidden="true" />
-        Let AI Auto-populate Offerings from website
+        {quiet ? "Auto-populate from website (AI)" : "Let AI Auto-populate Offerings from website"}
       </Button>
 
       <Dialog open={open} onOpenChange={(next) => !next && close()}>

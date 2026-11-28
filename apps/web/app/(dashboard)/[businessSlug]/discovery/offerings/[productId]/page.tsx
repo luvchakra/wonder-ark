@@ -3,12 +3,15 @@ import { resolveBusinessIdBySlug } from "@cofounderai/core/businesses/resolve";
 import { getProduct, getWorkspaceForProduct } from "@cofounderai/module-discovery/lib/tenancy/queries";
 import { getIcpProfile } from "@cofounderai/module-discovery/lib/icp/queries";
 import { SetupView } from "./setup-view";
-import { TodoView } from "./todo-view";
+import Link from "next/link";
+import { FindView } from "./prospects/discover/find-view";
 
 /**
  * DISC-NAV-P0-02.1: the offering's own address. Until it is set up (described, and its
- * ideal customer approved) it shows Setup; then it shows To do. A link that opens a part of
- * Setup (`?open=`, `?suggest=`, `?autorun=`) still shows Setup.
+ * ideal customer approved) it shows Setup; then it shows Search (DISC-NAV-P0-02.5, owner
+ * 2026-11-29: find new prospects and approve them, nothing else; what is done with an
+ * approved prospect is on Prospects). A link that opens a part of Setup (`?open=`,
+ * `?suggest=`, `?autorun=`) still shows Setup.
  */
 export default async function OfferingPage({
   params,
@@ -30,5 +33,26 @@ export default async function OfferingPage({
   if (!setupDone || query.open || query.suggest || query.autorun) {
     return <SetupView params={params} searchParams={Promise.resolve(query)} />;
   }
-  return <TodoView businessId={businessId} businessSlug={businessSlug} productId={productId} approved={query.approved} duplicates={query.duplicates} searched={query.searched} weekly={query.weekly === "1"} searchNote={query.searchNote} />;
+  const { approved, duplicates, searched, searchNote } = query;
+  return (
+    <FindView params={params} heading={false}>
+      {approved ? (
+        <p role="status" className="rounded-md border bg-muted p-3 text-sm">
+          Approved {approved}.{duplicates && duplicates !== "0" ? ` Skipped ${duplicates} already in your prospects.` : ""}{" "}
+          {approved === "0" ? null : (
+            <Link href={`/${businessSlug}/discovery/offerings/${productId}/prospects`} className="font-medium text-primary hover:underline">
+              Prepare and contact them on Prospects
+            </Link>
+          )}
+        </p>
+      ) : null}
+      {searched !== undefined || searchNote ? (
+        <p role="status" className="rounded-md border bg-muted p-3 text-sm">
+          {searchNote
+            ? `Ideal customer approved. ${searchNote}`
+            : `Ideal customer approved. The first search found ${searched === "1" ? "1 new prospect" : `${searched} new prospects`} for you to approve${query.weekly === "1" ? "; it runs again every week" : ""}.`}
+        </p>
+      ) : null}
+    </FindView>
+  );
 }

@@ -59,10 +59,10 @@ export function SuggestionReviewList({
   suggestions: ProspectSuggestion[];
   approveAction: (formData: FormData) => Promise<void>;
   discardAction: (formData: FormData) => Promise<void>;
-  /** DISC-NAV-P0-02.1: the heading; To do calls them "New prospects to approve". */
+  /** The heading. */
   title?: string;
-  /** DISC-NAV-P0-02.1: where approving or discarding returns ("todo": the offering's To do). */
-  returnTo?: "todo";
+  /** DISC-NAV-P0-02.5: where approving or discarding returns ("search": the offering's Search tab). */
+  returnTo?: "search";
 }) {
   return (
     <section aria-labelledby="to-review-heading" className="flex flex-col gap-3">

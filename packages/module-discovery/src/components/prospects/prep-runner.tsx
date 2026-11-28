@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Pause, Play } from "lucide-react";
+import { ChevronDown, Pause, Play } from "lucide-react";
 import { Button } from "@cofounderai/core/ui/button";
 import { Progress } from "@cofounderai/core/ui/progress";
 import { useAppPathname } from "@cofounderai/core/shell/org-address-context";
@@ -23,9 +23,10 @@ type Phase = "choose" | "running" | "paused" | "done" | "stopped";
 /**
  * DISC-AUTO-P0-01.3: preparing picked prospects (research, score, plan, first-message
  * draft), only the ones the person chooses and only when they press Prepare, so no AI
- * credits are spent on prospects they didn't pick (owner, 2026-11-23). On To do it lists the
- * prospects still to prepare with a box each; on the other tabs it shows nothing unless a
- * run is going (owner, 2026-11-27), then one slim line with its progress and Pause.
+ * credits are spent on prospects they didn't pick (owner, 2026-11-23). On Prospects it is one
+ * closed line, "Prepare prospects (N)", that opens to the prospects still to prepare with a
+ * box each (owner, 2026-11-29: keep the tab short); on the other tabs it shows nothing unless
+ * a run is going (owner, 2026-11-27), then one slim line with its progress and Pause.
  * Running, it shows a progress bar of steps done and a Pause button; paused, Resume.
  * Each step is one short server call; Pause lets the step in flight finish and starts no
  * other. Stops, and says why, on a failure every prospect would hit (AI key, credits, daily
@@ -34,13 +35,13 @@ type Phase = "choose" | "running" | "paused" | "done" | "stopped";
 export function PrepRunner({
   candidates,
   prepareAction,
-  todoPath,
+  homePath,
   autoSend = false,
 }: {
   candidates: Candidate[];
   prepareAction: (chosen: string[], skip: string[]) => Promise<PrepResult>;
-  /** The offering's To do page, where the choosing happens. */
-  todoPath: string;
+  /** DISC-NAV-P0-02.5: the offering's Prospects page, where the choosing happens. */
+  homePath: string;
   /** DISC-AUTO-P0-03.1: "Send automatically" is on: first emails go out as they are written. */
   autoSend?: boolean;
 }) {
@@ -155,11 +156,11 @@ export function PrepRunner({
 
   const percent = total > 0 ? Math.round(((total - stepsLeft) / total) * 100) : 0;
 
-  // DISC-NAV-P0-02.3: choosing and its results belong to To do alone. On the other tabs
-  // there is nothing, except one slim line while a run the person started is going, so it
-  // is never out of sight or out of reach.
-  const onTodo = pathname === todoPath;
-  if (!onTodo) {
+  // DISC-NAV-P0-02.3: choosing and its results belong to one page alone (Prospects, since
+  // DISC-NAV-P0-02.5). On the other tabs there is nothing, except one slim line while a run
+  // the person started is going, so it is never out of sight or out of reach.
+  const onHome = pathname === homePath;
+  if (!onHome) {
     if (!active) return null;
     return (
       <section aria-label="Prepare prospects" className="flex items-center gap-3 rounded-lg border bg-card px-3 py-2 text-xs">
@@ -232,49 +233,52 @@ export function PrepRunner({
             </p>
           ) : null}
           {candidates.length > 0 ? (
-            <>
-              <div className="flex items-baseline justify-between gap-3">
-                <span className="font-medium">
-                  Prepare prospects ({candidates.length}): research, score and a first message (AI)
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setSelected(allSelected ? new Set() : new Set(candidates.map((c) => c.id)))}
-                  className="shrink-0 text-xs font-medium text-primary hover:underline"
-                >
-                  {allSelected ? "Clear" : "Select all"}
-                </button>
+            <details className="group">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-medium [&::-webkit-details-marker]:hidden">
+                <span>Prepare prospects ({candidates.length}): research, score and a first message (AI)</span>
+                <ChevronDown className="size-4 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+              </summary>
+              <div className="flex flex-col gap-3 pt-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <p className="text-xs text-muted-foreground">
+                    Choose which ones. Each uses about three AI calls; nothing starts until you press Prepare.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(allSelected ? new Set() : new Set(candidates.map((c) => c.id)))}
+                    className="shrink-0 text-xs font-medium text-primary hover:underline"
+                  >
+                    {allSelected ? "Clear" : "Select all"}
+                  </button>
+                </div>
+                <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
+                  {candidates.map((c) => (
+                    <li key={c.id}>
+                      <label className="flex min-w-0 items-center gap-2 rounded-md px-1 py-1 hover:bg-accent/40">
+                        <input
+                          type="checkbox"
+                          className="size-4 shrink-0"
+                          checked={selected.has(c.id)}
+                          onChange={() =>
+                            setSelected((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(c.id)) next.delete(c.id);
+                              else next.add(c.id);
+                              return next;
+                            })
+                          }
+                        />
+                        <span className="truncate">{c.name}</span>
+                      </label>
+                    </li>
+                  ))}
+                </ul>
+                <Button type="button" size="sm" onClick={start} disabled={selected.size === 0} className="gap-1.5 self-start">
+                  <Play className="size-4" aria-hidden="true" />
+                  {selected.size === 0 ? "Prepare" : `Prepare ${selected.size}`}
+                </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Choose which ones. Each uses about three AI calls; nothing starts until you press Prepare.
-              </p>
-              <ul className="grid grid-cols-1 gap-1 sm:grid-cols-2">
-                {candidates.map((c) => (
-                  <li key={c.id}>
-                    <label className="flex min-w-0 items-center gap-2 rounded-md px-1 py-1 hover:bg-accent/40">
-                      <input
-                        type="checkbox"
-                        className="size-4 shrink-0"
-                        checked={selected.has(c.id)}
-                        onChange={() =>
-                          setSelected((prev) => {
-                            const next = new Set(prev);
-                            if (next.has(c.id)) next.delete(c.id);
-                            else next.add(c.id);
-                            return next;
-                          })
-                        }
-                      />
-                      <span className="truncate">{c.name}</span>
-                    </label>
-                  </li>
-                ))}
-              </ul>
-              <Button type="button" size="sm" onClick={start} disabled={selected.size === 0} className="gap-1.5 self-start">
-                <Play className="size-4" aria-hidden="true" />
-                {selected.size === 0 ? "Prepare" : `Prepare ${selected.size}`}
-              </Button>
-            </>
+            </details>
           ) : null}
         </>
       )}
