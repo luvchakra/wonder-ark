@@ -9,6 +9,7 @@ apps/web/                          Next.js 16 host: routes and pages only
 packages/core/src/                 db/ (@supabase/ssr clients), components/ui/, lib/, hooks/, ui-theme.css
 packages/module-registry/          static module manifest; nav and routes built from it
 packages/module-<key>/src/         contract/index.ts (the only import other modules may use), routes/ domain/ db/ events/ manifest.ts
+extensions/instagram-helper/       Chrome extension (plain MV3, no build): fills drafted Instagram messages; the person sends
 supabase/migrations/               one ordered timeline for the whole platform
 scripts/                           lint-import-boundaries, lint-migration-schema, lint-migration-grants
 docs/PROGRESS-TRACKER.md           generated (`npm run build:progress`); never hand-edit; on a merge conflict take either side and regenerate

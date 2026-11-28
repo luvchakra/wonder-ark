@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "WonderArk Instagram helper",
+  "version": "0.1.0",
+  "description": "Fills in the Instagram messages WonderArk drafted for your prospects. You read each one and press Send yourself.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://ark.wonderapps.biz/*",
+    "https://*.ark.wonderapps.biz/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "WonderArk Instagram helper",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.instagram.com/*"
+      ],
+      "js": [
+        "lib.js",
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://ark.wonderapps.biz/*",
+        "https://*.ark.wonderapps.biz/*"
+      ],
+      "js": [
+        "ark.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -69,6 +69,18 @@ describe("ReachList", () => {
     expect(withDm).toContain("Copy and open Instagram");
     expect(withDm).toContain("Mark as sent");
     expect(withDm).toMatch(/>\s*Edit\s*</);
+    expect(withDm).not.toContain("Instagram helper");
+  });
+
+  it("links to the Instagram helper beside Instagram messages, and nowhere else (DISC-IG-P0-01.3)", () => {
+    const html = (prospects: ProspectWithPipeline[]) =>
+      renderToStaticMarkup(<ReachList prospects={prospects} basePath="/b/o/p/prospects" channels helperHref="/b/discovery/instagram-helper" directMessages={{ m: dm("Hi!") }} />);
+    const instagram = html([channel("m", "messaged", "Review message", { reach: "instagram" } as never)]);
+    expect(instagram).toMatch(/<a[^>]*href="\/b\/discovery\/instagram-helper"[^>]*>Instagram helper<\/a>/);
+    // A Chrome extension for a computer: hidden on a phone.
+    expect(instagram).toMatch(/class="hidden[^"]*md:inline"[^>]*href="\/b\/discovery\/instagram-helper"|href="\/b\/discovery\/instagram-helper"[^>]*class="hidden[^"]*md:inline"/);
+    expect(html([channel("e", "messaged", "Review message", { reach: "email" } as never)])).not.toContain("Instagram helper");
+    expect(html([channel("l", "messaged", "Review message", { reach: "linkedin" } as never)])).not.toContain("Instagram helper");
   });
 
   it("says so when nothing needs the person, and where new prospects come from when none are approved", () => {
