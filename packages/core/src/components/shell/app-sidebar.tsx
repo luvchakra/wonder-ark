@@ -209,7 +209,6 @@ function ModuleNav({
   businessId,
   businessHref,
   productsByBusiness,
-  rememberedOfferingId,
   onCreateBusiness,
   onNavigate,
   hasBusinesses,
@@ -221,8 +220,6 @@ function ModuleNav({
   businessId: string | null;
   businessHref: (businessId: string) => string;
   productsByBusiness?: Record<string, ShellProduct[]>;
-  /** DISC-OFFER-P0-03.1: the offering this business was last worked in. */
-  rememberedOfferingId?: string;
   onCreateBusiness?: () => void;
   onNavigate: () => void;
   hasBusinesses: boolean;
@@ -252,7 +249,7 @@ function ModuleNav({
   if (module.key === "discovery") {
     // PLATFORM-NAV-P0-03.1: four plain links, nothing to unfold. Each section's pages are
     // the tabs on its own page -- see lib/discovery-nav.ts.
-    const links = buildDiscoveryNav(base, productsByBusiness?.[businessId] ?? [], pathname, rememberedOfferingId);
+    const links = buildDiscoveryNav(base, productsByBusiness?.[businessId] ?? [], pathname);
     return (
       <div className="flex flex-col gap-0.5">
         {links.map((link) => (
@@ -425,10 +422,11 @@ export function AppSidebar({
   const effectiveBusinessId = activeBusinessId ?? businesses[0]?.id ?? null;
   const closeDrawer = () => setOpen(false);
 
-  // DISC-OFFER-P0-03.1: remember the offering last worked in, per business, so Customer
-  // Acquisition stays on it from pages that name no offering. Read on mount for the same
-  // hydration reason as the folds above; written whenever the URL names an offering.
-  const [offeringFocus, setOfferingFocus] = useState<OfferingFocus>({});
+  // DISC-OFFER-P0-03.1: remember the offering last worked in, per business. Read on mount
+  // for the same hydration reason as the folds above; written whenever the URL names an
+  // offering. PLATFORM-NAV-P0-03.3: Acquisition now opens the list of offerings, so the menu
+  // no longer reads this; it is still recorded for the offering switcher's use.
+  const [, setOfferingFocus] = useState<OfferingFocus>({});
   useEffect(() => {
     setOfferingFocus(readOfferingFocus());
   }, []);
@@ -602,7 +600,6 @@ export function AppSidebar({
                     businessId={effectiveBusinessId}
                     businessHref={businessHref}
                     productsByBusiness={productsByBusiness}
-                    rememberedOfferingId={effectiveBusinessId ? offeringFocus[effectiveBusinessId] : undefined}
                     onCreateBusiness={onCreateBusiness}
                     onNavigate={closeDrawer}
                     hasBusinesses={businesses.length > 0}

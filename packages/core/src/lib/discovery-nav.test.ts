@@ -1,7 +1,7 @@
 /**
  * PLATFORM-NAV-P0-03.1 / 03.2. The Discovery menu is four plain links and the Business
- * page is a row of its own. The page you are on is highlighted exactly once, and Customer
- * Acquisition opens the offering in focus without any route having moved.
+ * page is a row of its own. The page you are on is highlighted exactly once, and
+ * Acquisition opens the list of offerings without any route having moved.
  */
 import { describe, expect, it } from "vitest";
 import { buildDiscoveryNav, businessNavLink, offeringIdFromPath } from "./discovery-nav";
@@ -21,7 +21,7 @@ describe("buildDiscoveryNav", () => {
     const links = buildDiscoveryNav(BASE, PRODUCTS, "/acme/discovery/dashboard");
     expect(links.map((l) => [l.label, l.href])).toEqual([
       ["Overview", "/acme/discovery/dashboard"],
-      ["Acquisition", "/acme/discovery/offerings/p1"],
+      ["Acquisition", "/acme/discovery/offerings"],
       ["Marketing", "/acme/discovery/marketing"],
       ["Funding", "/acme/discovery/funding"],
     ]);
@@ -38,11 +38,12 @@ describe("buildDiscoveryNav", () => {
     expect(activeIds(buildDiscoveryNav(BASE, PRODUCTS, "/acme/discovery/funding/data-room"))).toEqual(["funding"]);
   });
 
-  it("highlights Acquisition on every page of an offering, and opens that offering", () => {
-    for (const path of ["", "/icp", "/prospects/discover", "/prospects/x9", "/campaigns/c1", "/usage"]) {
-      const links = buildDiscoveryNav(BASE, PRODUCTS, `/acme/discovery/offerings/p2${path}`);
+  // PLATFORM-NAV-P0-03.3: Acquisition opens the list of offerings, for the person to choose.
+  it("highlights Acquisition on the offerings list and every page of an offering, and always opens the list", () => {
+    for (const path of ["", "/p2", "/p2/icp", "/p2/prospects/discover", "/p2/prospects/x9", "/p2/campaigns/c1", "/p2/usage"]) {
+      const links = buildDiscoveryNav(BASE, PRODUCTS, `/acme/discovery/offerings${path}`);
       expect(activeIds(links), path).toEqual(["customer-acquisition"]);
-      expect(link(links, "customer-acquisition").href).toBe("/acme/discovery/offerings/p2");
+      expect(link(links, "customer-acquisition").href).toBe("/acme/discovery/offerings");
     }
   });
 
@@ -68,18 +69,6 @@ describe("businessNavLink", () => {
 
 // DISC-OFFER-P0-03.1 "Offering Context Selector": context persists through navigation.
 describe("remembered offering focus", () => {
-  const acquisitionHref = (path: string, remembered?: string) =>
-    link(buildDiscoveryNav(BASE, PRODUCTS, path, remembered), "customer-acquisition").href;
-
-  it("keeps Acquisition on the offering last worked in when the URL names none", () => {
-    expect(acquisitionHref("/acme/discovery/marketing", "p2")).toBe("/acme/discovery/offerings/p2");
-  });
-
-  it("lets the URL win over the remembered offering, and ignores one that no longer exists", () => {
-    expect(acquisitionHref("/acme/discovery/offerings/p1/icp", "p2")).toBe("/acme/discovery/offerings/p1");
-    expect(acquisitionHref("/acme/discovery/dashboard", "deleted")).toBe("/acme/discovery/offerings/p1");
-  });
-
   it("reads the offering id out of a path", () => {
     expect(offeringIdFromPath(BASE, "/acme/discovery/offerings/p2/prospects/x")).toBe("p2");
     expect(offeringIdFromPath(BASE, "/acme/discovery/offerings")).toBeNull();

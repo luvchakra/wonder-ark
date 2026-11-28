@@ -36,12 +36,12 @@ beforeEach(() => {
 });
 
 describe("ProductNav, once the offering has a profile", () => {
-  // DISC-NAV-P0-02.1: three tabs and a Setup link; To do carries the count of what needs you.
+  // DISC-NAV-P0-02.1: three tabs and a Setup link. DISC-NAV-P0-02.5: Search and Prospects carry counts.
   const tabs = (path: string) => nav(path).filter((link) => link.text !== "Setup");
 
   it("shows the three tabs and Setup, on every page", () => {
     for (const path of ["", "/icp", "/setup", "/prospects/discover", "/prospects/import", "/history", "/discovery", "/prospects", "/opportunities", "/watchlist", "/campaigns", "/campaigns/abc", "/performance", "/conversions", "/usage", "/people-say", "/prospects/abc"]) {
-      expect(nav(path).map((link) => link.text), path).toEqual(["To do", "Prospects", "Results", "Setup"]);
+      expect(nav(path).map((link) => link.text), path).toEqual(["Search", "Prospects", "Results", "Setup"]);
     }
   });
 
@@ -49,16 +49,17 @@ describe("ProductNav, once the offering has a profile", () => {
     expect(nav("").map((link) => link.href)).toEqual([BASE, `${BASE}/prospects`, `${BASE}/performance`, `${BASE}/setup`]);
   });
 
-  it("counts what needs the person on To do, and nothing when nothing does", () => {
+  it("counts what waits on Search and on Prospects, and nothing when nothing does", () => {
     h.pathname = BASE;
-    const html = renderToStaticMarkup(<ProductNav basePath={BASE} completed={{ overview: true }} todo={4} />);
-    expect(links(html)[0]!.text).toBe("To do4 waiting");
-    expect(tabs("")[0]!.text).toBe("To do");
+    const html = renderToStaticMarkup(<ProductNav basePath={BASE} completed={{ overview: true }} counts={{ search: 4, prospects: 2 }} />);
+    expect(links(html)[0]!.text).toBe("Search4 waiting");
+    expect(links(html)[1]!.text).toBe("Prospects2 waiting");
+    expect(tabs("").map((link) => link.text)).toEqual(["Search", "Prospects", "Results"]);
   });
 
-  it("marks the tab of the page in view, and Setup instead of To do while setting up", () => {
+  it("marks the tab of the page in view, and Setup instead of Search while setting up", () => {
     expect(tabs("/prospects").find((link) => link.text === "Prospects")!.current).toBe("page");
-    expect(tabs("/prospects/import").find((link) => link.text === "To do")!.current).toBe("true");
+    expect(tabs("/prospects/import").find((link) => link.text === "Search")!.current).toBe("true");
     expect(tabs("/campaigns/abc").find((link) => link.text === "Prospects")!.current).toBe("true");
     expect(tabs("/prospects/8d0c").find((link) => link.text === "Prospects")!.current).toBe("true");
     const setup = nav("/setup");
@@ -66,7 +67,7 @@ describe("ProductNav, once the offering has a profile", () => {
     expect(setup.filter((link) => link.current).length).toBe(1);
     h.pathname = BASE;
     const notSetUp = links(renderToStaticMarkup(<ProductNav basePath={BASE} completed={{ overview: true }} setupDone={false} />));
-    expect(notSetUp.find((link) => link.text === "To do")!.current).toBeNull();
+    expect(notSetUp.find((link) => link.text === "Search")!.current).toBeNull();
     expect(notSetUp.find((link) => link.text === "Setup")!.current).toBe("page");
   });
 
@@ -85,7 +86,7 @@ describe("ProductNav's line about the tab in view", () => {
   };
 
   it("shows exactly one line, for the tab in view", () => {
-    expect(hintOf("")).toEqual([expect.stringMatching(/What needs you/)]);
+    expect(hintOf("")).toEqual([expect.stringMatching(/Find new prospects/)]);
     expect(hintOf("/setup")).toEqual([expect.stringMatching(/Say what you sell and who buys it, then approve/)]);
     expect(hintOf("/prospects/p-123")).toEqual([expect.stringMatching(/Everyone you approved/)]);
     expect(hintOf("/conversions")).toEqual([expect.stringMatching(/What your outreach led to/)]);

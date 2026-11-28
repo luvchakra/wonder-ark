@@ -49,7 +49,7 @@ export default async function ProductLayout({
   };
 
   // DISC-NAV-P0-02.1: set up means described and its ideal customer approved; then the
-  // offering opens on To do, and its count shows on the tab.
+  // offering opens on Search. DISC-NAV-P0-02.5: Search and Prospects each show their count.
   const setupDone = Boolean(product.product_profile) && icp?.status === "approved";
   // DISC-AUTO-P0-03.1: with Send automatically on, written first emails are sent too.
   const autoSend = setupDone ? await getAutoSend(businessId) : false;
@@ -91,15 +91,16 @@ export default async function ProductLayout({
             offerings={offerings.map((o) => ({ id: o.id, name: o.name }))}
           />
         </div>
-        <ProductNav basePath={basePath} completed={completed} setupDone={setupDone} todo={journey?.todo ?? 0} />
+        <ProductNav basePath={basePath} completed={completed} setupDone={setupDone} counts={{ search: journey?.toApprove ?? 0, prospects: journey?.needsYou ?? 0 }} />
         {/* DISC-AUTO-P0-01.3: the person chooses which picked prospects to prepare
-            (research, score, first message); nothing starts by itself. */}
+            (research, score, first message); nothing starts by itself. DISC-NAV-P0-02.5: the
+            choosing is on Prospects, as one closed line. */}
         {/* Always mounted, so a finished run's last line stays when the list empties. */}
         {workspace && journey ? (
           <PrepRunner
             candidates={journey.prepCandidates}
             autoSend={autoSend}
-            todoPath={basePath}
+            homePath={`${basePath}/prospects`}
             prepareAction={prepareNextProspectAction.bind(null, businessId, productId, workspace.id)}
           />
         ) : null}

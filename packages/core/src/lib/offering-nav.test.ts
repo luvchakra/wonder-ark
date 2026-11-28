@@ -18,7 +18,7 @@ describe("buildOfferingNav", () => {
   // DISC-NAV-P0-02.1
   it("has three tabs, in order, each landing on its first page", () => {
     expect(tabs.map((tab) => [tab.label, tab.href])).toEqual([
-      ["To do", BASE],
+      ["Search", BASE],
       ["Prospects", `${BASE}/prospects`],
       ["Results", `${BASE}/performance`],
     ]);
@@ -52,14 +52,14 @@ describe("buildOfferingNav", () => {
 
 describe("activeOfferingNav", () => {
   it("puts each page under its tab", () => {
-    expect(active("")).toBe("todo:");
+    expect(active("")).toBe("search:");
     // Setup's pages belong to no tab; the Setup link marks them.
     expect(active("/icp")).toBeNull();
     expect(active("/setup")).toBeNull();
-    expect(active("/prospects/discover")).toBe("todo:prospects/discover");
-    expect(active("/prospects/import")).toBe("todo:prospects/import");
-    expect(active("/history")).toBe("todo:history");
-    expect(active("/discovery")).toBe("todo:discovery");
+    expect(active("/prospects/discover")).toBe("search:prospects/discover");
+    expect(active("/prospects/import")).toBe("search:prospects/import");
+    expect(active("/history")).toBe("search:history");
+    expect(active("/discovery")).toBe("search:discovery");
     expect(active("/prospects")).toBe("prospects:prospects");
     expect(active("/opportunities")).toBe("prospects:opportunities");
     expect(active("/watchlist")).toBe("prospects:watchlist");
@@ -73,7 +73,7 @@ describe("activeOfferingNav", () => {
 
   it("keeps a single prospect, run or opportunity under its list's tab", () => {
     expect(active("/prospects/8d0c")).toBe("prospects:prospects");
-    expect(active("/history/r1")).toBe("todo:history");
+    expect(active("/history/r1")).toBe("search:history");
     expect(active("/opportunities/o1")).toBe("prospects:opportunities");
   });
 

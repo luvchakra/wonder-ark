@@ -24,10 +24,10 @@ const { approveIcpAction } = await import("./actions");
 beforeEach(() => vi.clearAllMocks());
 
 describe("approveIcpAction", () => {
-  // DISC-AUTO-P0-02.1: approving starts the first search, then opens To do, which says how it went.
+  // DISC-AUTO-P0-02.1: approving starts the first search, then opens Search, which says how it went.
   const icp = { workspace_id: "w1", status: "approved", industries: ["Bakeries"], geographies: ["Pune"], audience: null };
 
-  it("approves, runs the first search, then opens To do with what it added", async () => {
+  it("approves, runs the first search, then opens Search with what it added", async () => {
     h.approve.mockResolvedValue(icp);
     firstSearch.mockResolvedValue({ status: "searched", added: 4, sourceLabel: "WorksLake", weekly: true });
     await expect(approveIcpAction("b1", "p1", "icp-1")).rejects.toThrow("NEXT_REDIRECT:/acme/discovery/offerings/p1?searched=4&weekly=1");

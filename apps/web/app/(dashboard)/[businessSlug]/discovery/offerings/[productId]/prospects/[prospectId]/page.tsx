@@ -534,7 +534,7 @@ export default async function ProspectDetailPage({
               <form action={unshortlistProspectsAction.bind(null, businessId, productId, workspace.id)}>
                 <input type="hidden" name="ids" value={prospect.id} />
                 <SubmitButton size="sm" variant="ghost" pendingText="Moving...">
-                  Move back to Find
+                  Move back to Search
                 </SubmitButton>
               </form>
             ) : null}

@@ -511,7 +511,7 @@ Source: [`docs/plan/10-DISCOVERY-OFFERING-CENTRIC-BACKLOG.md`](./plan/10-DISCOVE
 
 | ID | Story | Status | Evidence / note |
 |---|---|---|---|
-| `DISC-OFFER-P0-03.1` | Offering Context Selector | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/layout.tsx` +7 |
+| `DISC-OFFER-P0-03.1` | Offering Context Selector | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/layout.tsx` +6 |
 | `DISC-OFFER-P0-03.2` | Offering Discovery Overview | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/setup-view.tsx` +1 |
 | `DISC-OFFER-P0-03.3` | Offering Navigation | ❔ Unverified | Discussed in `docs/design/discovery-offering-backlog-audit.md`, but no code cites it — confirm before relying on this |
 
@@ -1278,13 +1278,13 @@ Source: [`docs/plan/17-DISCOVERY-DATA-AND-CONSUMER.md`](./plan/17-DISCOVERY-DATA
 | `DISC-DATA-P0-02.2` | One list of prospect sources | ✅ Done | `packages/module-discovery/src/lib/data-sources/__tests__/fixtures/contract.ts` +5 |
 | `DISC-DATA-P0-02.3` | Usage check and run history for gateway calls | ✅ Done | `packages/module-discovery/src/lib/data-sources/__tests__/runs.test.ts` +3 |
 | `DISC-DATA-P0-03.1` | Find screen | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +6 |
-| `DISC-DATA-P0-03.2` | Staging results and the review list | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +6 |
+| `DISC-DATA-P0-03.2` | Staging results and the review list | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/find-view.tsx` +6 |
 | `DISC-DATA-P0-03.3` | Approval carries the source and refuses duplicates | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +4 |
 | `DISC-DATA-P0-04.1` | Enrich on approval and Fill missing details | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +20 |
 | `DISC-DATA-P0-04.2` | Find contacts, address status and sending rules | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +18 |
 | `DISC-DATA-P0-04.3` | Removal | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/[prospectId]/actions.ts` +6 |
 | `DISC-DATA-P0-05.1` | Weekly saved search | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/actions.ts` +13 |
-| `DISC-NAV-P0-01.1` | Four-tab offering navigation | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/page.tsx` +7 |
+| `DISC-NAV-P0-01.1` | Four-tab offering navigation | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/discover/find-view.tsx` +7 |
 | `DISC-NAV-P0-01.2` | Today list at the top of Prospects | ✅ Done | `packages/module-discovery/src/components/prospects/today-list.tsx` +5 |
 | `DISC-NAV-P0-01.3` | Plain labels | ✅ Done | `packages/core/src/lib/offering-nav.ts` +2 |
 | `DISC-CONS-P0-01.1` | Who buys this | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/actions.ts` +9 |
@@ -1318,7 +1318,7 @@ Source: [`docs/plan/18-MODULE-MENUS.md`](./plan/18-MODULE-MENUS.md)
 | `PLATFORM-NAV-P0-02.2` | Inventory pages | ✅ Done | `packages/module-inventory/src/components/dashboard/dashboard-view.tsx` +6 |
 | `PLATFORM-NAV-P0-02.3` | CRM pages | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/crm/follow-ups/page.tsx` +5 |
 | `PLATFORM-NAV-P0-02.4` | Finance pages | ✅ Done | `packages/module-gst/src/components/dashboard/compliance-dashboard-view.tsx` +2 |
-| `PLATFORM-NAV-P0-03.1` | Discovery menu | ✅ Done | `apps/web/e2e/authenticated/discovery-flows.spec.ts` +7 |
+| `PLATFORM-NAV-P0-03.1` | Discovery menu | ✅ Done | `apps/web/e2e/authenticated/discovery.spec.ts` +6 |
 | `PLATFORM-NAV-P0-03.2` | Business | ✅ Done | `packages/core/src/components/shell/app-sidebar.test.ts` +2 |
 
 ## Discovery — outreach campaigns

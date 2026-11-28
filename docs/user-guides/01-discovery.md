@@ -11,7 +11,7 @@ offerings and data:
 - **Funding** — your funding profile, investor readiness, rounds, investors,
   outreach, data room and due diligence.
 
-Last updated: 2026-11-28
+Last updated: 2026-11-29
 
 
 ## How Discovery is organised
@@ -21,20 +21,20 @@ Discovery's menu in the sidebar is four links, with nothing to unfold:
 | Item | What it opens |
 |---|---|
 | **Overview** | The Discovery dashboard (below) |
-| **Acquisition** | The offering you last worked in. Its tabs — Setup, Find, Prospects, Results — are across the top of the page |
+| **Acquisition** | Your offerings, one card each: choose the one to work on. Its tabs — Search, Prospects, Results — are across the top of its pages |
 | **Marketing** | The Marketing overview. Overview, Campaigns, Content and Website & SEO are tabs across the top |
 | **Funding** | The Funding overview. Overview, Profile, Investors and Data room are tabs across the top |
 
 **Business** is not in Discovery's menu. It is a row of its own at the top of the sidebar,
 above the modules, because it describes the business whichever module you are in. Its page
-holds your business profile and the list of your offerings; open an offering from there.
+lists your offerings first, where you add and edit them; the business's own details
+(description, contact details, logo and AI approvals) are under **Business details** below.
 
 **Switching offering.** When a business has more than one offering, the
 header of every offering page has an **Offering** selector. Switching keeps
 you on the same section — from Ideal customer to the other offering's Ideal customer,
-from Prospects to its Prospects. The sidebar also remembers the offering you last
-worked in, so going to Marketing and back to Acquisition returns to
-it rather than to the first offering. With no offering yet, Acquisition opens
+from Prospects to its Prospects. **Acquisition** in the sidebar always opens the list of
+your offerings, so you choose which one to work on. With no offering yet, it opens
 the Business page, where you add one.
 
 ## Before you start: business offerings
@@ -44,16 +44,17 @@ gets its own ideal customer profile, prospect list, and AI usage allowance.
 Set up your business's offerings first, from the **Business** page (at the top of the
 sidebar):
 
-1. Enter your business name, website and a short description.
-2. Add offerings one of three ways:
+1. Enter your business name and website (the description is under **Business details**).
+2. Add offerings one of three ways, from the **Offerings** list at the top of the page:
    - **Let AI Auto-populate Offerings from website** (needs a website) — the AI reads your
      site and lists offerings it found, each with a name, description and website. Tick the
      ones you want and click **Add N offerings**; nothing is added until you do.
    - **Import offerings** — a CSV, Excel or PDF catalog, up to 500 rows.
    - Add them by hand.
 
-If you created the business **From website**, the Business page also shows the website
-review: each profile field is marked as stated on the site, the AI's interpretation, or not
+If you created the business **From website**, the Business page also has a **Website
+import** section (open while it is reading your site or has results to use; one line once
+it has finished or failed) with the website review: each profile field is marked as stated on the site, the AI's interpretation, or not
 found, and each suggested offering shows how confident the AI is. **Apply name &
 description**, **Merge N selected** or **Create N Offerings** — again, only what you choose.
 
@@ -105,16 +106,16 @@ Once an offering is set up (described, and its ideal customer approved), it has 
 
 | Tab | What it shows |
 |---|---|
-| **To do** | The only list you work from, most urgent first: **Answer replies**, **Follow up with** (no reply and no activity for 7 days), **Send ready emails**, **Message on Instagram** (or another platform), **Add an email address**, campaign steps you do by hand, then **New prospects to approve** and imported prospects to pick. Tap one to open it at that step. The tab shows how many are waiting. Empty means nothing needs you; **Find more prospects** searches for more. |
-| **Prospects** | Everyone you approved and how far each has got: your groups first (the same as To do), then **To prepare**, **Waiting for a reply** and **Closed**. No buttons: you choose what to prepare on To do. On the **Companies** list, **Campaigns** below is the other way to reach them. |
+| **Search** | Finding new prospects, and nothing else: the search form, **New prospects to approve** from what it found, and imported prospects to pick, with **Import**, automatic discovery and **History** as closed sections below. The tab shows how many wait for your approval. |
+| **Prospects** | Everything you do with a prospect you approved. **Prepare prospects** is one closed line at the top: open it to choose which to research, score and write to. Then your groups, each card naming its one action: **Answer replies**, **Follow up with** (no reply and no activity for 7 days), **Message on Instagram** (or another platform), **Add an email address**, **Send ready emails**. **To prepare**, **Waiting for a reply** and **Closed** are closed lines with a count. The tab, and each of the **Companies** / **Channels** chips, shows how many need you. On the **Companies** list, **Campaigns** below is the other way to reach them. |
 | **Results** | Four counts across the top (**Prospects**, **Contacted**, **Replied**, **Won**), then closed sections: **Customers**, **What is working** and, once someone has given feedback, **What people say**. |
 
 **Setup** (beside the tabs) holds what you sell and who buys it. Until it is done, the
-offering opens on Setup; after that it opens on To do. Approving the ideal customer starts the first
+offering opens on Setup; after that it opens on Search. Approving the ideal customer starts the first
 search by itself, from what you approved (its industries and places; for an offering sold
-to consumers, the Ideal user's interests), and opens **To do**, which says what it found.
+to consumers, the Ideal user's interests), and opens **Search**, which says what it found.
 When that search used a free WorksLake source, it also runs again every week. If it can't
-run (nothing to search for yet, or no source connected), To do says why. Every page keeps the address it had, so
+run (nothing to search for yet, or no source connected), Search says why. Every page keeps the address it had, so
 old links and bookmarks still open it. (Before a profile exists you instead get a short
 step-by-step bar for setting the offering up: Overview, Ideal customer, Prospects,
 Conversions.)
@@ -262,9 +263,9 @@ Everything that brings companies in is under the **Find** tab.
 
 ### Picking prospects
 
-**Find more** (from **To do**) searches for prospects, and **To do** lists what it found under **New prospects to approve**: approving one picks it, and it
-goes straight to **Prospects**. A file you import arrives unpicked: it waits on **Find** under
-**Imported, to pick** until you tick the ones you want and press **Pick these** (**To do** links to them). **Prospects**
+**Search** looks for prospects and lists what it found under **To review**: approving one picks it, and it
+goes straight to **Prospects**. A file you import arrives unpicked: it waits on **Search** under
+**Imported, to pick** until you tick the ones you want and press **Pick these**. **Prospects**
 holds only picked prospects, as **Companies**, **Channels** or **People** chips when the
 offering has more than one. To unpick one, open it and choose **Move back to Find** under
 **More**. A prospect you add by hand (the three-dot button → **Add**) is already picked.
@@ -272,7 +273,7 @@ offering has more than one. To unpick one, open it and choose **Move back to Fin
 ### Prospects, and what is prepared for you
 
 **Prepared when you choose.** Once the ideal customer is approved, prospects you pick wait
-under **Prepare prospects** at the top of **To do**. The other tabs do not show it; while a run you started is going, they show one thin line with its progress and **Pause**.
+under **Prepare prospects**, a closed line at the top of **Prospects**; open it to choose. The other tabs do not show it; while a run you started is going, they show one thin line with its progress and **Pause**.
 Tick the ones you want, or **Select all**, and press **Prepare**: WonderArk researches and
 scores each one, plans the message and writes a first message draft (AI-generated). Nothing
 starts until you press Prepare, so AI credits are spent only on the ones you chose (about
@@ -285,7 +286,7 @@ provider busy or down), it stops once and says why, with **Fix the AI key** when
 the problem.
 
 **How each prospect is reached.** A message is written for the way the prospect can
-actually be reached, and To do groups them that way:
+actually be reached, and **Prospects** groups them that way:
 
 - **Send ready emails** — there is an address. Open one, check it and press **Send**.
 - **Message on Instagram** (or Facebook, LinkedIn) — a channel found on that platform
@@ -312,13 +313,13 @@ same path as pressing **Send**: unsubscribed and suppressed addresses are never 
 an address marked risky waits for your confirmation, and each send is recorded (marked as
 sent automatically). At most your mailbox's daily limit go out per day (30 unless you
 changed it), counting campaign emails. A send that fails is never retried on its own.
-Replies, follow-ups and LinkedIn or WhatsApp messages still wait for you on **To do**.
+Replies, follow-ups and LinkedIn or WhatsApp messages still wait for you on **Prospects**.
 Only an owner or admin can change it, and every change is recorded.
 
 **Prospects** lists everyone you approved, grouped by how far each has got. Your groups come
-first, in the same order as **To do**: **Answer replies**, **Follow up with**, **Send ready
-emails**, direct messages to send, and emails with no address yet. Then **To prepare** (not researched, scored or written to yet),
-**Waiting for a reply** and **Closed**. Tap a prospect to open it at its step. A fit score
+first and are open, each card naming its one action: **Answer replies**, **Follow up with**, direct messages to send,
+emails with no address yet, and **Send ready emails**. When none of them has anything, one line says nothing needs you. Then **To prepare** (not researched, scored or written to yet),
+**Waiting for a reply** and **Closed**, each a closed line with its count; click one to open it. Tap a prospect to open it at its step. A fit score
 shows once a prospect is scored, and a search box appears once the list is longer than ten.
 
 On the **Companies** list, **Campaigns** below the list is the other way to reach them:
@@ -326,7 +327,7 @@ email many at once, on a schedule. Campaigns email companies only, so the **Chan
 has no Campaigns section and the Next line never suggests one there.
 
 A running campaign's **Call**, **WhatsApp** and **LinkedIn** steps that are due are listed
-on **To do**, one line per prospect, oldest first and five at a time. Each shows
+at the top of the **Companies** list on **Prospects**, one line per prospect, oldest first and five at a time. Each shows
 who, the number or page to use, and the draft with that prospect's details filled in.
 **Mark done** records how it went. The list appears only when a step is due.
 
@@ -510,11 +511,11 @@ mailbox. Nothing is written or sent until you ask for it.
   is no "delivered" figure: your own mailbox doesn't report delivery. A send whose outcome
   isn't known is shown as failed with "Outcome unknown" and is never sent again
   automatically.
-- A prospect in a running campaign is not also listed under **Follow up with** on To do.
+- A prospect in a running campaign is not also listed under **Follow up with** on Prospects.
 - **Steps you do yourself.** A **Call**, **WhatsApp** or **LinkedIn** step is never sent or
   dialled by WonderArk. **Write messages** drafts it with the emails: talking points for a
   call, a short message for WhatsApp or LinkedIn, labelled and editable like any other
-  text. When the step is due for a prospect it appears on **To do** with the draft
+  text. When the step is due for a prospect it appears on **Prospects** with the draft
   and the phone number or LinkedIn page. A WhatsApp number opens a chat with the draft
   filled in only when it is stored with its country code (starting with "+"); if no
   LinkedIn page is stored, the line says so. Do the step yourself, then press **Mark done**

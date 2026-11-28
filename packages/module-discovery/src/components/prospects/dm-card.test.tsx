@@ -1,4 +1,4 @@
-/** DISC-REACH-P0-01.1: a direct message on To do is copied and opened, never sent by WonderArk. */
+/** DISC-REACH-P0-01.1: a direct message on Prospects is copied and opened, never sent by WonderArk. */
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { DmCard } from "./dm-card";

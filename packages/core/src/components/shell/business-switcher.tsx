@@ -129,7 +129,9 @@ export function BusinessSwitcher({
           />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-64">
+      {/* PLATFORM-NAV-P0-03.4 (owner, 2026-11-29): wide enough for a business's whole name, up
+          to the screen's width on a phone; a longer name wraps rather than being cut. */}
+      <DropdownMenuContent align="start" className="w-[min(24rem,calc(100vw-1.5rem))]">
         {siblings.length > 1 ? (
           <>
             <div className="flex flex-wrap gap-1.5 px-2 py-1.5">
@@ -168,10 +170,10 @@ export function BusinessSwitcher({
                   )}
                 >
                   <BusinessLogo business={business} className="text-muted-foreground" />
-                  <span className="min-w-0 flex-1 truncate">
-                    {business.name}
+                  <span className="min-w-0 flex-1">
+                    <span className="block break-words">{business.name}</span>
                     {business.description ? (
-                      <span className="text-muted-foreground"> - {business.description}</span>
+                      <span className="block truncate text-xs font-normal text-muted-foreground">{business.description}</span>
                     ) : null}
                   </span>
                   <span className="flex shrink-0 items-center gap-1.5">

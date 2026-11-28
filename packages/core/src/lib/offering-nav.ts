@@ -5,8 +5,8 @@
  * (docs/plan/12-DISCOVERY-EXPANSION-SPEC.md §0.1: no renamed route, no dead deep link);
  * what changes is only which tab it is reached from:
  *
- *   To do      To do (the offering's own address once it is set up), Find more, Import,
- *              Definitions (automatic discovery), History
+ *   Search     Search (the offering's own address once it is set up), Find more (the same
+ *              search at its old address), Import, Definitions (automatic discovery), History
  *   Prospects  All prospects, Campaigns, Opportunities, Watchlist
  *   Results    Performance, Conversions, Usage, What people say
  *
@@ -27,7 +27,7 @@
  * here: a client component imports it.
  */
 
-export type OfferingTabId = "todo" | "prospects" | "results";
+export type OfferingTabId = "search" | "prospects" | "results";
 
 export type OfferingNavPage = {
   /** The page's path below the offering, "" for the offering's overview. */
@@ -48,14 +48,14 @@ export type OfferingNavTab = {
 
 export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: string; pages: readonly { slug: string; label: string }[] }[] = [
   {
-    // DISC-NAV-P0-02.1 (owner-approved redesign, 2026-11-22): three tabs. To do is the only
-    // list the person works from; WonderArk finds and prepares the rest. Finding more and
-    // its pages belong here, since what they find comes back to To do for approval.
-    id: "todo",
-    label: "To do",
-    hint: "What needs you. WonderArk researches, scores and writes the rest by itself.",
+    // DISC-NAV-P0-02.5 (owner, 2026-11-29): the first tab is Search, and it only finds new
+    // prospects and has the person approve them. Everything done with an approved prospect
+    // (preparing, sending, answering) is on Prospects. Formerly "To do".
+    id: "search",
+    label: "Search",
+    hint: "Find new prospects. Nothing is added until you approve it.",
     pages: [
-      { slug: "", label: "To do" },
+      { slug: "", label: "Search" },
       { slug: "prospects/discover", label: "Find more" },
       { slug: "prospects/import", label: "Import" },
       { slug: "discovery", label: "Definitions" },
@@ -65,7 +65,7 @@ export const OFFERING_TABS: readonly { id: OfferingTabId; label: string; hint: s
   {
     id: "prospects",
     label: "Prospects",
-    hint: "Everyone you approved, and how far each has got.",
+    hint: "Everyone you approved: prepare them, send what is ready, answer replies.",
     pages: [
       { slug: "prospects", label: "All" },
       // DISC-CAMP-P0-05.1: outreach campaigns to the offering's prospects.

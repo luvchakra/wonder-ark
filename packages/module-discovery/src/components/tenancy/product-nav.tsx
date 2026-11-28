@@ -29,7 +29,7 @@ export function ProductNav({
   basePath,
   completed,
   setupDone = true,
-  todo = 0,
+  counts = {},
 }: {
   basePath: string;
   /** Real workflow progress (profile generated, ICP exists, prospects added) -- reached
@@ -38,10 +38,11 @@ export function ProductNav({
    * unless it's the current step. */
   completed?: Partial<Record<StageId, boolean>>;
   /** DISC-NAV-P0-02.1: described and its ideal customer approved. Until then the offering's
-   * own address shows Setup, so the To do tab is not marked as the page in view. */
+   * own address shows Setup, so the Search tab is not marked as the page in view. */
   setupDone?: boolean;
-  /** How many things need the person, shown on the To do tab. */
-  todo?: number;
+  /** DISC-NAV-P0-02.5: what waits on each tab: found prospects to approve on Search,
+   * approved prospects that need the person on Prospects. */
+  counts?: { search?: number; prospects?: number };
 }) {
   const pathname = useAppPathname();
   const { activeStage } = useAutoPopulateProgress();
@@ -74,10 +75,12 @@ export function ProductNav({
 
     return (
       <div className="flex flex-col gap-2">
-        {/* DISC-NAV-P0-02.1: three tabs. To do carries the count of what needs the person. */}
+        {/* DISC-NAV-P0-02.1: three tabs. DISC-NAV-P0-02.5: Search and Prospects each carry
+            the count of what waits for the person there. */}
         <nav aria-label="Offering sections" className="grid w-full grid-cols-3 gap-1 rounded-lg border border-border bg-muted p-1">
           {ongoingTabs.map((tab) => {
             const isActive = tab.id === active?.tab.id;
+            const waiting = tab.id === "search" ? (counts.search ?? 0) : tab.id === "prospects" ? (counts.prospects ?? 0) : 0;
             return (
               <Link
                 key={tab.id}
@@ -91,9 +94,9 @@ export function ProductNav({
                 )}
               >
                 {tab.label}
-                {tab.id === "todo" && todo > 0 ? (
+                {waiting > 0 ? (
                   <span className="min-w-5 rounded-full bg-primary px-1.5 text-center text-xs leading-5 text-primary-foreground tabular-nums">
-                    {todo}
+                    {waiting}
                     <span className="sr-only"> waiting</span>
                   </span>
                 ) : null}

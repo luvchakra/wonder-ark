@@ -60,7 +60,7 @@ describe("AppSidebar with Discovery open", () => {
       ["Executive Dashboard", "/dashboard"],
       ["Business", "/acme/business"],
       ["Overview", "/acme/discovery/dashboard"],
-      ["Acquisition", "/acme/discovery/offerings/p1"],
+      ["Acquisition", "/acme/discovery/offerings"],
       ["Marketing", "/acme/discovery/marketing"],
       ["Funding", "/acme/discovery/funding"],
     ]);
