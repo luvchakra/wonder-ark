@@ -77,7 +77,13 @@ export async function closeConversation(conversationId: string): Promise<Convers
  * from an automated one afterward: it's classified (best-effort, same as the webhook
  * path) and it unblocks "Generate reply" exactly like a webhook-ingested reply would.
  */
-export async function logInboundReply(conversationId: string, content: string): Promise<Message> {
+export async function logInboundReply(
+  conversationId: string,
+  content: string,
+  /** DISC-IG-P0-01.2: a key that makes saving the same reply twice a refusal by the database
+   * (the inbound unique index on workspace + provider_message_id), not a second row. */
+  options: { providerMessageId?: string } = {},
+): Promise<Message> {
   const trimmed = content.trim();
   if (!trimmed) throw new Error("Reply content is required.");
 
@@ -97,6 +103,7 @@ export async function logInboundReply(conversationId: string, content: string): 
       content: trimmed,
       status: "sent",
       sent_at: new Date().toISOString(),
+      ...(options.providerMessageId ? { provider_message_id: options.providerMessageId } : {}),
     })
     .select()
     .single();

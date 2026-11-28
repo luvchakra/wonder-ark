@@ -297,6 +297,18 @@ actually be reached, and **Prospects** groups them that way:
   the channel's page opens in a new tab. Paste it into a message there and send it, then
   press **Mark as sent**. To change it first, press **Edit**: change the text and press
   **Save**, or press **Rewrite with AI** for a new version.
+  With the **WonderArk Instagram helper** (a Chrome extension) you skip the copying:
+  on instagram.com press the **WonderArk** button at the bottom right, then **Open and
+  fill** on a message. It opens that prospect's chat and puts the message in the box. You
+  read it and press Instagram's own **Send**; the helper never presses it. It then marks
+  the message sent here. When a prospect writes back, open their chat, check the text the
+  helper shows and press **Save reply**: the reply is saved on the prospect, where its
+  answer is drafted. The helper holds you to a pace (20 messages a day and two minutes
+  between them, unless you change it in the extension), because faster sending puts an
+  Instagram account at risk. It uses your WonderArk sign-in in the same browser, stores no
+  password, and reads nothing on Instagram beyond the chat you have open. Until it is
+  published to the Chrome Web Store it is installed from its folder: Chrome → Extensions →
+  Developer mode → **Load unpacked**.
 - **Add an email address** — an email is written but there is nowhere to send it. Open
   it and type the address in the **To** box beside **Send**: it is saved as a contact and
   the email goes out in one step.

@@ -1,0 +1,27 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body { width: 300px; margin: 0; padding: 12px; font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; color: #0f172a; }
+      h1 { font-size: 14px; margin: 0 0 8px; }
+      label { display: block; margin: 8px 0 2px; color: #475569; font-size: 12px; }
+      input { width: 100%; box-sizing: border-box; border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; font-size: 13px; }
+      button { margin-top: 10px; border: 0; border-radius: 6px; background: #2563eb; color: #fff; padding: 7px 12px; font-weight: 600; cursor: pointer; }
+      p { color: #475569; margin: 8px 0 0; }
+    </style>
+  </head>
+  <body>
+    <h1>WonderArk Instagram helper</h1>
+    <p>Open instagram.com and press the WonderArk button at the bottom right. You send every message yourself.</p>
+    <label for="dailyLimit">Messages a day, at most (1 to 50)</label>
+    <input id="dailyLimit" type="number" min="1" max="50" />
+    <label for="gapSeconds">Seconds between two messages (30 or more)</label>
+    <input id="gapSeconds" type="number" min="30" max="3600" />
+    <label for="base">WonderArk address</label>
+    <input id="base" type="url" />
+    <button id="save" type="button">Save</button>
+    <p id="status" role="status"></p>
+    <script src="popup.js"></script>
+  </body>
+</html>
