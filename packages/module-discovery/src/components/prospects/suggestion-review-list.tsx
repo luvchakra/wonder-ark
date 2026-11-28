@@ -5,6 +5,7 @@ import { categoryOf, matchedTitlesOf, safeHttpUrl } from "../../lib/data-sources
 import { channelOf, channelTypeLabel, formatAudience } from "../../lib/data-sources/channels";
 import { WEB_SEARCH_SOURCE_ID, WEB_SEARCH_SOURCE_LABEL } from "../../lib/data-sources/types";
 import type { ProspectSuggestion } from "../../lib/prospects/types";
+import { SelectAllBox } from "./select-all-box";
 
 /**
  * DISC-DATA-P0-03.2: the "To review" list. Each suggestion shows its name, place,
@@ -66,17 +67,21 @@ export function SuggestionReviewList({
 }) {
   return (
     <section aria-labelledby="to-review-heading" className="flex flex-col gap-3">
-      <h2 id="to-review-heading" className="text-base font-medium">
-        {title}
-        {suggestions.length > 0 ? ` (${suggestions.length})` : ""}
-      </h2>
+      <div className="flex items-center justify-between gap-3 md:pr-3">
+        <h2 id="to-review-heading" className="text-base font-medium">
+          {title}
+          {suggestions.length > 0 ? ` (${suggestions.length})` : ""}
+        </h2>
+        {/* DISC-DATA-P0-03.4: tick or clear every suggestion at once. */}
+        {suggestions.length > 1 ? <SelectAllBox formId="to-review-form" /> : null}
+      </div>
 
       {suggestions.length === 0 ? (
         <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
           Nothing is waiting for review. Run a search above and what it finds will appear here.
         </p>
       ) : (
-        <form action={approveAction} className="flex flex-col gap-3">
+        <form id="to-review-form" action={approveAction} className="flex flex-col gap-3">
           {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
           <div
             aria-hidden="true"

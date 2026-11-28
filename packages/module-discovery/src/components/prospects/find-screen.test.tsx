@@ -168,8 +168,10 @@ describe("the review list", () => {
     const html = list([suggestion, { ...suggestion, id: "s2", source_ref: null, source_url: null }]);
 
     expect(html.match(/<input[^>]*type="checkbox"[^>]*name="ids"/g)).toHaveLength(2);
-    // Two checkboxes, one source link (the second has no link to give), two buttons.
-    expect(controls(html)).toBe(5);
+    // Two checkboxes, one source link (the second has no link to give), two buttons, and
+    // DISC-DATA-P0-03.4's one box that ticks or clears them all (owner, 2026-11-28).
+    expect(controls(html)).toBe(6);
+    expect(html).toContain('aria-label="Select all to review"');
     expect(html).toContain("Approve selected");
     expect(html).toContain("Discard selected");
   });
