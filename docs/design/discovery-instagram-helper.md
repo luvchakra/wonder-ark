@@ -52,6 +52,23 @@ worker adopts it only if WonderArk answers there as signed in).
 - **Replies are data.** A saved reply is the prospect's words, stored as an inbound message
   and classified like any other reply; it never changes a prompt or triggers an action.
 
+## Installing it (`DISC-IG-P0-01.3`)
+
+Chrome installs an extension in one click only from its Web Store, and blocks installers for
+anything else. Until the helper is listed there, the install page is the shortest honest path:
+`/<business>/discovery/instagram-helper`, linked beside Instagram messages on Prospects
+(desktop widths only; Chrome on a phone cannot run extensions).
+
+- **Download**: `GET /api/discovery/instagram-helper/download` (signed-in). The zip is built
+  from the extension's own files by `npm run build:instagram-helper` into
+  `lib/instagram-helper/package.generated.ts` (stored, fixed dates, so the same source gives
+  the same bytes). A test fails when it is stale.
+- **Installed check**: on WonderArk pages the helper sets `data-wonderark-helper` on `<html>`
+  to its version (`ark.js`). The install page reads it, so it says "Installed" only when it can
+  see the helper, and says when a newer version is ready.
+- **Web Store later**: listing it needs the owner's Chrome developer account. Then the page's
+  download becomes an "Add to Chrome" link and the steps go.
+
 ## What is and is not verified
 
 - Verified: the server logic and the door (unit tests), and the whole extension in Chromium

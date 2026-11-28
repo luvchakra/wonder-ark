@@ -45,11 +45,14 @@ export function ReachList({
   basePath,
   channels = false,
   directMessages = {},
+  helperHref,
 }: {
   prospects: ProspectWithPipeline[];
   basePath: string;
   channels?: boolean;
   directMessages?: Record<string, DirectMessage>;
+  /** DISC-IG-P0-01.3: the Instagram helper's install page, offered beside Instagram messages. */
+  helperHref?: string;
 }) {
   const [query, setQuery] = useState("");
   const q = query.trim().toLowerCase();
@@ -90,9 +93,17 @@ export function ReachList({
 
       {mine.map((group) => (
         <section key={group.id} id={`reach-${group.id}`} aria-labelledby={`reach-${group.id}-title`} className="flex scroll-mt-4 flex-col gap-2">
-          <h2 id={`reach-${group.id}-title`} className="text-sm font-semibold">
-            {group.title}
-          </h2>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id={`reach-${group.id}-title`} className="text-sm font-semibold">
+              {group.title}
+            </h2>
+            {/* A Chrome extension for a computer, so the link is not shown on a phone. */}
+            {helperHref && group.id === "dm" && group.prospects.some((p) => p.reach === "instagram") ? (
+              <Link href={helperHref} className="hidden shrink-0 text-xs font-medium text-primary hover:underline md:inline">
+                Instagram helper
+              </Link>
+            ) : null}
+          </div>
           {group.id === "needs-email" ? (
             <p className="text-xs text-muted-foreground">Their email is written, but there is no address to send it to yet.</p>
           ) : null}

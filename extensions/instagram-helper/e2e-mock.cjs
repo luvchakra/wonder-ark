@@ -115,6 +115,15 @@ const PROFILE = `<h1>blair.mohr</h1><div role="button" id="message" onclick="his
   const reply = calls.filter((c) => c.path.endsWith("/reply"));
   check("saves their reply to WonderArk when the person presses Save reply", reply.length === 1 && reply[0].body.prospectId === "p1" && reply[0].body.text === "Yes, send me the details");
 
+  // DISC-IG-P0-01.3: on a WonderArk page the helper leaves its version, which is what the
+  // install page reads to say "Installed".
+  await context.route("https://ark.wonderapps.biz/**", (route) => route.fulfill({ contentType: "text/html", body: page("<h1>WonderArk</h1>") }));
+  const ark = await context.newPage();
+  await ark.goto("https://ark.wonderapps.biz/home/discovery/instagram-helper");
+  const mark = await ark.waitForFunction(() => document.documentElement.dataset.wonderarkHelper, null, { timeout: 10000 }).then((h) => h.jsonValue());
+  check("marks a WonderArk page with its version, for the install page", mark === manifest.version, String(mark));
+  await ark.close();
+
   const worker = context.serviceWorkers()[0] || (await context.waitForEvent("serviceworker"));
   const stored = await worker.evaluate(() => chrome.storage.local.get("pace"));
   check("counts the sent message toward today's pace", stored.pace && stored.pace.count === 1, JSON.stringify(stored.pace && { count: stored.pace.count }));

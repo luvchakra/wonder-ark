@@ -244,7 +244,13 @@ export default async function ProspectsPage({
           {showCampaigns ? (
             <TodayList rows={[]} tasks={campaignTasks} taskAction={(enrollmentId) => markTaskDoneAction.bind(null, businessId, productId, enrollmentId)} />
           ) : null}
-          <ReachList prospects={prospects} basePath={basePath} channels={currentList === "channels"} directMessages={directMessages} />
+          <ReachList
+            prospects={prospects}
+            basePath={basePath}
+            channels={currentList === "channels"}
+            directMessages={directMessages}
+            helperHref={`/${businessSlug}/discovery/instagram-helper`}
+          />
         </>
       )}
 

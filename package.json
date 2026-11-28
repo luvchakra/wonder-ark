@@ -14,6 +14,7 @@
     "test": "npm run test --workspaces --if-present && npm run test:scripts",
     "test:scripts": "node --test scripts/*.test.mjs",
     "build:help": "node scripts/build-help-content.mjs",
+    "build:instagram-helper": "node scripts/build-instagram-helper.mjs",
     "build:brand": "node scripts/build-brand-assets.mjs",
     "build:screens": "node scripts/build-landing-screens.mjs",
     "build:progress": "node scripts/build-progress-tracker.mjs",

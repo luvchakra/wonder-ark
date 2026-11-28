@@ -9,6 +9,8 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { GENERATED_PATH, HELPER_FILES, generatedModule, zipOf } from "./build-instagram-helper.mjs";
+
 const dir = join(dirname(fileURLToPath(import.meta.url)), "..", "extensions", "instagram-helper");
 const helper = createRequire(import.meta.url)(join(dir, "lib.js"));
 const read = (name) => readFileSync(join(dir, name), "utf8");
@@ -74,4 +76,34 @@ test("settings stay within safe bounds and never point outside WonderArk", () =>
   assert.equal(helper.cleanSettings({ base: "https://home.ark.wonderapps.biz/" }).base, "https://home.ark.wonderapps.biz");
   assert.equal(helper.cleanSettings({ base: "https://ark.wonderapps.biz.evil.example" }).base, "https://ark.wonderapps.biz");
   assert.equal(helper.cleanSettings({ gapSeconds: 5 }).gapSeconds, 30);
+});
+
+// DISC-IG-P0-01.3: the download WonderArk offers is built from the extension's own files.
+test("the packed download matches the extension's source", () => {
+  assert.equal(readFileSync(GENERATED_PATH, "utf8"), generatedModule(), "package.generated.ts is stale -- run `npm run build:instagram-helper`");
+});
+
+test("the download holds what ships and not the mock test", () => {
+  assert.deepEqual(HELPER_FILES.slice().sort(), ["README.md", "ark.js", "background.js", "content.js", "lib.js", "manifest.json", "popup.html", "popup.js"]);
+  const manifest = JSON.parse(read("manifest.json"));
+  const used = [manifest.background.service_worker, manifest.action.default_popup, ...manifest.content_scripts.flatMap((entry) => entry.js)];
+  for (const file of used) assert.ok(HELPER_FILES.includes(file), `${file} is used by the manifest but not packed`);
+});
+
+test("zipOf writes a zip a reader accepts: signatures, sizes and a stable result", () => {
+  const files = [{ name: "a/one.txt", data: Buffer.from("hello") }, { name: "a/two.txt", data: Buffer.from("") }];
+  const zip = zipOf(files);
+  assert.equal(zip.readUInt32LE(0), 0x04034b50);
+  assert.equal(zip.readUInt32LE(zip.length - 22), 0x06054b50);
+  assert.equal(zip.readUInt16LE(zip.length - 22 + 10), 2);
+  assert.equal(zip.readUInt32LE(14), 0x3610a686); // CRC-32 of "hello"
+  assert.ok(zip.equals(zipOf(files)), "the same files give the same bytes");
+});
+
+test("on a WonderArk page the helper only reports the address and leaves its version mark", () => {
+  const script = read("ark.js");
+  assert.match(script, /dataset\.wonderarkHelper = chrome\.runtime\.getManifest\(\)\.version/);
+  for (const forbidden of ["fetch(", "cookie", "localStorage", "innerHTML", "querySelector", "addEventListener"]) {
+    assert.ok(!script.includes(forbidden), `ark.js must not use ${forbidden}`);
+  }
 });
