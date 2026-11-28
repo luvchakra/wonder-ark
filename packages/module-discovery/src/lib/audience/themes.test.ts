@@ -32,7 +32,7 @@ vi.mock("../usage/limits", () => ({ assertWithinUsageLimit: h.assertWithinUsageL
 vi.mock("../ai/router", () => ({ resolveAiModel: h.resolveAiModel, toAiProviderError: h.toAiProviderError }));
 vi.mock("../ai/usage", () => ({ recordAiRun: h.recordAiRun }));
 
-const { acceptThemeSuggestion, checkThemes, summariseWhatPeopleSay } = await import("./themes");
+const { acceptThemeSuggestion, checkThemes, countFeedback, summariseWhatPeopleSay } = await import("./themes");
 
 const ENTRIES = [
   { id: "f2", kind: "interview", body: "Weekends are hard", tags: [], created_at: "2026-11-12" },
@@ -164,5 +164,22 @@ describe("acceptThemeSuggestion", () => {
     h.getIcpProfile.mockResolvedValue(ICP);
     await expect(acceptThemeSuggestion("w1", "s1", 0)).rejects.toThrow(/no longer available/);
     expect(h.updateIcpProfile).not.toHaveBeenCalled();
+  });
+});
+
+describe("countFeedback (DISC-NAV-P0-02.4)", () => {
+  it("counts only the workspace's own feedback, reading no rows", async () => {
+    const supabase = createFakeSupabase({ query: () => ({ data: null, count: 3, error: null }) });
+    h.createClient.mockResolvedValue(supabase);
+
+    await expect(countFeedback("w1")).resolves.toBe(3);
+    const call = supabase.queries("audience_feedback")[0]!;
+    expect(opArgs(call, "select")).toEqual(["id", { count: "exact", head: true }]);
+    expect(opArgs(call, "eq")).toEqual(["workspace_id", "w1"]);
+  });
+
+  it("throws when the count fails, instead of reading as none", async () => {
+    h.createClient.mockResolvedValue(createFakeSupabase({ query: () => ({ data: null, error: new Error("denied") }) }));
+    await expect(countFeedback("w1")).rejects.toThrow("denied");
   });
 });

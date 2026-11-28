@@ -12,6 +12,9 @@ export async function summariseAction(businessId: string, productId: string, wor
     const outcome = await summariseWhatPeopleSay(workspaceId);
     if (outcome.status === "empty") throw new Error("There is no feedback to summarise yet.");
     if (outcome.status === "failed") throw new Error(outcome.message);
-    revalidatePath(`${await businessPath(businessId)}/discovery/offerings/${productId}/people-say`);
+    const offering = `${await businessPath(businessId)}/discovery/offerings/${productId}`;
+    revalidatePath(`${offering}/people-say`);
+    // DISC-NAV-P0-02.4: Results shows the same summary in its "What people say" section.
+    revalidatePath(`${offering}/performance`);
   });
 }

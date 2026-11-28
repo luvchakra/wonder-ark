@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { resolveBusinessIdBySlug } from "@cofounderai/core/businesses/resolve";
 import { ExportMenu } from "@cofounderai/core/export-ui/export-menu";
@@ -6,9 +5,7 @@ import { getProduct, getWorkspaceForProduct } from "@cofounderai/module-discover
 import { listProspects } from "@cofounderai/module-discovery/lib/prospects/queries";
 import { computeConversionFunnel } from "@cofounderai/module-discovery/lib/prospects/pipeline";
 import { ConversionFunnelPanel } from "@cofounderai/module-discovery/components/prospects/conversion-funnel-panel";
-import { getHandoffStatusForProspect } from "@cofounderai/module-fsm/contract/index";
-import { CreateOpportunityButton } from "./create-opportunity-button";
-import { createOpportunityAction } from "./actions";
+import { CustomersList } from "./customers-list";
 
 /**
  * A conversion funnel built entirely from data listProspects already returns -- no new
@@ -36,22 +33,6 @@ export default async function ConversionsPage({
   const customers = prospects.filter((p) => p.outcome === "won");
   const basePath = `/${businessSlug}/discovery/offerings/${productId}/prospects`;
 
-  // Per-customer handoff state (contract call, ADR-10) -- small lists in practice (a
-  // business's own won deals), so N calls here reads fine against one extra query each,
-  // same reasoning the prospect detail page's own single-customer version already uses.
-  const handoffStates = await Promise.all(
-    customers.map(async (c) => {
-      const status = await getHandoffStatusForProspect(businessId, c.id);
-      if (!status.ok && status.error === "MODULE_NOT_LICENSED") {
-        return { kind: "not_licensed" as const };
-      }
-      if (status.ok) {
-        return { kind: "exists" as const, opportunityId: status.data.opportunityId, opportunityStatus: status.data.opportunityStatus };
-      }
-      return { kind: "missing" as const };
-    }),
-  );
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
@@ -61,39 +42,7 @@ export default async function ConversionsPage({
 
       <div className="flex flex-col gap-3 rounded-md border p-4">
         <h3 className="font-medium">Customers</h3>
-        {customers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No won deals yet -- mark a conversation &quot;Won&quot; when it closes to add one here.
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {customers.map((c, i) => (
-              <li
-                key={c.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-md border p-3 text-sm"
-              >
-                <Link href={`${basePath}/${c.id}`} className="flex-1 hover:underline">
-                  <span className="font-medium">{c.company_name}</span>
-                  <span className="ml-2 text-xs text-muted-foreground">
-                    Closed {new Date(c.lastActivityAt).toLocaleDateString()}
-                  </span>
-                </Link>
-                {c.party_id ? (
-                  <CreateOpportunityButton
-                    state={handoffStates[i]!}
-                    businessId={businessId}
-                    createAction={createOpportunityAction.bind(null, businessId, productId, {
-                      prospectId: c.id,
-                      partyId: c.party_id,
-                      companyName: c.company_name,
-                      workspaceId: workspace.id,
-                    })}
-                  />
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
+        <CustomersList businessId={businessId} productId={productId} workspaceId={workspace.id} customers={customers} basePath={basePath} />
       </div>
       {/* Item #7 of a UX pass: marking a prospect "Won" redirects here with a `#bottom`
           fragment so the founder lands scrolled to this list/button, not back at the top
