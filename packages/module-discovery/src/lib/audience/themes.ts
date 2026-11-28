@@ -77,6 +77,18 @@ export function checkThemes(raw: z.infer<typeof ThemesSchema>, idByRef: Map<stri
   return themes;
 }
 
+/**
+ * DISC-NAV-P0-02.4: how many pieces of feedback the offering has, so Results shows "What
+ * people say" only once there is something to summarise. A count only, of the workspace's
+ * own rows (RLS scopes it to the member's business as well).
+ */
+export async function countFeedback(workspaceId: string): Promise<number> {
+  const supabase = await createClient();
+  const { count, error } = await supabase.from("audience_feedback").select("id", { count: "exact", head: true }).eq("workspace_id", workspaceId);
+  if (error) throw error;
+  return count ?? 0;
+}
+
 export async function getLatestThemes(workspaceId: string): Promise<ThemesSummary | null> {
   const supabase = await createClient();
   const { data, error } = await supabase

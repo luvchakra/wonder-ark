@@ -1298,7 +1298,7 @@ Source: [`docs/plan/17-DISCOVERY-DATA-AND-CONSUMER.md`](./plan/17-DISCOVERY-DATA
 | `DISC-CONS-P0-03.3` | Confirmation email, referral links, unsubscribe | ✅ Done | `packages/module-discovery/src/lib/audience/send.ts` +3 |
 | `DISC-CONS-P0-03.4` | Import a people list with confirmed consent | ✅ Done | `apps/web/app/p/w/[token]/page.tsx` +2 |
 | `DISC-CONS-P0-04.1` | Feedback | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/people/[leadId]/actions.ts` +11 |
-| `DISC-CONS-P0-04.2` | What people say | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/people-say/actions.ts` +10 |
+| `DISC-CONS-P0-04.2` | What people say | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/people-say/actions.ts` +11 |
 | `DISC-CONS-P0-04.3` | Suggested Ideal-user edit, accepted or rejected | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/icp/actions.ts` +4 |
 | `DISC-CONS-P0-05.2` | People list on Prospects, messaging with consent | ✅ Done | `apps/web/app/(dashboard)/[businessSlug]/discovery/offerings/[productId]/prospects/page.tsx` +14 |
 

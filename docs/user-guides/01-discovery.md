@@ -11,7 +11,7 @@ offerings and data:
 - **Funding** — your funding profile, investor readiness, rounds, investors,
   outreach, data room and due diligence.
 
-Last updated: 2026-11-27
+Last updated: 2026-11-28
 
 
 ## How Discovery is organised
@@ -107,7 +107,7 @@ Once an offering is set up (described, and its ideal customer approved), it has 
 |---|---|
 | **To do** | The only list you work from, most urgent first: **Answer replies**, **Follow up with** (no reply and no activity for 7 days), **Send ready emails**, **Message on Instagram** (or another platform), **Add an email address**, campaign steps you do by hand, then **New prospects to approve** and imported prospects to pick. Tap one to open it at that step. The tab shows how many are waiting. Empty means nothing needs you; **Find more prospects** searches for more. |
 | **Prospects** | Everyone you approved and how far each has got: your groups first (the same as To do), then **To prepare**, **Waiting for a reply** and **Closed**. No buttons: you choose what to prepare on To do. On the **Companies** list, **Campaigns** below is the other way to reach them. |
-| **Results** | Discovery effectiveness once there are opportunities, then one closed section per question (its leading answer on the section's line), with **Conversions** and **What people say** below. The export is under the three-dot button. |
+| **Results** | Four counts across the top (**Prospects**, **Contacted**, **Replied**, **Won**), then closed sections: **Customers**, **What is working** and, once someone has given feedback, **What people say**. |
 
 **Setup** (beside the tabs) holds what you sell and who buys it. Until it is done, the
 offering opens on Setup; after that it opens on To do. Approving the ideal customer starts the first
@@ -141,7 +141,8 @@ The offering's hub page:
   with a **Research further** button that regenerates the ICP. Below it, who buys the
   offering and its website, description and sources.
 - **Discovery effectiveness** — opportunities, how many led to a conversation, how many
-  were sent to CRM, how many were won, and the win rate — is on **Results**.
+  were sent to CRM, how many were won, and the win rate — is in the **What is working**
+  section of **Results**, once there are opportunities.
 - **Discovery** section — saved discovery criteria (minimum score, geography, industries,
   buyer roles, exclusions), a rediscovery schedule (Off, Daily or Weekly; WonderArk records
   the next date but doesn't start runs on its own yet) and a **Run AI Discovery** panel with
@@ -418,7 +419,7 @@ everyone here signed up on your page or was on a list you imported and confirmed
   link in any of these emails, stops every later email to them, and only they can undo it
   by signing up again. The first time you contact someone they are added to your business's
   contacts as a person.
-- **What people say**, under **Results**, summarises your feedback into themes with AI.
+- **What people say**, a section of **Results** once you have feedback, summarises it into themes with AI.
   **Summarise** writes it, marked **AI-generated**; summarising the same feedback again
   reuses the last summary. Each theme links to the entries behind it. When a theme suggests
   something your Ideal user is missing, **Update Ideal user** opens the ideal customer page
@@ -568,7 +569,7 @@ for this business."; nothing else changes.
 
 ### Conversions and handing off to Service
 
-Tracks your funnel from prospect to won customer. A won customer can be handed to field
+The **Customers** section of **Results** lists the prospects you marked Won. A won customer can be handed to field
 service with **Create opportunity**, which creates a Service opportunity (New, Estimate
 scheduled, Estimate sent, Won or Lost); its job and invoice status show on the prospect's
 page. If Service isn't licensed, the button says so and offers **Go to licenses**.
@@ -637,12 +638,19 @@ offering you set it in.
 
 ## Performance analysis and run history
 
-**Results** answers "what's actually working for this offering?"
-from everything discovered so far, as five closed sections: **Signals that start
-conversations**, **Industries and places that convert**, **Buyer roles that reply**,
-**Score against outcome** and **Discovery Plays**. Each section's line shows its leading
-answer (or that there is none yet); click it for the full breakdown. The report export is
-under the three-dot button at the top right.
+**Results** answers "what did my outreach lead to?" It opens on four counts of this
+offering's own prospects: **Prospects** (all of them), **Contacted** (a message was sent),
+**Replied** (with the share of those contacted) and **Won** (marked Won). Below are closed
+sections; click one to open it:
+
+- **Customers** — the prospects you marked Won, each opening its page, with the export of
+  the conversions report.
+- **What is working** — how far prospects got, stage by stage; discovery effectiveness
+  once there are opportunities; then which signals, industries, places, buyer roles, score
+  ranges and Discovery Plays lead to replies and wins. A question with nothing recorded
+  yet is named in one line at the end instead of shown as an empty box. The performance
+  report export is here.
+- **What people say** — shown once at least one piece of feedback is logged.
 
 The **History** section of **Find** is the audit list of every AI Discovery run for the
 offering — what started it (Run AI Discovery, Retry failed stage, or Save &

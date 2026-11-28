@@ -6,8 +6,12 @@ import type { ConversionFunnel } from "../../lib/prospects/pipeline";
 export function ConversionFunnelPanel({
   funnel,
   wonCount = 0,
+  figures = true,
 }: {
   funnel: ConversionFunnel;
+  /** DISC-NAV-P0-02.4: false leaves out the four figure cards, where the page already
+   * shows the counts (the offering's Results). */
+  figures?: boolean;
   /** Prospects with outcome "won" -- the account's actual customer count. Separate from
    * the funnel's "closed" stage, which only means a conversation ended (it says nothing
    * about whether the deal was won or lost). */
@@ -28,6 +32,7 @@ export function ConversionFunnelPanel({
       {/* Customers (won) leads the grid -- it's the metric that actually matters most
           here (the others are how you got there), so it gets top-left / first-read
           position rather than being buried third. */}
+      {figures ? (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <div className="rounded-md border p-4">
           <p className="text-xs text-muted-foreground">Customers (won)</p>
@@ -62,6 +67,7 @@ export function ConversionFunnelPanel({
           ) : null}
         </div>
       </div>
+      ) : null}
 
       <div className="flex flex-col gap-3 rounded-md border p-4">
         <h3 className="font-medium">Pipeline funnel</h3>
