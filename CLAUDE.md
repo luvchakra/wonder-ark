@@ -15,7 +15,7 @@ Cost is roughly context size times turns, and this file is re-read every turn.
 
 - **Short sessions.** Start a new session or `/compact` after each batch of finished work. Keep state in `docs/` and PRs, not the chat.
 - **Batch.** Small related requests share one branch and PR. Add to the open PR while its CI runs.
-- **CI waits.** On a CI-completed event, read the check results once and merge or fix in that turn. No polling, `sleep` loops or repeated status checks.
+- **CI waits.** On a CI-completed event, read the check results once and fix anything red in that turn. Green PRs merge through auto-merge. No polling, `sleep` loops or repeated status checks.
 - **Text before pixels.** `node scripts/ui-check.mjs <path> [--click role:name] [--find role[:name]] [--width 390]` prints each element's text and box. Add `--shot` only when the look matters: one per change, cropped, 1x JPEG at quality 60.
 - **Read narrowly.** `grep -n` first, then only the line ranges you need. Don't re-read files already in context or just edited.
 - **Never read these whole:** `docs/PROGRESS-TRACKER.md` (100 KB), `docs/design/compliance-backlog-audit.md` and `docs/design/platform-admin-portal-audit.md` (~0.5 MB each), `package-lock.json`, `docs/**/*.png`, full test traces, videos and full-page screenshots. Read the short error summary instead.
@@ -108,7 +108,7 @@ See `docs/REPO-LAYOUT.md`. Create directories as stories need them; don't pre-cr
 
 - **Test data is allowed** (owner, 2026-10-16): run any suite in full and create test users, accounts and data without asking. Prefix test data `e2e-qa` so it can be removed, and keep it out of anything a real customer sees. Revisit at launch.
 - **Ship fast.** The owner tests changes personally, so getting a change in front of them beats exhaustive local checks.
-- **Every build is a PR, squash-merged by you** once CI is green and it's mergeable [2026-10-15]. Don't ask the owner first, and don't delete branches or force-push over someone else's work. Confirm the production deploy is ready. Merge only your own PRs. If you hold several green PRs, fold them into one and close the rest, naming the PR that carried them.
+- **Every build is a PR with GitHub auto-merge (squash) enabled as soon as it's open** [2026-10-24, replacing manual squash-merge of 2026-10-15]. It merges once required checks pass. Don't ask the owner first, and don't delete branches or force-push over someone else's work. Confirm the production deploy is ready once it merges. Merge only your own PRs. If you hold several green PRs, fold them into one and close the rest, naming the PR that carried them.
 - **One request, one PR, one production deploy.** Stories from one request share a PR. Docs, tracker and test updates ride with the code they describe. No docs-only PR while a code PR is open or about to open.
 - **Before pushing:** `npm run typecheck`, lint the changed files, and the unit tests for what you touched (`npx vitest run <paths>` in the package). Push once, when ready.
 - **CI (`.github/workflows/ci.yml`)** runs fast checks only, chosen by `scripts/ci-affected.mjs`: typecheck, ESLint on changed files, related unit tests, the audit, DB tests for the migrated area, and the build when app code changed. A merge to `main` runs all unit tests and the whole lint.
