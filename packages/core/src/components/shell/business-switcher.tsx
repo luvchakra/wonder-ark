@@ -97,15 +97,17 @@ export function BusinessSwitcher({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        {/* Sized and bordered like the `outline` Button variant rather than given its own
-            look -- it sits in a 56px bar next to the alert bell, so a taller two-line
-            card would crowd it and read as a separate design language. */}
+        {/* PLATFORM-NAV-P0-03.5 (owner, 2026-11-29): the whole business name is visible in the
+            top bar. The trigger takes all the room the bar leaves (no fixed max width) and
+            has no border of its own on a phone, and a name that still doesn't fit wraps onto
+            a second, slightly smaller line instead of being cut with an ellipsis. */}
         <button
           type="button"
+          title={activeBusiness?.name}
           className={cn(
-            "flex h-9 min-w-0 max-w-[15rem] items-center gap-2 rounded-lg border px-3 text-left text-sm font-medium transition-colors",
+            "flex min-h-9 min-w-0 max-w-full items-center gap-2 rounded-lg px-1.5 py-1 text-left text-sm font-medium transition-colors sm:max-w-[24rem] sm:border sm:px-3",
             activeBusiness
-              ? "border-border bg-card text-foreground hover:border-primary/40 hover:bg-accent/50"
+              ? "border-border bg-card text-foreground hover:bg-accent/50 sm:hover:border-primary/40"
               : "border-primary/25 bg-primary/5 text-primary hover:bg-primary/10",
           )}
         >
@@ -113,7 +115,7 @@ export function BusinessSwitcher({
             business={activeBusiness}
             className={activeBusiness ? "text-muted-foreground" : "text-primary"}
           />
-          <span className="min-w-0 flex-1 truncate">
+          <span className="line-clamp-2 min-w-0 flex-1 text-[13px] leading-tight break-words sm:text-sm">
             {activeBusiness?.name ?? "Select a business"}
           </span>
           {activeBusiness ? (
