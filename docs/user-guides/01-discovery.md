@@ -11,7 +11,7 @@ offerings and data:
 - **Funding** — your funding profile, investor readiness, rounds, investors,
   outreach, data room and due diligence.
 
-Last updated: 2026-11-29
+Last updated: 2026-11-28
 
 
 ## How Discovery is organised
@@ -234,7 +234,8 @@ Everything that brings companies in is under the **Find** tab.
   outside your approved ICP. When you type a place under **Where**, results from that place
   are kept even if your ICP's geographies name it differently; with **Where** empty, your
   ICP's geographies decide. What was found waits under **To review**, each with its place,
-  category, why it fits and a badge naming its source. Untick any you don't want, then
+  category, why it fits and a badge naming its source. Untick any you don't want (the box
+  beside **To review** ticks or clears them all at once), then
   click **Approve selected** to add the rest to your prospects, or **Discard selected** to
   remove them. Running the same search again doesn't add the same company twice.
   **Run this weekly**, shown in the result of a search on a free WorksLake source, saves that
